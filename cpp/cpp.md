@@ -1,6 +1,40 @@
-# C语言笔记
+# CPP
 
 [toc]
+
+## 注意事项
+
+1. 每个程序/项目必须有一个命名为main的函数，main函数返回类型必须是int，因为有的编译器不支持void main，且返回值用来指示状态，非0返回值由系统定义指示错误类型。
+2. 执行完cpp程序后，可以使用echo $获得返回值（linux）
+3. 标准库iostream包括cin, cout, cerr, clog, <<左边必须是一个ostream对象，如cout, ceer，输出流返回结果依然是ostream对象。
+4. 16bit <= short <= int <= long(>32) <= long long(>=64)
+5. 当一个表达式中既有unsinged又有int时，int会被转换为无符号数。
+6. 字面值常量：整数字面值(8)、浮点数字面值(8.0)、字符字面值('a')、字符串字面值("hello")、布尔字面值(false)、指针字面值(nullptr)、转移序列；
+7. 初始值不是赋值，初始值是创建变量时赋予一个初始值；赋值是把对象的当前值擦除，再以一个新值替代。
+8. cpp11引入了列表初始化，(eg int a{0})，它还能给对象赋新值；初值存在丢失风险的时候会报错(p39)；
+9. 默认初始化：函数体内的内置类型若未初始化，则值未定义（不在定义控制范围之内）；定义于任何函数体之外的变量被初始化为0；
+
+
+## 正文
+
+```c
+// 64bit os
+typedef long unsigned int size_t;
+typedef long ssize_t;
+// 32bit os
+typedef unsigned int size_t;
+typedef int ssize_t;
+```
+
+如果要迁移，只需要修改一下typedef定义即可，美滋滋；
+所以一般喜欢给基本数据类型起别名，_t一般是os起的；
+
+0.about void*:
+
+- 任何类型的指针都可以直接赋值给void*指针， 且无需进行强制类型转换。
+- void*赋值给其他类型的指针需要进行显式转换.
+- void指针只有强制类型转换后才可以正常对其操作，即强制类型转换后才有意义，比如int a=1; void* t = &a; 不能直接deference，得*((int*)t)
+- void指针可以直接和其他类型的指针进行比较指针存放的地址值是否相同
 
 1. **c语言有哪些核心的特征？**
 简便灵活；可移植性好；可直接操作计算机硬件；执行速度快；可扩展性很强。
@@ -105,7 +139,7 @@ Char str[] = “hello”；（数组形式，如需修改字符串，采用数�
 28. **什么是preprocessor directives/instructions（预处理指令）?**
 Preprocessor directives一般放在程序的开头。主要是用来指定调用库文件的。还有一个用途是用来定义一些常值变量，宏定义等等。#开头。
 
-29. **C语言的一些字符串函数：**
+29. **C语言的一些字符A串函数：**
 Strlen(s)返回长度；
 strcmp(s1,s2)按ASCII比较s1和s2的大小
 Strcpy(s1,s2)将s2拷贝到s1；（没strncpy安全）
