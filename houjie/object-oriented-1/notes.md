@@ -167,6 +167,13 @@ A: 只要不返回local object，就应该return by reference.
 Q: member function什么时候要加const?
 A: 函数不会修改对象的member variable的时候，应声明为const。// void func() const;
 
+const是不能修饰非成员函数的，const只能修饰成员函数和对象。
+然后const对象不能调用非const成员函数。是因为：const对象的指针类型是`const classA* this`, 而非const成员函数的隐式参数为`classA* this`，故类型不匹配，const成员函数的隐式参数才是`const classA* this`；
+所以const对象只能调用const成员函数，非const对象都可以调用。
+
+![picture 0](../../images/65d3442655201445efac6ad3cfe5e66ce3a80dcedf0d0954d8a0466df9412a07.png)  
+> 右边这个const构成函数重载，但是根据这个我们可以看出const对象既可以调用const成员函数版本，又可以调用非const成员函数版本。确实如此，但是**当成员函数的const和non-const同时存在时，const obj只能调用const版本**。
+
 Q: 成员初始值列表(member initialization list)和一般形式有什么区别?
 A: member initialization list可以为每个成员变量提供初始值，在对象创建的时候直接初始化成员变量，更高效；一般形式会在对象创建时首先使用默认构造函数创建成员变量，然后再通过赋值运算符赋值。(待补充)
 
@@ -175,3 +182,8 @@ A: 成员函数体中访问成员变量a时，可以写this->a，也可以省略
 
 Q: 关于static?
 A: static member function没有this pointer，静态函数只能去处理静态数据；静态数据是属于class的，所有object公用一份，需要在class之外对class内声明的static变量进行定义（赋初值）；
+
+Q: 函数重载与函数签名
+A: 函数重载依赖于唯一的函数签名；function signature包括：函数名，参数类型，参数个数，参数顺序，所在的类，所在的命名空间
+注：返回类型不属于函数签名，const属于函数签名的一部分（const修饰成员函数）
+再注：const修饰函数参数的时候是否构成重载会比较复杂：[reference](https://www.cnblogs.com/qingergege/p/7609533.html)
