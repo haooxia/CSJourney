@@ -107,7 +107,54 @@ ListNode* head = new ListNode();
 head->val = 5;
 ```
 
-## 一、树
+## Tree
+
+### 种类
+
+满二叉树(full binary tree)：结点数$2^k - 1$；
+完全二叉树(complete binary tree)：除底层以外的其它层是满的，且底层自左而右必须连续；
+平衡二叉树：**每个**节点的左右子树高度差的绝对值都不超过1；
+二叉搜索树(Binary Search Tree)：左子树所有节点 < 中间节点 < 右子树所有结点即可（有序）；搜索时间复杂度为logn;
+平衡二叉搜索树(balanced BST)：abs(左子树高度 - 右子树高度) <= 1; map, set, multimap, multiset的底层; 插入和查询都是logn级别；
+
+> 又名AVL树（Adelson-Velsky and Landis）；
+> unordered_map, unordered_set底层是哈希表；
+
+### 存储方式
+
+链式存储：即二叉链表；
+线性存储：按0,1,2...对二叉树从上到下，从左到右编码，便可得到一个节点数组；（很少出现）
+
+二叉链表定义：
+
+```cpp
+struct TreeNode{
+    int val;
+    TreeNode* left;
+    TreeNode* right;
+    TreeNode(int x): val(x), left(nullptr), right(nullptr) {};
+};
+```
+
+> struct 的成员默认访问权限是public，class 的成员默认访问权限是private;
+
+### 遍历方式
+
+深度优先遍历(DFS)：前序(中左右)，中序(左中右)，后序(左右中)（递归或者迭代法-栈实现）
+leetcode144,145,84;
+广度优先遍历(BFS)：层序（迭代法-队列）
+
+### 注意事项
+
+某节点的高度：从该节点到最远叶子节点的距离；
+某节点的深度：从根节点到当前节点的路径上的节点数；
+
+**树**的高度和深度是相同的；深度是从上往下（先序遍历），高度是从下往上（后序遍历）；
+同一层的节点的深度是相同的，但**高度不一定相同**；
+
+### problem
+
+---
 
 - 遍历算法
   - 递归：pre；in；post
