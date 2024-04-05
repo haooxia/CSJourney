@@ -41,7 +41,7 @@ namespace std
 default copy ctor: 将a的值(数组的地址)赋值给b，即b也将指向a所指的字符数组(指向同一个是危险的)，而自己的字符数组内存泄漏了；(原来这就叫**浅拷贝**：仅拷贝指针)
 然而我们希望的是两侧各指各的，但是想让b的字符数组和a的字符数组内容一致(so called **深拷贝**：创造一块空间，把内容拷贝过去)，而非b和a的内容(数组的地址)一致。
 
-### P8: 堆，栈与内存管理
+### P8: 堆，栈与内存管理 new/operartor new/malloc
 
 ![picture 4](../images/53a4cc274d3bb3dd74cb6692cb98a97c56f77a204b7a484e37445f30a05c3c9e.png)  
 
@@ -64,9 +64,16 @@ heap objects不会在作用域结束之后自动死亡；如果不delete，heap 
 
 ---
 
+#### new/operator new/malloc/constructor
+
 **new, malloc, constructor的关系**
 new运算符 先分配内存(调用函数operator new(), 内部调用malloc)，再转型，最后调用构造函数；
 ![picture 6](../images/87b32c1d4f1d838d9e9960e6e481d0058dbcc6147ff8f705252966afb5d382ee.png)  
+
+new: 是一个运算符/关键字
+operator new: 是一个函数
+new的行为是不能变的，不能重载（固定为分解为这三个步骤）
+而operator new可以重载
 
 > 我们知道malloc给你的内存，比你所要的要多很多东西。cookie, debug header, padding等. 要分配小块内存，开销overhead就想对比较大(比例大).
 
@@ -78,6 +85,34 @@ delete: 先调用析构函数，再释放内存(operator delete (free))
 ![picture 0](../images/4fc46e2674b1b4113758bd7e200076f2a53837d7200caa970f18bb5b2c37e649.png)  
 
 ![picture 1](../images/1dc384de07a418b250c44db23dbe07371ee3c8506984ef8d9fe0c752936ac972.png)  
+
+> 最后补充: int *p = new int; delete p;这里delete的是p指向的内存，而非p本身；此时还可以将p指向其他地址；
+
+#### smart pointer
+
+1.shared_ptr: 共享指针会记录有多少个共享指针指向这个object，当这个数字降为0的时候，会自动释放这个物体，无需手动delete。（有一个引用计数器）
+> 由于需要引用计数 所以性能会稍稍下降
+
+```cpp
+#include <memory>
+shared_ptr<int> p = make_shared<int>(100); // 创建一个shared_ptr，指向值为100的int （推荐使用make_shared，效率更高，更安全)
+shared_ptr<int> p{new int(100)}; // method 2
+// 创建完成之后你可以把他当做普通指针进行操作
+```
+
+2.unique_ptr：零开销；当unique_ptr那个变量销毁的时候，其绑定的资源就会自动释放，不用手动delete。
+
+
+#### overloading new/delete
+
+![picture 0](../../images/6208ca8563249c1fd896f6934c66a4bfbd7cf0664d217063431f4f1e905d74a0.png)  
+
+![picture 1](../../images/94c099755642d8992846b546cd3fd46084d03f33181f5aba26e55f8f6793cd28.png)  
+
+![picture 2](../../images/a5d5ca30e1c99ea9798f7a08da4894573127e76c8782f76cad6fb6349a1d2ca7.png)  
+
+![picture 3](../../images/2f0b6e857594a533c1186f9c1da35610f090e3a8bf5981d0f3a6a8dd6b50ef19.png)  
+![picture 4](../../images/9e88ff90a92b09ab2fde38d52d51f132313801df17104327216eb7119e949a2d.png)  
 
 ## Object Oriented Programming
 
