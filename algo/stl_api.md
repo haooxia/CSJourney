@@ -84,6 +84,7 @@ algo:
 
 - begin()
 - end()
+- **first, second**
 - empty()
 - size()
 - insert({key_name, value_name})
@@ -91,6 +92,26 @@ algo:
 - erase(key_name)
 - clear()
 - find(key_name)
+
+遍历map：首先使用下标是不行的(**学习使用迭代器**)
+参考leetcode 347
+
+```cpp
+// 方法一：迭代器
+// 请注意此处的::iterator it (没有*)
+unrdered_map<int, int> map;
+for (unordered_map<int,int>::iterator it = map.begin(); it != map.end(); ++it)
+    cout << *it.first << *it.second << endl;
+    // cout << it->first << it->second << endl;
+
+// 方法二：range-based for
+// 首先int&表示定义一个引用类型的int；pair<int,int>&表示定义一个引用类型的pair<int,int>
+// 其次，之所以使用&，是因为要修改；而倘若又加上const，那就是为了加速了。妙的
+for (const pair<int,int>& pair : map) // 注意是pair而非unordered_map<int,int>
+    cout << pair.first << pair.second << endl;
+
+// 方法三 熟练之后使用auto
+```
 
 ## priority_queue
 
