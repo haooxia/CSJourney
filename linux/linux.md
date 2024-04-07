@@ -33,3 +33,6 @@ kil -l: 查询所有信号
 kill -9 [PID]: 使用SIGKILL强制杀死进程
 Ctrl-C: SIGINT: 终止该进程
 Ctrl-Z: SIGTSTP: 将前台的进程置于后台，并暂停；可以使用fg调到前台。
+
+netstat：显示网络连接
+可以查看对应的端口有没有被监听
