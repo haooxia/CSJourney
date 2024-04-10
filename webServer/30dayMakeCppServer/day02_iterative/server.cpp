@@ -37,25 +37,23 @@ int main() {
     memset(&clnt_addr, 0, sizeof(clnt_addr));
     // 注意accept要求传入的是socklen_t*，所以需要定义一个socklen_t类型变量（不太懂 保留疑问）
     socklen_t clnt_addr_len = sizeof(clnt_addr);
-    int clnt_sockfd = accept(sockfd, (sockaddr*)&clnt_addr, &clnt_addr_len); // 返回客户端sockfd
-    errif(clnt_sockfd == -1, "socket accpet error");
-    printf("new client fd %d! Address: %s:%d\n", clnt_sockfd, inet_ntoa(clnt_addr.sin_addr), ntohs(clnt_addr.sin_port));
+    
+    char buf[1024]; // 定义缓冲区
+    bzero(&buf, sizeof(buf));
 
-    while (true) {
-        char buf[1024]; // 定义缓冲区
-        bzero(&buf, sizeof(buf)); // &buf相当于指向整个数组，buf指向数组首元素，虽然数值相同，但++的结果是完全不同的
-        ssize_t read_bytes = read(clnt_sockfd, buf, sizeof(buf)); // 返回已读数据大小
-        if (read_bytes > 0) {
+
+    // ******
+    // 定义迭代式服务器 挂着可以串行执行5个客户端（虽然串行没啥鸟用） 依然无法并发执行任务
+    for (int i=0; i<5; ++i) {
+        int clnt_sockfd = accept(sockfd, (sockaddr*)&clnt_addr, &clnt_addr_len); // 返回客户端sockfd
+        errif(clnt_sockfd == -1, "socket accpet error");
+        printf("new client fd %d! Address: %s:%d\n", clnt_sockfd, inet_ntoa(clnt_addr.sin_addr), ntohs(clnt_addr.sin_port));
+
+        while (read(clnt_sockfd, buf, sizeof(buf)) > 0) {
             printf("message from client fd %d: %s\n", clnt_sockfd, buf);
             write(clnt_sockfd, buf, sizeof(buf)); // 将相同的数据写回clnt
-        } else if (read_bytes == 0) {
-            printf("client fd %d disconnected\n", clnt_sockfd);
-            close(clnt_sockfd);
-            break;
-        } else if (read_bytes == -1) {
-            close(clnt_sockfd);
-            errif(true, "socket read error");
         }
+        close(clnt_sockfd);
     }
     close(sockfd);
     return 0;
