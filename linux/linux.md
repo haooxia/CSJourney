@@ -2,12 +2,14 @@
 
 ## commands
 
+### 进程相关
+
 ps: 显示当前运行进程的快照
 
 ps -ef: 显示进程详细信息，连同命令行
 
 - UID: user ID of the process owner
-- PID: process ID, unique
+- PID: process ID, unique (>=2)
 - PPID: parent process ID
 - C: CPU占用率
 - STIME: start time
@@ -16,6 +18,7 @@ ps -ef: 显示进程详细信息，连同命令行
 - CMD: command that started the process
 
 ps -ef | grep python: 查看python进程
+ps au
 ps -aux: 显示所有进程更详细的信息，包括cpu和内存占用
 
 - %CPU: CPU占用
@@ -57,3 +60,46 @@ RX packets: 接收数据包数量；TX packets: 发送数据包数量；
 errors: 错误数据包，eg校验错误，帧同步错误
 dropped: 丢包数量
 overruns: 超限数据包，速度过快，ring buffer来不及处理
+
+### 磁盘相关
+
+1.`fdisk -l`：列出系统中连接的磁盘的信息
+
+```sh
+rtx5@rtx5:/home/xiahao/temp/PiBO-Spearmint$ sudo fdisk -l
+Disk /dev/nvme0n1: 1.76 TiB, 1920383410176 bytes, 3750748848 sectors
+Disk model: SAMSUNG MZ1LB1T9HALS-00007
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+
+
+Disk /dev/sda: 18.2 TiB, 20000588955648 bytes, 39063650304 sectors
+Disk model: MR9340-8i
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 4096 bytes
+I/O size (minimum/optimal): 65536 bytes / 131072 bytes
+Disklabel type: gpt
+Disk identifier: 357959AD-A985-4884-A2B6-F4E3990FF9FE
+
+Device          Start         End     Sectors   Size Type
+/dev/sda1        2048   600000511   599998464 286.1G Linux filesystem
+/dev/sda2   600000512  4600000511  4000000000   1.9T Linux filesystem
+/dev/sda3  4600000512 39063648255 34463647744    16T Linux filesystem
+```
+
+表示有两块磁盘：/dev/nvme0n1和/dev/sda
+/dev/nvme0n1: 1.76TiB, 型号 SAMSUNG..., 扇区大小512B(逻辑/物理), NVMe固态SSD
+/dev/sda: 18.2TiB, 型号MR9340.., 扇区大小512B(逻辑) 4096B(物理)
+
+下面的device实际上就是sda的磁盘分区，分成三个区
+/dev/sda1: 起始扇区号, 结束扇区, 大小, 类型为linux文件系统
+
+2.`df -lh`: 查看**文件系统**的磁盘空间**使用情况**
+Filesystem： 文件系统的名称。
+Size： 文件系统的总大小。
+Used： 已使用的空间量。
+Avail： 可用空间量。
+Mounted on：文件系统的挂载点。
+
+3.`mount /dev/name /created_dir` 挂载name磁盘到指定目录
