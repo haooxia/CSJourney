@@ -102,4 +102,6 @@ Used： 已使用的空间量。
 Avail： 可用空间量。
 Mounted on：文件系统的挂载点。
 
+> `lsblk -f` 更方便地查询磁盘挂载；**同一磁盘的不同分区是不同的文件系统**，有独立的UUID。
+
 3.`mount /dev/name /created_dir` 挂载name磁盘到指定目录

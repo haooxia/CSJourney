@@ -5,7 +5,7 @@
 pid_t fork(void);
 ```
 
-fork(): 创建子进程，该子进程时调用进程（父进程）的副本。
+==fork()==: 创建子进程，该子进程时调用进程（父进程）的副本。
 调用fork()后，调用fork（）函数后，系统先给新的进程分配资源，例如存储数据和代码的空间。然后把原来的进程的所有值都复制到新的新进程中，只有少数值与原来的进程的值不同。相当于克隆了一个自己。
 
 fork调用后分成完全不同的进程，所以父子进程**拥有完全独立的内存结构**，**只是二者共享一份代码而已**
@@ -13,7 +13,8 @@ fork调用后分成完全不同的进程，所以父子进程**拥有完全独�
 通常情况下，fork()调用成功后，会在父进程和子进程中分别返回不同的值，以便区分哪个是父进程，哪个是子进程。具体而言，fork()在父进程中返回子进程的PID，而在子进程中返回0。如果fork()调用失败，则会返回一个负值。
 
 ```cpp
-#include <stdio.h>                                                                                                     #include <unistd.h>                                                                                                   
+#include <stdio.h>
+#include <unistd.h>
 int main() {
     int a = 10;
     pid_t pid = fork();
@@ -45,7 +46,7 @@ in child process, PID=1236421, a=18 // 两个空间内一样名称的变量没�
 
 > 通过`ps au`查看进程，当状态STAT是Z时候就是僵尸进程。
 
-wait(): 父进程主动请求获取子进程的返回值（main函数return返回值、exit的参数），来销毁子进程。
+==wait()==: 父进程主动请求获取子进程的返回值（main函数return返回值、exit的参数），来销毁子进程。
 
 ```cpp
 #include <sys/wait.h>
@@ -84,7 +85,7 @@ int main() {
 }
 ```
 
-waitpid()
+==waitpid()==
 
 ```cpp
 #include <sys/wait.h>
@@ -92,3 +93,19 @@ pid_t waitpid(pid_t pid, int* statloc, int options);
 // pid: 等待终止的目标子进程的id，若-1，等同于wait，可以等候任意子进程终止。
 // options: 传递常量WNOHWANG，没有终止的子进程也不会阻塞。
 ```
+
+函数指针：指向函数的一个指针
+
+```c
+int add(int a, int b) {
+    return a + b;
+}
+int main() {
+    int (*ptr)(int, int) = &add; // 定义一个函数指针,需要指明参数; &可以省略
+    int result = ptr(10,20);
+}
+```
+
+==signal()==
+linux中，一个子进程终止时，会向父进程发送一个`SIGCHLD`信号，父进程可以通过捕捉这个信号来处理子进程的终止状态，避免子进程成为僵尸进程。
+`signal(SIGCHLD, SIG_IGN)`: 父进程告诉os，子进程终止时不需要向父进程发送SIGCHLD信号，os立即回收子进程资源，无需等待父进程来捕捉处理。

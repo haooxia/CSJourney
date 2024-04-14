@@ -1,9 +1,8 @@
 #include "util.h"
 #include <stdio.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
 #include <string.h>
 #include <unistd.h> // read and write (TCP); sendto and recvfrom (UDP)
+#include <arpa/inet.h> // 包含#include <sys/socket.h>
 
 int main() {
     /* domain底层协议族, type数据传输类型, protocol具体协议 */
