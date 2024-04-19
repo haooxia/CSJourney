@@ -1,5 +1,23 @@
 # STL API
 
+## type conversion
+
+```cpp
+// int -> string
+int num = 123;
+std::string str = std::to_string(num);
+// string -> int
+std::string str = "456";
+int num = std::stoi(str);
+// 个位数int -> char
+int num = 6;
+char ch = '0' + num;
+// char -> 个位数int
+char ch = '6';
+int num = '6' - '0';
+// 多位数int可不能和char互转奥 因为char只能存一个字符 只会保留int的低8bit
+```
+
 ## vector
 
 - begin() & end()
