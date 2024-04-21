@@ -40,9 +40,17 @@ Ctrl-Z: SIGTSTP: 将前台的进程置于后台，并暂停；可以使用fg调�
 netstat：显示网络连接
 可以查看对应的端口有没有被监听
 
-### 如何查看网络的性能指标
+### 网络相关
 
-网络性能指标：
+#### 查询
+
+查询本地dns服务器：`cat /etc/resolv.conf`
+或者: `nslookup www.baidu.com`(本意是获取ip的)
+Non-authoritative answer代表来自缓存
+Authoritative answer代表来DNS服务器(实际上是来自权威域名服务器Authoritative DNS Serverreso)
+> windows中`ipconfig -all`或者`nslookup`
+
+#### 网络性能指标：
 
 1. 带宽：链路最大传输速率(bit/s)
 2. 延时：请求数据包发送后，收到对端响应所需要的时间
