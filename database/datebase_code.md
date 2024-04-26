@@ -32,9 +32,9 @@ linux系统安装完成之后默认有密码（手动修改）
 version > 5.7.9
 
 ```mysql
-alter user 'root'@'%' identified with mysql_native_password by 'xiahao';
+alter user 'root'@'localhost' identified with mysql_native_password by 'xiahao';
 flush privileges;
-# 'root'@'lockhost'
+# 'root'@'localhost'
 ```
 
 > 报错参考 [url](https://blog.csdn.net/q258523454/article/details/84555847)
