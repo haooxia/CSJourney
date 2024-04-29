@@ -46,7 +46,7 @@ algo:
 - find(vec.begin(), vec.end(), value); // return position_iter
 - count(vec.begin(), vec.end(), value); // count the number `value`
 - max_element(vec.begin(), vec.end()); return the position_iter
-- accumulate(vec.begin(), vec.end(), 0); // he last argument's type is used not just for the initial value, but for the type of the result as well. e.g., `0`, `0.0`; `#include <numeric>`
+- accumulate(vec.begin(), vec.end(), 0); // the last argument's type is used not just for the initial value, but for the type of the result as well. e.g., `0`, `0.0`; `#include <numeric>`
 
 ## list
 
