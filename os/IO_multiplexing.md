@@ -24,6 +24,10 @@ poll: 底层是线性表，没有上限。
 ---
 IO多路复用与多线程并发的区别：
 
+---
+
+![picture 14](../images/4c5545e62213a4d828e8efccce714d8c9c9350dc4c48f9c9e652a97bfa4a12ba.png)  
+
 ## Select
 
 ### 单线程
@@ -83,7 +87,7 @@ select/poll缺陷重申：
 
 ## Epoll
 
-如果并发量要求并不是很高，选择使用select或poll，若并发量很高，采用epoll，但epoll无法跨平台。
+**如果fd数量并不是很高，大多数fd都是激活的，选择使用select或poll**，若并发量很高，采用epoll，但epoll无法跨平台。
 
 **区别：**
 

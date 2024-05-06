@@ -963,7 +963,7 @@ epoll是解决C10K问题的利器，通过两个方面解决了select/poll的问
 
 Reactor模式: Redis, Nginx, Netty
 Reactor模式：来了一个事件，Reactor会有相对应的反应/响应。(所以叫 反应堆)
-也叫做Dispatcher模式: I/O多路复用监听事件，收到事件后，根据事件类型分配(Dispatch)给某个进程/线程。
+也叫做Dispatcher模式: I/O多路复用监听事件，**收到事件后，根据事件类型分配(Dispatch)给某个进程/线程**。
 
 Reactor模式主要包括两部分:
 1.Reactor：负责监听和分发事件，事件类型包含连接事件、读写事件；

@@ -1,6 +1,8 @@
 # note
 
-## http
+## 基于epoll的多线程服务器
+
+### http
 
 **http请求**
 ![picture 1](../images/256e00b1b9f1e29fbb22bf1c7345d1aaab07570fb5d2c7d7be0bd4aa8f42b9b0.png)  
@@ -20,3 +22,11 @@ post向服务器提交数据：
 **http响应**
 ![picture 5](../images/d421f9f6b4ecf60e11d0bd663b52d9a18dd490b4e7946c0796073b50dd610cd0.png)  
 ![picture 6](../images/636edf7836cdbdc54a89ff8886c911ad55ec4f67bbf2f0da6b061a7bc99ba896.png)  
+
+## 多反应堆线程池
+
+channel模块：封装一个文件描述符fd，可能用于连接或者通信
+![picture 7](../images/98c76d319643c64d49390631629ade786b854c7b31ede6d8e78eb4601435599e.png)  
+
+dispatcher模块（核心）
+
