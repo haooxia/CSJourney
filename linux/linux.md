@@ -20,6 +20,9 @@ ps -ef: 显示进程详细信息，连同命令行
 ps -ef | grep python: 查看python进程
 ps au
 ps -aux: 显示所有进程更详细的信息，包括cpu和内存占用
+> a: show processes for all users
+> u: display the process's user/owner
+> x: 显示无控制终端的进程
 
 - %CPU: CPU占用
 - %MEM
