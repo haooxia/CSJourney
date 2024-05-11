@@ -53,7 +53,9 @@ Non-authoritative answer代表来自缓存
 Authoritative answer代表来DNS服务器(实际上是来自权威域名服务器Authoritative DNS Serverreso)
 > windows中`ipconfig -all`或者`nslookup`
 
-#### 网络性能指标：
+查看TCP连接：`netstat -napt`
+
+#### 网络性能指标
 
 1. 带宽：链路最大传输速率(bit/s)
 2. 延时：请求数据包发送后，收到对端响应所需要的时间

@@ -97,6 +97,7 @@ algo:
 - erase(key_name)
 - clear(): clean all values
 - find(key_name)
+- count(): 返回0或1，可用于查询
 
 ## unordered_map
 
@@ -119,7 +120,7 @@ algo:
 // 请注意此处的::iterator it (没有*)
 unrdered_map<int, int> map;
 for (unordered_map<int,int>::iterator it = map.begin(); it != map.end(); ++it)
-    cout << *it.first << *it.second << endl;
+    cout << (*it).first << (*it).second << endl;
     // cout << it->first << it->second << endl;
 
 // 方法二：range-based for

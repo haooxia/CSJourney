@@ -304,6 +304,77 @@ HTTPS在HTTP和TCP层之间添加`SSL/TLS`协议，解决了HTTP的不安全：*
 
 ## 三、TCP
 
+### TCP基础
+
+为什么需要TCP协议？
+IP层不可靠，它不保证网络包的按序交付、数据完整性。
+TCP提供可靠数据传输服务，确保接收端收到的网络包是无损坏、按序的、非冗余的。
+
+TCP和UDP的**区别**：
+
+1. 连接：TCP面向连接，UDP无需连接，即刻传输数据。
+2. 服务对象：TCP是一对一，即连接只有两个端点。UDP支持一对一、**一对多、多对多**的通信。
+3. 可靠性：
+   1. TCP是可靠传输，数据可以无差错、不丢失、不重复、按序到达。
+   2. UDP是尽最大努力交付，不保证可靠传输。（也可以基于QUIC协议整个可靠的UDP传输）
+4. 拥塞控制、流量控制：
+   1. TCP有拥塞控制和流量控制机制，保证数据传输的安全性。
+   2. UDP没有，即使网络非常拥堵，也不影响UDP的发送速率。
+5. 首部开销：
+   1. TCP首部较⻓，在没有使用选项字段时是20字节
+   2. UDP固定为8字节；简单的一批
+      1. ![picture 10](../images/3aeddab71bc919933438243f8c22b20eb7e45f31a1a4b51b3dbe8863cccd1d43.png)
+   3. 由于UDP头部长度固定，所以没有“首部长度”字段，而TCP需要。
+6. 传输方式：
+   1. TCP是**流式传输**（面向**字节流**），没有数据边界，但保证顺序和可靠。
+   2. UDP是**一个包一个包**的发送（面向**数据报**），有数据边界，但可能会丢包和乱序。
+      1. UDP存在数据边界，意味着read调用次数==write调用次数；
+7. 分片不同：
+   1. TCP的数据大小如果大于MSS大小，则会在传输层进行分片，目标主机收到后，也同样在传输层组装TCP数据包，如果中途丢失了一个分片，只需要传输丢失的这个分片。
+   2. UDP的数据大小如果大于MTU大小，则会在IP层进行分片，目标主机收到后，在IP层组装完数据，接着再传给传输层。
+8. 应用场景
+   1. TCP: FTP文件传输, HTTP/HTTPS
+   2. UDP: 包总量较少的通信(DNS, SNMP), 音视频，广播。
+
+---
+
+**讲解TCP报文头部格式**：
+![picture 4](../images/ebdb15398a1f3cc979bb49063cfd987852f1ebf37b622f0920291a8411d9bd70.png)
+
+- 序列号：用于**解决网络包乱序**问题。在建立连接时由计算机生成的随机数作为其初始值，通过SYN包传给接收端主机，每发送一次数据，就累加一次该数据字节数的大小。
+- 确认应答号/序列：用于**解决丢包问题**。指下一次期望收到的数据的序列号，发送端收到这个确认应答以后**可以认为在这个序号 以前的数据都已经被正常接收**。
+- 控制位：
+  - ACK: ACK=1时，**确认应答号字段**生效。TCP规定除了最初建立连接时的SYN包之外，该位均应设置为1.
+  - RST: 为1表示TCP连接中出现异常必须强制断开连接
+  - SYN: 为1表示希望建立连接，在**序列号字段**设定初始序列号。
+  - FIN: 为1表示紧后不会再发送数据，希望断开链接。
+
+---
+
+**三次握手建立连接**：所谓连接，只是双方计算机内维护的一个状态机中的状态变化。
+![picture 5](../images/d475e80daf89b4535421f44531cde1d66103f7257fabcf0bf6bfb59d814388cd.png)  
+![picture 6](../images/f91309f4a756e298bfc70334f4b5bcb452ae341e58c9456021bf40c265006b48.png)  
+**详图**：
+![picture 11](../images/ae3c12a32ce60779b9636969ad9a0c1fca27770c566f00f14c7be3284a5f5c59.png)  
+
+---
+
+TCP连接就是用于保证可靠性和流量控制而维护的一些状态信息，包括**Socket**、**序列号**和**窗口大小**。
+> 可以认为TCP连接三要素是：socket、序列号和窗口大小
+
+**为什么TCP需要三次握手建立连接？**
+
+1. RFC上指出，最主要原因是防止“历史连接”初始化了连接。
+2. 同步双方初始序列号（一来一回才能确保双方的初始序列号实现同步）
+   1. 四次握手当然也可以同步双方序列号，但中间两步(服务端到客户端的ACK和SYN)可以合并
+   2. 两次握手则只保证了一方序列号的同步
+3. 避免浪费资源
+   1. ![picture 12](../images/39d76d8b38561770f9858b92dbcc44587e38667007f09c584b9798c061667cd3.png)
+
+![picture 13](../images/ed1937be670df442d52e8410ebc20b4984b8a262baf198eafa3fb1216c1bd9cf.png)  
+
+为什么
+
 ## 四、IP
 
 ### IP address
@@ -356,6 +427,12 @@ ip分片与重组：
 每种数据链路的最大传输单元MTU不同，eg以太网MTU1500, FDDI数据链路MTU=4352。当ip包大于MTU，就会被分片。
 > 分片后的IP包只会在目标主机处重组，中间的路由器可不会重组。
 
+---
+
+环回地址
+其实127开头的都是环回地址...不止127.0.0.1奥
+一般来说，IPV4下使用`127.0.0.1`作为loopback addr，IPV4使用`::1`。
+
 ### IP related protocol
 
 #### dns
@@ -393,13 +470,82 @@ so **NAT穿透技术**
 
 ![picture 23](../images/7625686289a948d73d853542050ffe8f8d3a539fecef217d13e760272bec8293.png)
 
-#### ICMP
+#### ICMP/ping/traceroute
+
+虽然ICMP和IP都是网络层协议，但ICMP是基于IP的（层内关系）
 
 Internet Control Message Protocol
 互联网控制报文协议
-ICMP工作在网络层，封装在IP数据包内
 
-![picture 25](../images/e2faf9bba0eb33c9f7d297f50890b8c845b2a8c011a4a8540df82acb7e556596.png)  
+![picture 25](../images/e2faf9bba0eb33c9f7d297f50890b8c845b2a8c011a4a8540df82acb7e556596.png)
+> 目标不可达：又可分为：网络不可达、主机不可达、协议不可达、端口不可达、**需要分片但设置了不分片(traceroute)**
+> 原点抑制：为了缓和网络拥堵问题
+> 重定向消息：路由器发现发送端主机没使用最优路径发送数据，返回该消息包含了最合适的路径
+> 超时：**当IP头部的TTL字段(time to live)减为0(traceroute)**(每路过一个路由器-1)，丢弃该ip包，路由器返回一个超时消息。
+
+ICMP工作在网络层，封装在IP数据包内
+![picture 4](../images/7df0409c3058cc3700683e19af534832a3c7c3f4d5c21bbef87e2e8c3eb2f50b.png)
+
+**ping**--基于查询报文类型 （**应用层**命令）
+man ping: send ICMP ECHO_REQUEST to network hosts
+ping基于ICMP**回送请求echo request**和(8类型)ICMP**回送应答echo reply**(0类型)这两种**查询**报文，如果可以返回ICMP echo reply，说明发送端主机(host)可以到达接收端主机。
+
+> 翻墙后依然ping不通google的原因大概是：代理软件只代理HTTP等应用层协议，而ping是ICMP网络层协议，故而ICMP无法被代理软件代理。
+
+ping的详细流程：
+
+![picture 5](../images/3b588df5eb45ec8be1fb57a366b28b2dcb5c7b2f3eb91756365a6ee6d8ba91a3.png)  
+> 设置**序号**是为了区分ping所发送的多个数据包，ping在发送echo request时会在报文数据本分插入发送时间戳，收到echo reply之后用当前时间戳减一手就知道**RTT**往返时间了。
+
+ping与TCP发数据的区别：
+![picture 6](../images/74e465883cf0840cc3dce3dd5bd612ec8a56c760bca5b066accf27b8f444aa23.png)
+> socket中SOCK_STREAM是TCP，工作在传输层，SOCK_RAW是原始套接字，工作在网络层，构成ICMP的数据。
+> 所以本质上，ping和普通程序发消息在流程上没啥区别。
+
+ping 127.0.0.1会发生什么：
+![picture 8](../images/f16309427ee5fb1cc7bbcd434e521f0799c4b1199d8831e8c14e5cfbfcf27a5a.png)  
+
+![picture 7](../images/f6c33bdaf53a6d07ccfdd3033ce0144ffb59de20e839091bfbc1fea83dbc0d14.png)  
+
+---
+
+ping 本机ip又会发生什么：
+ping 本机ip与ping 环回地址一样，都会走“假网卡”（`ifconfig`中的`lo`本地环回接口）
+即二者一样。
+
+---
+
+`localhost` is a **domain name**, will be parsed to IP address `127.0.0.1`, can be modified by `vim /etc/hosts`
+`0.0.0.0`表示**本机的所有IPv4地址**。(用于socket服务端的listen ip)
+
+```c
+/* Address to accept any incoming messages. */ 
+#define INADDR_ANY ((unsigned long int) 0x00000000) /* 0.0.0.0   */
+```
+
+![picture 9](../images/df1ba68b49b13edefcb31753888e29e910c4dd35d3c13389dcf380201a6c1696.png)  
+
+---
+
+**traceroute**--基于差错报文类型
+man: print the route packets trace to network host
+> windows中叫做tracert
+
+原理：**故意设置特殊的TTL**来追踪去往目的地时所经过的路由器。
+specifically, 将IP包的TTL生存期限从1开始按顺序递增，发送**UDP包**，强制接收**ICMP超时**消息。
+> 当然有的路由器就不会返回这个ICMP，所以对于有的公网地址，是看不到中间经过的路由的。dont know why.
+
+最后，当差错报文类型是**端口不可达**时，说明发送方发出的UDP包到达了目的主机。（traceroute发送UDP包时会填一个不可能的目的端口号(一般认为不会使用的)）
+
+---
+
+traceroute还有一个作用：
+原理：**故意设置不分片**，来确定路径的MTU
+> 以太网的数据链路上的MTU通常是1500字节，但是非以太网的MTU值就不一样了，所以我们要知道MTU的大小，从而控制发送的包大小
+
+specifically, 发送端主机发送IP包时将IP首部的**分片禁止标志位设为1**，途中的路由器便不会对大数据包分片，会直接将其丢弃，然后返回一个**ICMP目标不可达消息**（包含**数据链路的MTU**）。该目标不可达消息就是：**需要进行分片但设置了不分片**。
+
+`traceroute -F host`: -F; --dont-fragment
 
 #### IGMP
 
