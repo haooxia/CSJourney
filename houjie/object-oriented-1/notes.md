@@ -213,7 +213,7 @@ Q: 成员初始值列表(member initialization list)和一般形式有什么区�
 A: member initialization list可以为每个成员变量提供初始值，在对象创建的时候直接初始化成员变量，更高效；一般形式会在对象创建时首先使用默认构造函数创建成员变量，然后再通过赋值运算符赋值。(待补充)
 
 Q: 关于this pointer？
-A: 成员函数体中访问成员变量a时，可以写this->a，也可以省略为a，编译器自动会加上；但是函数参数中一定不能写this；
+A: 成员函数体中访问成员变量a时，可以写this->a，也可以省略为a，编译器自动会加上；但是函数参数中一定不能写this；(但是注意别将成员a和块内局部变量a混淆(比如构造函数参数名是a，你不能a=a, 需要this->a=a))
 
 Q: 关于static?
 A: static member function没有this pointer，静态函数只能去处理静态数据；静态数据是属于class的，所有object公用一份，需要在class之外对class内声明的static变量进行定义（赋初值）；
