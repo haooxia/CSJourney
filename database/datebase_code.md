@@ -4,22 +4,28 @@
 
 ## MySQL
 
+![picture 1](../images/60ed56107759295fa2d2ccc198cc609f2a205459f89f7c0288a5dc570af1473e.png)  
+
+
 ### begin
 
 关系型数据库管理系统(RDBMS)：使用表格化数据模型，支持表与表之间的关系。比如MySQL, ORACLE, PostgreSQL
 SQL是RDBMS的语言。
 非关系型数据库管理系统(NON-RDBMS)：使用非结构化或面向文档的数据模型。比如Redis, mongoDB, neo4j, cassandra.
 
+* DBMS下有多个数据库，数据库下对应对张表
+* 表格的一行在java中使用一个对象表示
+
 SQL:
 
-- DDL 数据定义语言 data definition language: CREATE, DROP, ALTER, TRUNCATE
-- DML 数据操作语言 manipulation: INSERT, UPDATE, DELETE, CALL
-- DQL 数据查询语言 query: SELECT
-- DCL 数据控制语言 control: GRANT, REVOKE
+* DDL 数据定义语言 data definition language: CREATE, DROP, ALTER, TRUNCATE
+* DML 数据操作语言 manipulation: INSERT, UPDATE, DELETE, CALL
+* DQL 数据查询语言 query: SELECT
+* DCL 数据控制语言 control: GRANT, REVOKE
 
 ### 安装
 
-Linux
+**Linux**
 `sudo apt install mysql-server`: 安装后自动启动
 `mysql --version`
 `systemctl status mysql`: 查看mysql服务状态，如果没启动：
@@ -63,6 +69,29 @@ mysqlx-bind-address     = 127.0.0.1
 # 为：
 bind-address            = 0.0.0.0 # 修改为监听所有的ip地址
 mysqlx-bind-address     = 0.0.0.0
+```
+
+windows修改root密码
+
+```bash
+use mysql;  
+update user set authentication_string=password('xiahao') where user='root' and Host='localhost';
+```
+
+windows使用
+**mysql是一个数据服务器，监听3306端口；命令行终端或图形化工具(eg navicat)或java程序是client，通过网络连接到服务器.**
+
+* 如果没写-h默认是本机localhost；如果没写-P默认是3306；
+* 为了避免被攻击，一般会修改端口号
+
+```bash
+net start mysql # 启动mysql服务器后client才可以连接
+net stop mysql  # close 
+mysql -u root -p
+# 全称
+mysql -h host/IP -P port -u user -ppassword # -p后无空格 
+# example
+mysql -h 127.0.0.1 -P 3306 -u root -pxiahao
 ```
 
 ### 基础语句
@@ -210,9 +239,9 @@ Redis: Remote dictionary server
 
 使用途径
 
-- CLI: Command Line Interface
-- API: Application Programming Interface
-- GUI: Graphical User Interface
+* CLI: Command Line Interface
+* API: Application Programming Interface
+* GUI: Graphical User Interface
 
 ### install
 
