@@ -46,6 +46,17 @@ int main() {
 }
 ```
 
+```java
+// Definition for singly-linked list.
+public class ListNode {
+    int val;
+    ListNode next;
+    ListNode() {}
+    ListNode(int val) {this.val = val;}
+    ListNode(int val, ListNode next) {this.val = val; this.next = next;}
+} 
+```
+
 ## HashSet / unordered_set
 
 哈希表用来快速判断(O(1))一个元素是否出现在集合中
@@ -94,6 +105,11 @@ for (Map.Entry<String, Integer> entry : map.entrySet()) {
 
 ## String
 
+* 初始化
+  * `String str = "hello";` 直接赋值
+  * `String str = new String("hello");` 使用构造函数
+  * `char[] charArr = {'h', 'e'}; String str = new String(charArr);` 使用字符数组
 * `str.length()`
 * `str.charAt(idx)`
-* `str.toCharArray()`
+* `str.toCharArray()`: String不可修改，char[]可以; String没有实现Iterable接口不可forEach，char[]可以
+* `new String(charArray)`: 将char[]转为String
