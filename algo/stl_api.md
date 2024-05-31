@@ -61,6 +61,7 @@ algo:
 
 ## stack
 
+- `stack<int> st;`
 - no begin() & end()
 - empty()
 - size()
@@ -70,8 +71,10 @@ algo:
 
 ## queue
 
+- `queue<int> que;`
 - no begin() & end(): 因为其访问受限 FIFO 不支持随机访问
 - front() & back(): reference to elem
+  - 注意是队列中元素总是从队尾插入，从对头删除，所以back是队尾，类似于stack中的top
 - empty()
 - size()
 - push()

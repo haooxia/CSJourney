@@ -3,6 +3,7 @@
 [toc]
 
 ![picture 1](../images/8c59864034ef6c2020329cd184d752e513b468797f89cba43cd3ed57ce597f0b.png)  
+> ArrayDeque并没有实现Deque 别误会
 
 <!-- ![picture 0](../images/8af828e2c5e829ba171e65eebf32ca00b9b706c5206b1c39ad1ab5b07d1a0972.png) -->
 
