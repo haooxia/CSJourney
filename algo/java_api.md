@@ -61,6 +61,41 @@ public class ListNode {
 } 
 ```
 
+## ArrayList
+
+* `List<Integer> list = new ArrayList<>();`
+* `list.add(ele)`
+* `list.add(idx, ele)`
+* `list.get(idx)`
+* `list.set(idx, ele)`: update
+* `list.remove(idx)`
+* `list.size()`
+* `list.isEmpty()`
+* `list.contains()`
+
+## Arrays
+
+```java
+int[] arr = {1,3,4,2,9,7};
+// 顺序排序
+Arrays.sort(arr);
+
+// 逆序排序（方法一）
+Arrays.sort(arr, Comparable.reverseOrder()); // 适用类型还不明确
+
+// 逆序排序（方法二：匿名内部类并实现compare方法）
+Arrays.sort(arr, new Comparator<Integer>() {
+    @Override
+    public int compare(Integer a, Integer b) {
+      return b - a;
+    }
+});
+
+// 逆序排序（方法三：lambda表达式）
+Arrays.sort(arr, (a, b) -> b - a);
+
+```
+
 ## HashSet / unordered_set
 
 哈希表用来快速判断(O(1))一个元素是否出现在集合中
@@ -86,11 +121,11 @@ for (String ele : set) {
 ## HashMap / unordered_map
 
 * `Map<String, Integer> map = new HashMap<>();`
-* `map.put("key", 1)`
-* `map.get("key")`
+* `map.put(key, 1)`
+* `map.get(key)`
 * `map.getOrDefault(key, 0): 获取key的value，如果不存在返回0`
-* `map.containsKey("key")`
-* `map.remove("key")`
+* `map.containsKey(key)`
+* `map.remove(key)`
 * `map.size()`
 * `map.isEmpty()`
 * `map.containsValue(1)`
@@ -105,6 +140,20 @@ for (Map.Entry<String, Integer> entry : map.entrySet()) {
     String key = entry.getKey();
     String value = entry.getValue();
 }
+```
+
+```cpp
+unordered_map<int,int> map;
+for (auto c:nums) 
+  map[c]++;
+```
+
+上述cpp版本等价于：
+
+```java
+Map<Integer, Integer> map = new HashMap<Integer, Integer>;
+for (int c: nums)
+  map.input(c, map.getOrDefault(c, 0)+1);
 ```
 
 ## String
@@ -197,6 +246,12 @@ Deque中stack相关的方法和Deque中的一般方法的对应关系：
 ![picture 6](../images/9f823224c9994b1e0ff309e71ef74d8c8d4bc8595ab219ff01490e180a22d925.png)  
 
 > **虽然我们只想使用Queue接口的方法，但是并不能实例化一个接口，所以我们还是要去new一个ArrayDeque，但我们只用其中的Queue部分的方法。（因为接口中并不包含方法的实现）**
+
+### PriorityQueue
+
+使用Queue接口中的常见api就行了: `offer(), poll(), peek(), size()`
+
+前k个高频元素：[link](https://leetcode.cn/problems/top-k-frequent-elements/description/)
 
 ---
 

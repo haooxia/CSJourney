@@ -6,6 +6,10 @@
 
 ![picture 1](../images/60ed56107759295fa2d2ccc198cc609f2a205459f89f7c0288a5dc570af1473e.png)  
 
+![picture 0](../images/666b21c4693b11f56e68ed0f112fe3ce7aafb9178142c2e6258ded70ef9e502e.png)
+
+![picture 3](../images/0c802f215506964e398299038b2438ea40a4cdc650304d0be3e488260a345ea9.png)  
+
 ### Begin
 
 关系型数据库管理系统(RDBMS)：使用二维表存储数据，支持表与表之间的关系。比如MySQL, ORACLE, PostgreSQL
@@ -17,8 +21,8 @@ SQL (Structured Query Language)是RDBMS的语言。
 
 SQL分类:
 
-* DDL 数据定义语言 definition: CREATE, DROP, ALTER, TRUNCATE
-* DML 数据操作语言 manipulation: INSERT, UPDATE, DELETE, CALL
+* DDL 数据定义语言(数据库设计) definition: CREATE, DROP, ALTER, TRUNCATE
+* DML 数据操作语言(增删改) manipulation: INSERT, UPDATE, DELETE, CALL
 * DQL 数据查询语言 query: SELECT
 * DCL 数据控制语言 control: GRANT, REVOKE
 
@@ -114,7 +118,7 @@ mysql -u root -p game < game.sql # 从文件导入数据
 ```sql
 # 数据库操作
 show databases;
-create database game;   # add
+create database/schema game;   # add
 drop database game;     # delete
 use game;               # change database
 ```
@@ -124,7 +128,7 @@ use game;               # change database
 show tables;            # show all tables of current database
 desc tableName;         # 查看指定表结构：字段、类型等
 show create table tableName;    # 查看指定表的建表语句
-# 创建表
+# 创建表 (重点)
 create table player (
     id INT DEFAULT 1 comment '编号', # 常用约束包括default, null, not null, unique等, 以及主键约束(每个表只能有一个主键，主键不为空)，外键约束(一个表的外键必须是另一个表的主键)等
     name VARCHAR(100) comment '姓名', # 变长字符串 size=100
@@ -135,24 +139,33 @@ create table player (
 drop table player; # 删除table
 ```
 
+**用于限制表中字段的规则**
+![picture 2](../images/75f2b86768af2064fb65ac4924d12b2772b83fce7204dd733eb5d254d374f7bb.png)  
+
 数据类型：
 
-* 数值类型: TINYINT(1B), SMALLINT(2B), MEDIUMINT(3B), INT(INTEGER)(4B), BIGINT(8B), FLOAT(4B), DOUBLE(8B), DECIMAL
-* 字符串类型: 定长字符串CHAR, 变长VARCHAR(指定长度为最大占用长度)...
-  * 定长CHAR更高效
-* 日期时间类型: DATE, TIME, YEAR, DATATIME, TIMESTAMP
+* **数值**类型: tinyint(1B), smallint(2B), mediumint(3B), int(integer)(4B), bigint(8B), float(4B), double(8B), decimal(字符串处理小数)
+  * 默认是有符号类型，可以通过unsigned指定为无符号；eg int unsigned
+  * double(5,2)表示2位小数，总共5位数
+* **字符串**类型: 定长字符串char(0-255B), 变长varchar(0-65535B)(指定长度为最大占用长度)...
+  * char(10)表示最多只能存10字符，不足也占用10B；而varchar(10)不足时按实际情况存储；char更高效，浪费空间。
+* **日期时间**类型: **date**(YYYY-MM-DD), time(HH:MM:SS), year(YYYY), **datetime**(YYYY-MM-DD HH:MM:SS), timestamp
 
 ```sql
-# 修改表
+# 修改表 (不重要 可视化操作就完了)
 alter table player add column nickname varchar(20); # 给player表添加字段; 似乎可以省略column
 alter table player modify column name VARCHAR(200); # 修改player表中name列数据结构
-alter table player rename/change column name to nick_name; # 修改player表中name名称为nick_name;
+alter table player change column name to nick_name; # 修改player表中name名称为nick_name;
 alter table player drop column name; # 删除name列
+rename table player to new_name; # 修改表名
 ```
 
 #### DML
 
-数据操作语言：**增删改**
+数据操作语言：**增删改** insert delete update
+![picture 4](../images/ce82de55f514dde10b9dbf2cdddb2473bfc7933b9b67dcbc1ded0bb34fcadef2.png)  
+![picture 5](../images/d2e243c788de2ae0828085024c11604bf498a7758051864ed30118947ae7f6dc.png)  
+![picture 7](../images/d8416e7bf56fd9ec2042399b90e4b318bcd7cf997ac8a9f4bfaeec57ae5e8982.png)  
 
 ```sql
 insert into player (id, name, level, exp, gold) values (1, '张三', 1, 1, 1); # 所有字段都写的话可省略name
@@ -165,21 +178,12 @@ delete from player where gold=0; # 删除gold=0的玩家
 #### DQL
 
 在一个正常的业务系统中，查询操作的频次是要远高于增删改的
-
-```sql
-SELECT      字段列表        # 要返回的列或表达式
-FROM        表名列表        # 被检索数据表
-WHERE       条件列表        # 行级过滤
-GROUP BY    分组字段列表    # 分组
-HAVING      分组后条件列表  # 组级过滤
-ORDER BY    排序字段列表    # 输出排序顺序
-LIMIT       分页参数
-```
+![picture 8](../images/6f31bf9ec283691264f868a07eb23963f39df7876196c4f8e9faf78602718cfb.png)  
 
 ```sql
 # 基础查询
 select 字段1, 字段2 from 表名;
-select * from tableName;                    # 实际开发中少用，低效
+select * from tableName;                    # 实际开发中少用，低效且不直观
 select 字段 as 别名 from ...;                # 设置字段别名
 select 字段2 别名2, 字段2 别名2 from ...;     # as可省略
 select distinct 字段列表 from ...;           # 去重  
@@ -190,28 +194,27 @@ select distinct 字段列表 from ...;           # 去重
 select column_list from table_name where 条件列表;
 ```
 
-常用比较运算符：`>, >=, =, <>, !=, BETWEEN ... AND ..., IN(...), LIKE 占位符(模糊匹配(_单字符，%任意字符)), IS NULL`
-常用逻辑运算符：`AND / &&, OR / ||, NOT / !`
+常用比较运算符：`>, >=, =, <>, !=, between ... and ..., in(...), like 占位符(模糊匹配(_单字符，%任意字符)), is null`
+常用逻辑运算符：`and / &&, or / ||, not / !`
 
 ```sql
-# 聚合函数(将一列数据作为整体)
+# 聚合函数(将一列数据作为整体进行纵向计算)
 select 聚合函数(字段列表) from table_name;
 select count(idcard) from emp; -- 统计idcard字段不为null的记录数
 select avg(age) from emp;      -- 统计该企业员工的平均年龄
 ```
 
-常用聚合函数：`count, max, min, avg, sum`
+常用聚合函数：`count(不统计null), max, min, avg, sum`
+统计行数: `count(字段), count(常量), count(*)(推荐，底层有特别优化)`都行
 
 ```sql
 # 分组查询
-select column_list from table_name [where condition] group by 分组字段名 [having 分组后过滤条件]
 select gender, avg(age) from emp group by gender ; -- 根据性别分组 , 统计男性员工 和 女性员工的平均年龄
 select workaddress, count(*) address_count from emp where age < 45 group by workaddress having address_count >= 3; 
 -- 查询年龄小于45的员工 , 并根据工作地址分组 , 获取员工数量大于等于3的工作地址
 ```
 
-* where在分组前过滤，过滤掉的不参与分组；having在分组后过滤；
-* where不能对聚合函数进行判断；having可以；
+![picture 9](../images/e580fc603c3dd1725afed050cc00f537c865ef60898a981e0500bb49f70a9ec9.png)  
 
 ```sql
 # 排序查询
@@ -229,6 +232,8 @@ select * from emp limit 10;
 select * from emp limit 10,10;
 ```
 
+起始索引 = (页码 - 1) * 每页展示记录数
+
 ```sql
 UNION: 并集；union two select result, and keep unique.
 INTERSECT: 交集；
@@ -238,9 +243,7 @@ EXCEPT：差集；
 执行顺序：
 ![picture 0](../images/531e9a4fb1557984ed739f4c09706c0bb93c8f756f54fa8b9779fadd3593a381.png)  
 
-**子查询**
-一个查询结果作为另一个查询的条件；
-即嵌套select
+> **select是在分组之后的，只能查询分组字段或汇聚函数**
 
 #### DCL
 
@@ -297,25 +300,98 @@ revoke 权限列表 on 数据库名.表名 from 'userName'@'hostName'; -- 撤销
 
 ### 约束
 
-#### 表关联
+### 多表设计
+
+#### 一对多
+
+在多的一方添加外键
+
+![picture 10](../images/862a8e3c58b3dc57b751af991212b70b4d2e814f0d96f2a87c479d6418fa0103.png)  
+![picture 11](../images/acb2321476d07e626c4106fb62d235bccb5c4836759933befbcd5bcfcc0a0bd8.png)
+![picture 12](../images/1b0daea6521a3c4a55cf872f558d88911e51aef05c1a1ea3ee99e063de8e4ebd.png)  
+![picture 13](../images/f55ffbc901b8e90895805715ed4e2725c98d403591b8768515a19e19713cd573.png)
+> 项目开发中很少使用物理外键，甚至被禁止
+
+#### 一对一
+
+![picture 14](../images/58d44f5b9955172dd53264407a87c1387d1c11ac32c539512b1d45f7ebb0f94a.png)  
+
+#### 多对多
+
+![picture 15](../images/4b687bf2ce500f0c2c55a7ee02491aaa487b503d47d55512c1eb647e98ef8b00.png)  
+
+### 多表查询
+
+如果直接`select * from tableA, tableB`将返回笛卡尔积：类似于矩阵外积，向量外积，CLIP的language和image的乘积。
+直接这么搞是没意义的。**必须要消除那些无效的笛卡尔积**。
+
+![picture 16](../images/6f9a784313a27ae3cfe11d2c7ceca5e812c3a82c0eb8da02b4411f2c533eb052.png){width=300}
+
+![picture 17](../images/c48d9cb9052a0a6cb887476398a72ea04435f8bcd259d25eccda26b6a0ff5463.png){width=600px}
+> 左外和右外都包含交集
+
+#### 内连接
+
+![picture 18](../images/cc761828a0fb47e7607b4ef7126380dd37c423f88dc9301f31dceb78c9fb6bd5.png)  
+> 可以给表起别名简化
 
 ```sql
-INNER JOIN, LEFT JOIN, RIGHT JOIN
+-- 查询员工姓名 和 对应部门名称
+-- 隐式内连接
+select tb_emp.name, tb_dept.name from tb_dept, tb_emp where tb_emp.dept_id = tb_dept.id;
+-- 显式内连接
+select tb_emp.name, tb_dept.name from tb_emp inner join tb_dept on tb_emp.dept_id = tb_dept.id;
+-- 别名
+select e.name, d.name from tb_emp e inner join tb_dept d on e.dept_id=d.id;
 ```
 
-#### 索引ff
+#### 外连接
+
+![picture 19](../images/23aac632861b62d086764ba4ccff43fc8828a1579536fd9a2f2344c9269aa047.png)  
 
 ```sql
-CREATE [UNIQUE|FULLTEXT|SPATIAL] INDEX index_name ON 
+-- 查询员工表*所有*员工的姓名 和 对应的部门名称 (左外连接: 会完全包含左表数据，交集 + 包括null(左表有 右表无))
+select tb_emp.name, tb_dept.name from tb_emp left outer join tb_dept on tb_emp.dept_id=tb_dept.id;
+-- 查询部门表*所有*部门的名称 和 对应的员工名称 (右外连接: 包含交集 + 右表部门表有 左表员工表无)
+select d.name, e.name from tb_emp e right join tb_dept d on e.dept_id=d.id; -- 注意右表放部门表
+-- 右外可以完全替换成左外（实际开发中一般使用左外）
+select d.name, e.name from tb_dept d left join tb_emp e on e.dept_id=d.id;
 ```
 
-#### 视图
+#### 子查询/嵌套查询
 
-create view
+一个查询结果作为另一个查询的条件；
+![picture 20](../images/730ac90a750c8ff401806f3679c98a20a331d874076f4e766d813700a1f2fa57.png)
+
+```sql
+-- 标量子查询
+-- 查询"教研部"的所有员工信息 (分解为：a:查询教研部对应id；b:找到员工id等于该id的条目)
+select * from tb_emp where dept_id = (select id from tb_dept where name='教研部');
+-- 查询"方东白"员工入职之后的员工信息 (分解为：a:查询方东白入职时间；b:...)
+select * from tb_emp where entrydate >= (select entrydate from tb_emp where name = '方东白');
+
+-- 列子查询
+-- 查询"教研部"和"咨询部"的所有员工信息
+select * from tb_emp where dept_id in (select id from tb_dept where name = '教研部' or name = '咨询部');
+
+-- 行子查询
+-- 查询与"韦一笑"的*入职日期及职位*都相同的员工 (两次子查询)
+select * from tb_emp where entrydate = (select entrydate from tb_emp where name = '韦一笑')
+                       and job = (select job from tb_emp where name = '韦一笑');
+-- 优化一手 支持这种写法(A,B)=  (一次子查询)
+select * from tb_emp where (entrydate, job) = (select entrydate, job from tb_emp where name = '韦一笑');
+
+-- 表子查询 (将子查询作为临时表使用)
+-- 查询入职日期是"2006-01-01"之后的员工信息，及其部门名称
+-- 先查到日期符合的员工作为临时表来使用
+select tmp.*, tb_dept.name from (select * from tb_emp where entrydate > '2006-01-01') tmp, tb_dept
+    where tmp.dept_id=tb_dept.id;
+
+```
 
 ### 事务
 
-事务是一组操作的集合，它是一个不可分割的工作单位，事务会把所有的操作作为一个整体一起向系 统提交或撤销操作请求，即这些操作要么同时成功，要么同时失败。（原子性）
+事务是一组操作的集合，它是一个不可分割的工作单位，事务会把所有的操作作为一个整体一起向系 统提交或撤销操作请求，即这些操作**要么同时成功，要么同时失败**。（原子性）
 
 ```sql
 # 手动控制事务方法一（关闭事务自动提交）
@@ -328,7 +404,7 @@ rollback;   -- 回滚事务
 ```
 
 ```sql
-# 手动控制事务方法二（显式开启事务）
+# 手动控制事务方法二（显式开启事务）[推荐]
 start transaction; -- 开启事务 或者begin
 -- 事务操作
 commit; -- 提交
@@ -337,10 +413,10 @@ rollback; -- 回滚
 
 事务四大特性 (ACID)
 
-* 原子性（Atomicity）：事务是不可分割的最小操作单元，要么全部成功，要么全部失败。
-* 一致性（Consistency）：事务完成时，必须使所有的数据都保持一致状态。
-* 隔离性（Isolation）：数据库系统提供的隔离机制，保证事务在不受外部**并发**操作影响的独立环境下运行。
-* 持久性（Durability）：事务一旦提交或回滚，它**对数据库中的数据的改变就是永久**的 (因为存在磁盘中)。
+* **原子性**（Atomicity）：事务是不可分割的最小操作单元，要么全部成功，要么全部失败。
+* **一致性**（Consistency）：事务完成时，必须使所有的数据都保持一致状态。
+* **隔离性**（Isolation）：数据库系统提供的隔离机制，保证事务在不受外部**并发**操作影响的独立环境下运行。（隔离级别越高越安全但也越低效）
+* **持久性**（Durability）：事务一旦提交或回滚，它**对数据库中的数据的改变就是永久**的 (因为存在磁盘中)。
 
 并发事务问题（多个并发事务同时操作某数据库/表所引发的问题）
 
@@ -365,6 +441,33 @@ repeatable read会保证一个事务中查询的数据一致，即使另一个�
 serializable可解决幻读问题：A事务查询数据没有，B事务去insert**会被阻塞**，直到A事务commmit之后。
 
 serializable串行化可以解决所有并发事物问题；我们一般使用默认repeatable read不做修改。
+
+### 索引
+
+索引是帮助数据库高效获取数据的数据结构。MySQL中默认的索引结构是B+树。
+
+* 优点
+  * 提高查询效率，降低数据库IO成本
+  * 提升排序效率
+* 缺点（问题不大）
+  * 索引占用磁盘存储空间 (数据和索引都存在.idb中)
+  * 虽然大大提升了查询效率(占据90%的频次)，但是**降低了增删改的效率**
+
+底层原理：
+
+* MySQL数据库支持的索引结构很多，比如Hash索引、B+树索引、Full-Text索引等。默认是B+树索引。
+* 为什么不采用二叉搜索树、红黑树呢？因为大量数据下，**层级会变得很深（不够宽）**，检索速度还是慢。
+* B+树（多路平衡搜索树）特点：
+  * 一个节点有多个子节点（多路）-> 所以树比较**矮胖**
+  * 非叶子不保存数据，只作为索引；所有key都会出现在叶子中
+  * 叶子按照从小到大排序，形成双向链表
+
+![picture 21](../images/a420456e85bef5900a0b0629be7140d2ed2cd20fab91a534a95db9db870ed802.png)  
+
+![picture 22](../images/868fe3eb311a9a8d3a5278e2c2840c9d33af95099807561b4f193506954609bc.png){width=600}
+
+* 数据库默认会创建主键索引 PRIMARY (性能最高)
+* unique字段唯一约束也会创建一个索引
 
 ## 进阶
 
