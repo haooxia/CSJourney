@@ -66,10 +66,10 @@ public class ListNode {
 * `List<Integer> list = new ArrayList<>();`
 * `list.add(ele)`
 * `list.add(idx, ele)`
-* `list.get(idx)`
+* `list.get(idx)` ==没有[]==
 * `list.set(idx, ele)`: update
 * `list.remove(idx)`
-* `list.size()`
+* `list.size()` ==没有length()==
 * `list.isEmpty()`
 * `list.contains()`
 
@@ -246,6 +246,8 @@ Deque中stack相关的方法和Deque中的一般方法的对应关系：
 ![picture 6](../images/9f823224c9994b1e0ff309e71ef74d8c8d4bc8595ab219ff01490e180a22d925.png)  
 
 > **虽然我们只想使用Queue接口的方法，但是并不能实例化一个接口，所以我们还是要去new一个ArrayDeque，但我们只用其中的Queue部分的方法。（因为接口中并不包含方法的实现）**
+
+好好好 stack和queue都用这一句`Deque<Integer> st/que = new ArrayDeque<>();`
 
 ### PriorityQueue
 

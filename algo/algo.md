@@ -2,7 +2,7 @@
 
 [toc]
 
-## 〇、基础
+## 基础
 
 - 数据的逻辑结构
   - 线性结构：linear list；stack；queue；array；string
@@ -19,62 +19,6 @@
   - 二叉排序树BST:左<中<右
   - 平衡二叉树AVL:左<中<右 && |所有节点左子树高度 - 右子树高度| <= 1
   - B树、B+树、折半查找判定树均是AVL；
-
-### 栈与队列
-
-```cpp
-//用队列实现栈：
-//单队列即可,将前n-1个元素插入到尾部;
-//双队列:前que1中前n-1个备份到que2,队1 pop后需将que2元素再赋值给que1；
-
-//用栈实现队列
-//出队栈sout 为空时才允许入栈；进入 出队栈sout时需要将入队栈sin所有元素一次性转移（画图即可）
-```
-
-### 模式匹配
-
-```cpp
-int Index(string S, string T)
-{
-    int i=1, j=1;//假设字符串从1开始存储
-    int idx = 1;
-    while(i <= S.size() && j <= T.size())
-    {
-      if (S[i] == T[j]){
-            ++i;++j;
-    } else {
-            i = ++idx;j=0;
-        }
-    }
-    if(j>T.size()) return idx;
-    else return -1;
-}    
-```
-
-### 二分法
-
-查找**升序2*2矩阵**中有无target元素；(**二维化为一维**，将一维mid映射到真正的行列上)
-
-## Stack
-
-GCC采用的是SGI STL，默认使用deque实现Stack和Queue。
-Stack和Queue不算是container，而是container adapter，二者都不可以遍历。stack有top(), queue有front()和back()
-一般来说，容器在栈区定义容器变量，史记存储的数据在堆区；
-
-```cpp
-template<
-    class T,
-    class Container = std::deque<T>
-> class stack;
-```
-
-## Array
-
-1. 数组是存放在连续内存空间上的相同类型数据的集合。
-2. built-in array(C-style array) v.s. std::array v.s. std::vector
-    1. c-style array: 固定大小，无边界检查，需手动管理内存;
-    2. std::array: 固定大小，有边界检查，自动管理内存;
-    3. std::vector: 动态大小，有边界检查，自动管理内存;
 
 ## Linked List
 
@@ -164,6 +108,22 @@ struct TreeNode{
     TreeNode* right;
     TreeNode(int x): val(x), left(nullptr), right(nullptr) {};
 };
+```
+
+```java
+public class TreeNode {
+    private int val;
+    private TreeNode left;
+    private TreeNode right;
+
+    TreeNode() {}
+    TreeNode(int val) {this.val = val;}
+    TreeNode(int val, TreeNode left, TreeNode right) {
+        this.val = val;
+        this.left = left;
+        this.right = right;
+    }
+}
 ```
 
 > struct 的成员默认访问权限是public，class 的成员默认访问权限是private;
