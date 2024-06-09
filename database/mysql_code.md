@@ -147,7 +147,7 @@ drop table player; # 删除table
 * **数值**类型: tinyint(1B), smallint(2B), mediumint(3B), int(integer)(4B), bigint(8B), float(4B), double(8B), decimal(字符串处理小数)
   * 默认是有符号类型，可以通过unsigned指定为无符号；eg int unsigned
   * double(5,2)表示2位小数，总共5位数
-* **字符串**类型: 定长字符串char(0-255B), 变长varchar(0-65535B)(指定长度为最大占用长度)...
+* **字符串**类型: 定长字符串char(0-255B), 变长varchar(0-65535B)(指定长度为最大占用长度), tinyblob(0-255B)(binary large object存储不超过255B的二进制数据), tinytext(0-255B)(短文本字符串), blob/text(0-65535B), mediumblob/mediumtext(0-1600wB), longblob/longtext(0-40亿B)
   * char(10)表示最多只能存10字符，不足也占用10B；而varchar(10)不足时按实际情况存储；char更高效，浪费空间。
 * **日期时间**类型: **date**(YYYY-MM-DD), time(HH:MM:SS), year(YYYY), **datetime**(YYYY-MM-DD HH:MM:SS), timestamp
 
@@ -408,37 +408,6 @@ start transaction; -- 开启事务 或者begin
 commit; -- 提交
 rollback; -- 回滚
 ```
-
-事务四大特性 (ACID)
-
-* **原子性**（Atomicity）：事务是不可分割的最小操作单元，要么全部成功，要么全部失败。
-* **一致性**（Consistency）：事务完成时，必须使所有的数据都保持一致状态。
-* **隔离性**（Isolation）：数据库系统提供的隔离机制，保证事务在不受外部**并发**操作影响的独立环境下运行。（隔离级别越高越安全但也越低效）
-* **持久性**（Durability）：事务一旦提交或回滚，它**对数据库中的数据的改变就是永久**的 (因为存在磁盘中)。
-
-并发事务问题（多个并发事务同时操作某数据库/表所引发的问题）
-
-> 并发会产生并行的幻觉
-
-* **赃读**：A事务读到B事务还未提交的数据
-* **不可重复读**：同一事务先后读取同一条记录结果不一致的问题;（为何不叫读不重复）
-* **幻读**：一个事务按条件查询数据时，没有对应的数据行，但在插入数据时，又发现该数据已存在，好像出现了"幻影"
-
-事务隔离级别
-
-![picture 0](../images/3a6472a4b1825a38d59d59c58b91be9f9471c94fe78695a54c4f980ae8e5eeed.png)  
-> √表示会出现这种问题
-
-```sql
-SELECT @@TRANSACTION_ISOLATION; -- 查看事务隔离级别
-SET [ SESSION | GLOBAL ] TRANSACTION ISOLATION LEVEL { READ UNCOMMITTED | READ COMMITTED | REPEATABLE READ | SERIALIZABLE } -- 设置事务隔离级别
-```
-
-比如，read uncommitted不可规避脏读问题，A事务**可以**读到B事务还未提交的数据；而read committed可以规避脏读问题，A事务读到B事务还未提交的数据时**会读取之前的数据**，并不会读取uncommitted data，当B事务提交之后select可以读到commited data。但read comitted会出现不可重复读问题。
-repeatable read会保证一个事务中查询的数据一致，即使另一个事物commit数据。但会出现幻读问题，去查没有，更新又有，妈的见鬼。
-serializable可解决幻读问题：A事务查询数据没有，B事务去insert**会被阻塞**，直到A事务commmit之后。
-
-serializable串行化可以解决所有并发事物问题；我们一般使用默认repeatable read不做修改。
 
 ### 索引
 

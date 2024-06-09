@@ -21,6 +21,10 @@
     * key插入取出顺序一致 -> LinkedHashMap
     * 读取文件 -> Properties
 
+注意：
+
+* ArrayDeque不可存放null(底层是数组，数组元素存储一个对象的引用，不可存放null)，LinkedList可以存放(底层是双向链表，链表可以存放null)
+
 ## ACM template
 
 ```java
