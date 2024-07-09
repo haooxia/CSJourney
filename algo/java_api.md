@@ -65,18 +65,6 @@ public class ListNode {
 } 
 ```
 
-## ArrayList
-
-* `List<Integer> list = new ArrayList<>();`
-* `list.add(ele)`
-* `list.add(idx, ele)`
-* `list.get(idx)` ==没有[]==
-* `list.set(idx, ele)`: update
-* `list.remove(idx)`
-* `list.size()` ==没有length()==
-* `list.isEmpty()`
-* `list.contains()`
-
 ## Arrays
 
 ```java
@@ -97,8 +85,70 @@ Arrays.sort(arr, new Comparator<Integer>() {
 
 // 逆序排序（方法三：lambda表达式）
 Arrays.sort(arr, (a, b) -> b - a);
+// 等效方法
+Arrays.sort(arr, (a, b) -> {
+  return b - a;
+});
 
+// 输出int[] nums
+Arrays.toString(nums);
+
+// 将nums数组中所有元素填充为number
+Arrays.fill(nums, number);
 ```
+
+注意：对于primitive array (eg int[]) comparator似乎不可用，目前是手撸逆序
+
+* `int index = Arrays.binarySearch(array, val);`: 二分查找之前需要是**有序数组**
+* `Arrays.copyOf(array, newLen)`: 深拷贝，可以指定了复制长度newLen
+* `Arrays.copyOfRange(array, from, to)`: 指定区间拷贝
+
+## ArrayList
+
+* `List<Integer> list = new ArrayList<>();`
+* `list.add(ele)`
+* `list.add(idx, ele)`
+* `addFirst()`, `addLast()`: since Java 21
+* `list.get(idx)` ==没有[]==，不是charAt()
+* `getFirst()`, `getLast()`: since Java 21
+* `list.set(idx, ele)`: update
+* `list.remove(idx)`
+* `removeFirst()`, `removeLast()`: since Java 21
+* `list.size()` ==没有length==
+* `list.isEmpty()`
+* `list.contains()`
+* `list.indexOf(val)`: 返回val对应的index，==搜索==; 等价于c++的find
+  * 返回-1代表没找到，0是第一个元素
+* `list.clear()`
+
+```java
+// ArrayList<Integer> -> int[] (Leetcode中很多题目需要return int[])
+// 法一：循环遍历 有点呆
+int[] array = new int[list.size()];
+for (int i=0; i<list.size(); ++i)
+  array[i] = list.get(i);
+
+// 法二：基于java8的Stream API简化
+int[] array = list.stream().mapToInt(Integer::intValue).toArray();
+// 从ArrayList生成一个Stream<Integer>类型的流, 然后对stream中的每个元素应用mapToInt函数返回一个新流(IntStream类型), 然后使用toArray将IntStream转为int[]
+// 主要是要将Integer拆箱为int 如果是List<String> list = new ArrayList<String>(); 直接Object[] obj = list.toArray();即可
+
+// 或者
+int[] arr = list.stream().mapToInt(i -> i).toArray();
+```
+
+* Stream API
+  * 生成一个新的数据源，不改变原始数据源
+  * 可以从各种数类型(集合、数组等)创建流
+
+## LinkedList
+
+目前感觉主要是提供了一些ArrayList没有的方法
+(不过java21之后这几个API ArrayList都有了...)
+
+* addFirst(), addLast()
+* removeFirst(), removeLast()
+* getFirst(), getLast()
 
 ## HashSet / unordered_set
 
@@ -157,7 +207,7 @@ for (auto c:nums)
 ```java
 Map<Integer, Integer> map = new HashMap<Integer, Integer>;
 for (int c: nums)
-  map.input(c, map.getOrDefault(c, 0)+1);
+  map.put(c, map.getOrDefault(c, 0)+1);
 ```
 
 ## String
@@ -175,11 +225,17 @@ for (int c: nums)
 * `Integer.valueOf(str)`: String -> Integer对象
 * `String.valueOf(num)`: int/long/float/double -> String
 * `num + ""`: int/long/float/double ->String
+* `str.substring(begin, end)`: 截取子串，可以删除头部几个字符
+  * ==左闭右开==
+* 拼接字符串: + 或者concat(返回拼接后的字符串，可以继续concat)
 
 ## StringBuilder
 
-* `StringBuilder str = new StringBuilder("hello");`
+* `StringBuilder str = new StringBuilder("hello");` **创建**
 * `str.length()`
+* `str.append()`**拼接**字符串。。。不可以使用+和concat
+  * string的+和concat每次都会创建新的string对象
+* `str.toString()`: StringBuilder->String
 * `char[] strChar = str.toString().toCharArray();// 服啦`
 * `str.charAt(idx)`
 * `str.setCharAt(idx, value)`
@@ -187,7 +243,7 @@ for (int c: nums)
 * `str.delete(begin, end); // [)`
 * `str.delete(begin, begin+cnt); // [)`
 * `str.reverse()`: 整体反转
-* `str.subString(begin, end); //[)`
+* `str.substring(begin, end); //[)` 返回一个**string**
 
 cpp中的`reverse(str.begin(), str.end());`在java中竟然没有对应函数：
 
