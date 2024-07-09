@@ -390,7 +390,7 @@ hashCode()用于比较两个对象是否相等，比如往HashSet添加对象，
 
 * 保持一致性：java规范要求equals()相同的对象必须具备相同的hashCode()
   * ![picture 7](../images/8c5bca49ed311dfa695a76104145c819039dbc77140ef1e71000ba9d547b6cf4.png)
-* 保持正确性：比如上述hashSet，它需要先使用hashCode()确定对象的存储位置，然后再利用equals()判等
+* 保持正确性：比如上述hashSet，它需要**先使用hashCode()确定对象的存储位置，然后再利用equals()判等**
 
 #### toString()
 
@@ -456,6 +456,29 @@ JVM为了提升性能和减少内存消耗针对字符串（String类）专门�
 ![picture 10](../images/fac3cb1b7597b726e4e3c60eca93e956f7dab08856b5a31f1959e23be8b77901.png)  
 
 另外intern方法的作用待补充...
+
+### Exception
+
+![picture 13](../images/04a92a43ae8f7e574894ce3956a0f307d37587a39c3f370b47268bfdc9da13fe.png)  
+
+Exception vs. Error
+
+* Error: 程序无法处理的错误，不建议使用catch捕获。比如`OOM`, `StackOverflowError`,Error是严重错误，**程序直接崩溃**。
+* Exception: 程序本身可以处理的异常，可以通过catch捕获。分为编译时异常 / checked exception 和 运行时异常 / runtime exception
+  * **编译时异常必须处理(checked)**，使用try-catch捕获或在方法签名中声明抛出throws，如果没处理无法通过编译 -> `unhandled exception`
+  * 编译器无法检查出运行时异常，一般是编程时的逻辑错误，程序员应该避免；运行时异常可以不做处理，因为太多了，都处理很累效率很低（一堆try-cache还看个啥；默认会用throws的方式处理，一直throws到JVM，输出并终止
+
+异常处理的两种方式：
+
+* try-catch-finally: **自行处理**
+  * try block: 捕获异常，后面可以跟0或多个catch block，如果没有catch block必须跟一个finally block
+  * catch block: 处理try捕获到的异常（异常被封装成Exception对象e，传递给catch
+    * 可以有多个catch blok，捕获不同的异常；要求子类异常在前，父类在后（河狸
+  * finally block: 一定会执行，无论是否有异常发生，通常搁这儿释放资源
+* throws: 抛出异常，交给调用者处理，**最顶级的处理者是JVM**，但JVM的处理方式很暴力：**直接输出并退出**
+  * 可以抛出具体的异常（推荐）也可以抛出器父类
+
+![picture 14](../images/d6fbebaf7abb61389b062b70e005e5a153b21672823c9b61ef2e10380e153bdf.png)  
 
 ### 泛型
 
