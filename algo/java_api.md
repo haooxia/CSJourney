@@ -103,6 +103,20 @@ Arrays.fill(nums, number);
 * `Arrays.copyOf(array, newLen)`: 深拷贝，可以指定了复制长度newLen
 * `Arrays.copyOfRange(array, from, to)`: 指定区间拷贝
 
+```java
+// int[]按照绝对值大小排序（由于Comparator只能与对象类型而非原始类型工作，所以必须转为Integer（很烦
+int[] nums = {3, -1, 4, -1, 5, -9, 2, -6, 5, 3, -5};
+        nums = IntStream.of(nums)
+                .boxed()
+                .sorted((o1, o2) -> Math.abs(o2) - Math.abs(o1))
+                .mapToInt(Integer::intValue).toArray();
+
+
+// 求和int[] nums
+Arrays.stream(nums).sum();
+
+```
+
 ## ArrayList
 
 * `List<Integer> list = new ArrayList<>();`

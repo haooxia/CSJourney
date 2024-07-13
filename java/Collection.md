@@ -272,14 +272,19 @@ methods (定义了Collection,Iterable的方法，似乎基本只有Collection的
 
 ### HashSet
 
+![picture 4](../images/95c10dad5f0e4e95866e3424bb9c6faa261ba9706d4cfca307ed391c100a9eff.png)  
+
 **底层**：(HashSet和HashMap机制相同，回头可以看一下HashMap[源码分析](https://www.bilibili.com/video/BV1fh411y7R8?t=180.3&p=538)，我直接跳过了)
 
 * HashSet的底层是HashMap
 * HashMap的底层是**数组+链表/红黑树**(jdk8)
 * 添加元素是首先计算出hash值，然后**将hash值转为索引值idx**
-* 找到存储表idx处有无元素，如无直接放，如有，调用equals(**允许重写自定义**)，如果相同不再添加，如果不同加到当前idx的链表最后
-  * 这个equals不能简单看做是内容相等，可以被类重写
-* jdk8后，如果链表元素个数等于`TREEIFY_THRESHOLD=8 && len(table) >= MIN_TREEIFY_CAPACITY=64`，**树化**为**红黑树**。否则继续采用数组扩容机制resize。（jdk7之前是数组+链表）
+  * **如何将元素映射到数组index上**? 将hash值 -> idx: `index = hash & (array_len - 1)`，确保了哈希值可以被映射到有效索引范围；即`hash % array_len`
+  * **那如何解决冲突呢**? HashMap采用链表或红黑树解决：如果索引位置链表长度<8，新元素将被添加到链表中；如果>=8（且数组长度>=64），将链表树化为红黑树，否则继续采用数组扩容机制resize （jdk88之后）
+    * `TREEIFY_THRESHOLD=8 && len(table) >= MIN_TREEIFY_CAPACITY=64`
+  * **添加元素时如何判断是否重复呢**? 首先比较hashCode，如果一致，再通过equals()对比元素，如果返回true，认定为重复
+  * **什么时候扩容**? 如果HashMap的结点个数超过临界值（负载因子default=0.75），进行扩容：将数组大小加倍，并重新计算所有元素的位置。
+  * **为什么要将HashMap的长度设置为2的幂次**？因为取余%操作中如果除数是2的幂次，等价于 和除数-1的与&操作；也即hash%length==hash&(length-1)的前提是length是2的n次方，使用&可以加速运算。
 
 注意：
 
@@ -288,7 +293,7 @@ methods (定义了Collection,Iterable的方法，似乎基本只有Collection的
 * `if (len(this linked list) = TREEIFY_THRESHOLD(8) && len(table) >= MIN_TREEIFY_CAPACITY(64)`才会将该链表(this linked list)树化为红黑树；如果链表长度=8但table长度不够64，会先resize()将数组扩容两倍
   * 16->32->64 -> 树化为红黑树 (condition: 链表长度==8)
 
-源码分析：
+**更细节的源码分析：**
 
 * `.add(key)`会调用`.put(key, value)`; // `value=PRESENT; static final Object PRESENT = new Object();`
 * put会调用`putVal()`, 执行`hash(key)`得到hash值（不完全等于`.hashCode()`）作为参数传给`putVal()`
@@ -297,22 +302,36 @@ methods (定义了Collection,Iterable的方法，似乎基本只有Collection的
     * 在哈希表的负载因子过高之前进行扩容，以确保哈希表操作的高效性，减少冲突
   * 然后根据key的hash来计算索引位置（table中idx）
   * 然后判断`table[idx]`是否为`null`
-    * 相等则直接创建`Node`到`table[idx]`(key就是我们要的，value恒定为`PRESENT`, 同时还会存储hash值(为了后续比较)) （即new一个Node存储到table中，即将一个链表(结点)挂载到数组中）
-      * `if ((p = tab[i = (n - 1) & hash]) == null) tab[i] = newNode(hash, key, value, null); // 等价于hash % n`
+    * 若相等：
+      * 直接创建`Node`到`table[idx]`(key就是我们要的，value恒定为`PRESENT`, 同时还会存储hash值(为了后续比较)) （即new一个Node存储到table中，**即将一个链表(结点)挂载到数组中**）
+        * `if ((p = tab[i = (n - 1) & hash]) == null) tab[i] = newNode(hash, key, value, null); // 等价于hash % n`
     * 若不相等
-    * `if (table[idx].hash==hash && (p.key==key || key.equals(k)))`，说明当前索引位置对应链表的第一个元素和添加元素的hash值一样 && （是同一个对象 || 内容相同）-> 不再继续添加
-    * `else if (is红黑树)`:调用putTreeVal添加
-    * `else`: (此时就改插到该链表尾部了) -> 从头到尾遍历判断是否有该元素，有则不添加break，无则加到末尾;
-      * 把元素添加到链表尾部后立即判断该链表长度是否达到8个节点，是->`treeifyBin()`将当前**链表树化为红黑树**
-        * `treeifyBin()`在扩容之前会判断table的长度是否>=64，如果不满足，`resize()`进一步扩容，暂时先不树化。
+      * `if (table[idx].hash==hash && (p.key==key || key.equals(k)))`，说明当前索引位置对应链表的第一个元素和添加元素的hash值一样 && （是同一个对象 || 内容相同）-> 不再继续添加
+      * `else if (is红黑树)`:调用putTreeVal添加
+      * `else`: (此时就改插到该链表尾部了) -> 从头到尾遍历判断是否有该元素，有则不添加break，无则加到末尾;
+        * 把元素添加到链表尾部后立即判断该链表长度是否达到8个节点，是->`treeifyBin()`将当前**链表树化为红黑树**
+          * `treeifyBin()`在扩容之前会判断table的长度是否>=64，如果不满足，`resize()`进一步扩容，暂时先不树化。
   * 检查此时是否超过负载临界值`if (++size > threshold) resize();`
-  
+
 ```java
 static final int hash(Object key) {
     int h;
-    return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16); // 如此设计是为了避免碰撞，让不同key得到不同哈希值
+    return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16); // 如此设计是为了避免碰撞，让不同key得到不同哈希值 (**扰动函数**)
+    // 无符号右移16位 并 按位异或
 }
 ```
+
+---
+详解一下`if (table[idx].hash==hash && (p.key==key || key.equals(k)))`；即判等机制
+
+* 哈希值比较：首先table[idx]是哈希表的一个桶(bucket), 比较`table[idx].hash==hash`是指比较当前元素的hash值与我们正在插入的桶的hash值，是一个快速的初步检查，如不同，立即可以知道这不是我们要找的元素。
+  * **先比较哈希值可以快速排除大多数不匹配的情况，很高效**
+* 键相等性检查：如果哈希值相同，我们还需要进一步检查键是否真的相等，因为不同的对象可能会有相同的哈希值（哈希冲突）
+  * `p.key==key`: 如果两个引用指向同一对象，那指定相等了，也是加快速度
+  * `key.equals(k)`: 如果引用不等，使用equlas()比较对象的内容
+    * equals()可以自定义
+
+---
 
 注意
 
@@ -384,7 +403,7 @@ HashMap底层细节
 
 * 存储结构：HashMap存储键值对（key-value）在其内部的HashMap$Node对象中，并通过"数组+链表/红黑树"的结构组织成一个table。(same to HashSet)
   * Node是HashMap的一个内部类，包含以下成员：hash, key, value, next。
-* Node实现了`Map.Entry<K,V>`接口（实现了`getKey(), getValue()`）; 
+* Node实现了`Map.Entry<K,V>`接口（实现了`getKey(), getValue()`）;
 * 底层会自动创建一个存储了Entry对象的entrySet集合`Set<Map.Entry<K,V>>`，这个Set就支持使用iterator遍历了
 * `Map.Entry`中存储的key和value实际是Node中key和value的**引用**，因为Node实现了Map.Entry接口，所以可以将Node对象赋给该接口（多态）
 * 为了方便操作，除了`Set<Map.Entry<K,V>> entrySet()`外还有`Set<K> keySet()`和`Collection<V> values()`
@@ -461,16 +480,6 @@ HashMap<String, String> map = new HashMap<>();
     }
 ```
 
-### HashTable
-
-* HashTable的kv都不能为null，HashMap的kv都可以是null
-* HashTable是线程安全的，HashMap不安全
-* 底层是`Hashtable$Entry[11]`, HashMap底层是`HashMap$Node[16]`, 加载因子都是0.75，达到后进行扩容。
-  * Hashtable扩容：2倍+1：11->23；而HashMap是2倍；
-  * HashMap比Hashtable新，之所有不用Entry改为Node，是为了支持新的数据结构红黑树，
-
-![picture 1](../images/3c0e42647b898362a32bd366a9e098b79528f9c23bae82b8df8d7cfd523cff0e.png)
-
 ### Properties
 
 * Properties继承自HashTable
@@ -492,10 +501,44 @@ HashMap<String, String> map = new HashMap<>();
 * 解决哈希冲突不同：jdk8之后HashMap：链表长度大于阈值(default=8)时，将链表转化为红黑树（将链表转换成红黑树前会判断，如果当前数组的长度小于 64，那么会选择先进行数组扩容，而不是转换为红黑树）；Hashtable没这个机制
 * 哈希函数不同：HashMap对哈希值进行了高位和低位的混合扰动处理以减少冲突，而Hashtable直接使用键的hashCode()值
 
+> * Hashtable底层是`Hashtable$Entry[11]`, HashMap底层是`HashMap$Node[16]`, 加载因子都是0.75，达到后进行扩容。
+>   * Hashtable扩容：2倍+1：11->23；而HashMap是2倍；
+>   * HashMap比Hashtable新，之所有不用Entry改为Node，是为了支持新的数据结构红黑树，
+
+### ConcurrentHashMap
+
+![picture 5](../images/e86a29fecb5c24c37017bf12871f670c5971aa208aa5667184f66af496d16fd8.png)  
+
+* 将数据分段(segment)存储，每一段数据配一把锁，当一个thread占用锁访问其中一个数据段时，其他段的数据也能被其他线程访问。
+* Segment扮演锁的角色，所以Segment数组是一个锁数组，HashEntry用于存储键值对数据。
+* Segment数组默认大小为16，即默认可以同时支持16个线程并发写。每个Segment守护一个HashEntry数组。即当需要修改某个HashEntry数组中的数据，必须先获得对应的Segment锁。对同一Segment的并发写入会被阻塞，不同Segment并不会
+
+> Segment extends ReentrantLock，所以是一种可重入锁（后续可以深入了解
+
+---
+
+![picture 6](../images/e1b7477f3031601bdb1ad31f774e5f1faa86bd1bbee8284d19ea9c391490d7da.png)
+
+取消了Segment分段锁，采用**Node + CAS + synchronized**来保证并发。锁粒度更细，直到锁定bucket级别，减少了并发冲突，大幅度提升效率（1.7是锁到一个segment，即多个bucket
+
+---
+
+ConcurrentHashMap 1.7 vs. ConcurrentHashMap 1.8
+
+* 1.7采用Segment分段锁，1.8采用`Node+CAS+synchronized`（不懂，锁粒度更细，synchronized只锁定当前链表或红黑二叉树的首节点。（不懂
+* hash碰撞解决方法不同：1.7采用拉链法，1.8采用拉链法+红黑树（可能树化嘛
+* 1.7的最大并发度是Segment的个数（默认16），1.8最大并发度是Node数组的大小，会大的多
+
+ConcurrentHashMap vs. Hashtable
+Hashtable也是用synchronized保证线程安全，但仅用同一把锁，锁住整个table，效率非常低下
+
 ### HashMap vs. HashSet
 
 ![picture 3](../images/43fd1797d3e44128e71d720e685815aab8eb75a8ce38ee204a129c2705045c75.png)  
 
+### 为什么HashMap线程不安全
+
+数据覆盖问题：我们将多个键值对分配到同一个bucket，如果多个线程同时对HashMap进行put操作，可能产生数据覆盖。比如俩线程同时put，发生了哈希冲突，然后呢俩线程可能在不同的时间片获得cpu，线程1先抢到cpu（线程2被挂起），线程1执行插入，然后线程2获得cpu，此时**由于已经经过了hash碰撞的判断**，所以会直接插入，那就覆盖了。（即核心就是，俩线程都经过了hash碰撞的判断，然后其一插入，另一挂起，然后另一插入覆盖。
 
 ## java.utils.Collections
 
