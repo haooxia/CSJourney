@@ -83,12 +83,10 @@ Arrays.sort(arr, new Comparator<Integer>() {
     }
 });
 
-// 逆序排序（方法三：lambda表达式）
+// 逆序排序（lambda表达式简化
+Arrays.sort(arr, (Integer a, Integer b) -> {return b - a;});
+// 进一步简化
 Arrays.sort(arr, (a, b) -> b - a);
-// 等效方法
-Arrays.sort(arr, (a, b) -> {
-  return b - a;
-});
 
 // 输出int[] nums
 Arrays.toString(nums);
@@ -115,6 +113,32 @@ int[] nums = {3, -1, 4, -1, 5, -9, 2, -6, 5, 3, -5};
 // 求和int[] nums
 Arrays.stream(nums).sum();
 
+```
+
+---
+
+```java
+// Arrays.sort()用于二维数组排序
+int[][] arr;
+Arrays.sort(arr, new Comparator<int[]>() {
+    @Override
+    public int compare(int[] o1, int[] o2) { // note: 竟然是int
+      return o1[0] - o2[0]; // 按第一列排序
+    }
+});
+
+// lambda表达式简化
+Arrays.sort(arr, (int[] o1, int[] o2) -> {return o1[0] - o2[0];});
+// 进一步简化
+Arrays.sort(arr, (o1, o2) -> o1[0] - o2[0];);
+
+// 按第一列升序，如果第一列相同按第二列降序
+Arrays.sort(arr, (int[] o1, int[] o2) -> {
+    if (o1[0] != o2[0]) {
+      return o1[0] - o2[0]; // 首先按第一列升序
+    }
+    return o2[1] - o1[1]; // 然后再按第二列降序
+});
 ```
 
 ## ArrayList
@@ -148,7 +172,7 @@ int[] array = list.stream().mapToInt(Integer::intValue).toArray();
 // 主要是要将Integer拆箱为int 如果是List<String> list = new ArrayList<String>(); 直接Object[] obj = list.toArray();即可
 
 // 或者
-int[] arr = list.stream().mapToInt(i -> i).toArray();
+// int[] arr = list.stream().mapToInt(i -> i).toArray();
 ```
 
 * Stream API

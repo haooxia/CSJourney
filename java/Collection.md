@@ -221,7 +221,7 @@ private static class Node<E> {
 ### ArrayList vs. Array (built-in)
 
 * ArrayList内部基于动态数组，Array是静态数组，前者可动态扩容、缩容，后者创建后长度就固定了
-* ArrayList只能存对象/引用，不可存基本数据类型，Array均可
+* ArrayList只能存对象/引用(**可以存数组int[]**)，不可存基本数据类型，Array均可
 * 前者创建时无需指定大小，后者必须
 * 前者可以使用泛型确保类型安全，后者不行
 * ArrayList提供了增删api，如add()、remove()等，而Array只有length属性
