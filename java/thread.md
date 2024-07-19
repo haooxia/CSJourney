@@ -11,6 +11,9 @@
       * ![picture 1](../images/201740b20c191d51ffd42bc1a2972512ad5a64743acd687c47daf28f79f1b94d.png)  
         * 详见onenote: Static Proxy
   * implements Callable接口 (了解)
+    * 基本和Runnale类似；但可以有返回值，可以抛出异常。方法不同run()/call()
+    * Thread的构造函数可以是Runnable，**但没有Callable**，即无法直接传递Callable对象
+      * 解决方法：FutureTask实现了Runnable接口，所以可以把FutureTask丢进Thread构造函数，然后FutureTask的构造函数参数类型可以是`Callable<V>`
 
 ```java
 // 方法一
