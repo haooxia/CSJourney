@@ -10,7 +10,7 @@
 秒享生活
 基于Redis+SpringBoot的生活服务类App,实现了短信验证码登录查找店铺，秒杀优惠券，发表点评，关注推送的完整业务流程。
 
-## 登录功能
+## 1.登录功能
 
 使用Redis解决了在集群模式下的Session共享问题，使用双拦截器实现用户的登录校验和权限刷新。
 实现手机短信登录功能，并使用Redis实现Session token的存储，解决服务器集群中共享登录用户信息问题；采用双拦截器实现刷新token有效期和鉴权功能。
@@ -71,3 +71,143 @@ redis替代session实现登录注册功能的好处：
 解决：在这个拦截器A前再加一个拦截器B，用于拦截所有路径，把获取token、查询Redis用户、刷新token有效期的操作放到这个拦截器B上做。而拦截需要登陆的路径的拦截器A只需要判断ThreadLocal中有没有用户即可
 
 ![picture 2](../../images/af34cc78c69e15bd951872cc1ba5864cb996a46d6237d86b88c8e38f450bd2c7.png)  
+
+## 2.缓存店铺信息
+
+推荐观看[总结](https://www.bilibili.com/video/BV1cr4y1671t?t=659.3&p=47)
+
+使用redis作为mysql的缓存有很多好处，见`redis.md`
+
+### 一般操作
+
+查询数据库之前先查询redis缓存，如缓存数据存在，则直接从缓存中返回，如不存在，再查询mysql数据库，然后将数据存入redis。
+
+体现在业务中：前端提交一个**店铺id**，先去redis查缓存，然后判断查询结果是否命中，若命中直接返回，结束；若未命中，根据id查数据库，然后判断查询结果是否命中，若命中，将数据写入redis再返回，若不存在，直接返回404报错；
+![picture 3](../../images/77388bf0f6d5b1e1251f1bf22527e72be811369f6fc537083c5c1660ed278f60.png)  
+![picture 4](../../images/a8c11ed401ffaa83af8f822924c2b01a49c64fb4dcd0f7315af641efa0baad9b.png)  
+
+但目前没有考虑==**缓存更新策略**==，存在问题：如果已缓存了数据到redis，此时若数据库更新，reids就是旧数据了
+
+### 如何保证缓存和数据库的一致性
+
+> 背景知识参考redis.md, 此文件仅表述采用的解决方案
+>
+> * 为什么要采用Cache Aside？write/read through 及 write back区别？
+> * 为什么Cache Aside要先更新数据库再删除redis？顺序可以反吗？为什么不是更新redis呢？
+> * 为什么还要设置超时时间保证超时剔除？
+> * 如何保证更新数据库 & 删除缓存的原子性？
+
+==主动更新（Cache Aside旁路缓存策略） + 超时剔除==
+
+* 根据id查询商铺时，如果缓存未命中，则查询数据库，将数据库结果写入缓存，并设置超时时间；
+  * ![picture 5](../../images/669d40ab6c50e539a17489ae71014f1f55f6149deb717b4b6a05e765880ade9d.png)  
+* 根据id修改店铺时，**先**修改数据库，再**删除**缓存（同时开启事务保证两个操作的原子性
+  * ![picture 6](../../images/d698d944dd3d84f6d829dabf63f5c7587e1ac2bdc7432f451a667d50b8e53310.png)  
+
+代码分析：当我们修改了数据之后，把缓存中的数据进行删除，查询时发现缓存中没有数据，则会从mysql中加载最新的数据，从而避免数据库和缓存不一致的问题。
+由于此项目是单体架构的项目，更新数据库操作和删除缓存操作都在一个方法里，需要通过**事务**去控制，来保证原子性。**但如果是分布式系统：在更新完数据库之后，删除缓存的操作不是自己来完成，而是通过mq去异步通知对方，对方去完成缓存的处理!!**
+
+### 如何解决缓存穿透问题
+
+缓存空对象
+![picture 7](../../images/648987d09a134f47ce34a65c24bf4f4161089e11f42d0f5b619dc7b86a412d4c.png)  
+![picture 8](../../images/84c4045858777dddf241d65c664b683c03a0c9da48a8430f1dbc9612d37d0ef7.png)  
+
+* **为什么不用bloom filter？TODO** [扩展一下](https://wx.zsxq.com/dweb2/index/topic_detail/5122558481528484)
+
+### 如何解决缓存雪崩问题
+
+给不同的key添加随机值（比如在增量0-10min中浮动）
+
+### 如何解决缓存击穿问题
+
+![picture 9](../../images/05997c554e834ad7bd6a30145a6b4847e0fb22be71898d5cdd20d672566a2fb1.png)  
+
+#### 互斥锁解法
+
+原方案：从缓存中查询不到数据后直接查询数据库
+现方案：查询缓存之后，如未查到，尝试获取互斥锁，然后**判断是否获得互斥锁**，没拿到就休眠50毫秒并重新查缓存(看看这时候重建好了没，最好是拿锁的哥们已经重建好了...(但缓存击穿一般要求重建时间比较久))，拿到锁的哥们就根据id查询数据库，并重建/更新缓存，最后释放锁。
+![picture 11](../../images/74eab7cb95c0dd07a70fdf40ee4543c1dc941daef677be2225e16f821bc64707.png)  
+
+这里的锁非同寻常：
+不是我们的synchronized或者Lock(因为要求互斥等待)，而我们想要一个自定义的行为，此处利用redis的String的指令`setnx lock 1获取锁, del lock释放锁`
+
+![picture 10](../../images/f2df8d40963c0d97d460da67f4084484c01ddb28c80c34a94a2f2ac403867ce6.png)  
+
+你的并发效果怎么样呢？
+我采用JMeter进行并发压力测试：日志中就查了一次数据库，证明在如此高并发的场景下我们并没有打到数据库上（1000个线程并发运行，Ramp-up时间5秒（打到指定线程数所需时间，用于控制启动速度，即5s内平均每秒启动200个线程）
+> 这jmeter测试的跟缓存击穿没啥关联啊，只能说证明了我们的互斥锁没问题：即一个线程拿锁去查数据库，即就查了一次数据库，其他都是查缓存
+
+#### 逻辑过期解法
+
+![picture 12](../../images/bf11ae0000730b1a302c2b29c54ea187ecb2a065ee791c1eae1e2c47220e653f.png)  
+
+我们通过jmeter并发测试：发现就执行了一次缓存重建，在重建完成之间，直接返回旧的数据，重建成功之后返回新的数据（确实妙
+
+![picture 13](../../images/af3d9aa68f916477cb6e5a0e012ee2b339756a3c5939fa97d2f1d240bcf44945.png)  
+
+## 3. 秒杀
+
+### 全局ID生成器
+
+全局唯一ID/分布式唯一ID（Globally Unique Identifier，简称 GUID）是一个特殊的编码，用于确保在一个特定的环境中生成的所有ID都是唯一的，不会有重复的。这种唯一性**不仅限于单个系统或应用，而是跨多个系统、应用或数据库的全局唯一**
+
+Q: 为什么要设置全局ID唯一，而非直接利用mysql的主键id自增
+
+* id规律性太明显，容易泄漏信息
+  * 场景：别人可以根据两个时点(比如一天内)的id变化判断出你商城的销售量...这还怎么骗人嘞
+* 受单表数据量的限制（数据量过大），订单id不应该重复
+  * 场景：随着我们商城规模越来越大，mysql的单表的容量不宜超过**500W**，数据量过大之后，我们要进行**拆库拆表**，但mysql拆分后的各表的id各自自增；但他们从逻辑上讲他们是同一张表，所以我们期望需要保证订单id的唯一性（因为售后客户要根据id来找你，一样的id就不行咯...
+
+**全局ID生成器**，是一种在分布式系统下用来生成全局唯一ID的工具，一般要满足下列特性：
+
+* 唯一性
+  * redis的string**数值类型**有**incre自增特性**，redis独立于数据库之外，管你有多少个数据库或表，我redis就一份，故天然保证唯一
+* 高可用（我来找你你不能挂啊
+  * redis主从、集群、哨兵可以确保
+* 高性能（要快
+  * redis就是快
+* 递增性
+  * incre
+* 安全性（不能让用户猜到规律
+  * 这里得改改了，手动拼点别的信息
+
+> 还有其他的全局唯一ID生成算法：UUID(非单增)，snowflake雪花算法(也是long64位)，我们是redis自增
+
+![picture 14](../../images/1284787eef245b9deba2b4fb21b12af90ae06d5351e90a458cb904ea61a7348c.png)  
+ID的组成部分：
+
+* 符号位：1bit，永远为0
+* 时间戳：31bit，以**秒**为单位，可以使用**69年**
+* 序列号：32bit，秒内的计数器（保证1s内的多个订单ok），理论上支持每秒产生2^32个不同ID，绝壁够用了
+
+```java
+public class RedisIDWorker {
+    // 开始时间戳
+    private static final long BEGIN_TIMESTAMP = 1640995200L; // 2022-01-01 00:00:00
+    // 序列号的位数
+    private static final int COUNT_BITS = 32;
+    private StringRedisTemplate stringRedisTemplate;
+    public RedisIDWorker(StringRedisTemplate stringRedisTemplate) {
+        this.stringRedisTemplate = stringRedisTemplate;
+    }
+    public long nextId(String keyPrefix) {
+        // 1.生成时间戳
+        LocalDateTime now = LocalDateTime.now();
+        long nowSecond = now.toEpochSecond(ZoneOffset.UTC); // 转换为秒数
+        long timestamp = nowSecond - BEGIN_TIMESTAMP;
+        // 2.生成序列号
+        // 2.1.获取当前日期，精确到天
+        String date = now.format(DateTimeFormatter.ofPattern("yyyy:MM:dd"));
+        // 2.2.自增长
+        long count = stringRedisTemplate.opsForValue().increment("icr:" + keyPrefix + ":" + date);
+        // note 为什么要拼接date, 用一个key不可以吗？ 1. 一个key上限是2^64,不好；另外我们只给了32位；
+        //  所以我们给每天整一个key，还可以起到统计一天/月/年单量的效果
+        // 3.拼接并返回(我们要返回long 可能是字符串拼接奥
+        // note: 将时间戳左移到高位，然后将序列号放到低位(或运算)
+        return timestamp << COUNT_BITS | count;
+    }
+}
+```
+
+### 优惠券秒杀下单

@@ -12,6 +12,9 @@
 
 ## 基础-1
 
+> 值类型：基本数据类型
+> 引用类型：java包装类(Integer, String...)，自定义类，以及数组
+
 ### 基础
 
 * Java SE vs. Java EE vs. Java ME
@@ -301,19 +304,19 @@ String str4 = new String("hello");
 
 #### 面向对象的三大特性
 
-* **封装Encapsulation**：将对象的属性和方法组合在一起，对外隐藏内部实现细节(eg 属性)。通过访问修饰符（eg private, protected, public）来控制对类成员的访问权限，确保对象的内部状态只能通过定义好的接口（方法）进行访问和修改。
+* **封装Encapsulation**：将对象的属性和方法组合在一起，通过访问控制修饰符对外隐藏内部实现细节(eg 属性)，只暴露必要的接口/方法供外部访问和修改；
   * 一般就是私有化属性->提供public的setter和getter
   * 增强代码的可维护性和安全性，防止外部代码对对象内部状态进行不合理的修改。（可以进行数据验证）
   * > 抽象是为了简化和模型化问题，将现实问题映射到程序模型中；而封装则是为了保护和隐藏这些模型的内部实现细节，只暴露必要的接口供外部使用。
-* **继承Inheritance (is-a)**：通过定义一个类（子类）从另一个类（父类）继承属性和方法，从而实现代码的重用。子类可以扩展父类的功能或重写父类的方法
+* **继承Inheritance (is-a)**：通过定义一个子类从父类继承属性和方法，从而实现代码的重用。子类可以**扩展**父类的功能或**重写**父类的方法
   * 提高代码复用性
   * 子类拥有父类对象所有的属性和方法（**包括私有属性和私有方法**），但是父类中的私有属性和方法子类是无法访问，只是拥有。(有趣，我有继承权，但你的访问控制依然在控制我)
   * 子类不可以继承和override父类构造器(构造器通常不被视为普通的类方法)
-  * super代表父类对象的引用，this代表本对象的引用
+  * **super**代表父类对象的引用，this代表本对象的引用
   * **创建子类对象时，编译器首先默认调用父类无参ctor**(i.e., 编译器会默认自动在子类构造器开头插入`super();`)，倘若父类没有无参ctor，必须在子类中第一句显式使用super指定要调用的父类ctor`super(params list);`
     * 当然你也可以显式使用super指定要调用的ctor
       * 当然你还可以使用super调用父类的属性和方法；==super代表父类对象的引用，this代表本对象的引用==
-    * 同cpp一样同样是自内而外构造，从Object ctor-> ... -> Base ctor -> derived ctor
+    * 同cpp一样同样是**自内而外**构造(基类/父类->派生类/子类)，从Object ctor-> ... -> Base ctor -> derived ctor(因为子类包含父类的所有成员之外，还可以扩展功能嘛，所以父类是子类的子集)
   * 如果子类和父类, 爷类, Object等有同名属性时，按就近原则访问
 * **多态Polymorphic**：允许不同类型的对象对同一消息做出不同的响应；override是实现手段，动态绑定是底层原理
   * ==**多态的向上转型upcasting**==：**父类引用指向子类对象**
@@ -327,9 +330,11 @@ String str4 = new String("hello");
 
 #### 接口 vs 抽象类
 
-抽象类是一种类，可以包含抽象方法（没有方法体的方法，实现尚不确定），也可以包含具体方法（有方法体的方法）。抽象类不可被实例化，主要被用于被其他类继承。
-
-抽象类是对一种事物的抽象,**包括属性和行为**。而接口是对**行为**的抽象,仅定义行为规范。
+* 抽象类主要用于**代码重用**和**为子类提供通用实现**，而接口主要用于**定义行为规范**
+* 抽象类可以包含抽象方法（没有方法体的方法）和非抽象方法。而接口(jdk1.8之前)方法默认都是public abstract, 不能有方法体
+* 抽象类的成员变量可以任意类型，而接口成员变量默认是public static final
+* 都不能被实例化，只能被继承/实现
+* 一个类只能继承一个类，但可以实现多个接口
 
 ```java
 // 抽象类 Animal
@@ -352,30 +357,15 @@ class Dog extends Animal {
 }
 ```
 
-* 共同点
-  * 都不能被实例化，只能被继承/实现
-  * 都可以包含未实现的抽象方法
-    * 抽象方法：没有方法体，使用abstract修饰，必须被子类实现
-  * 都可以有默认的实现方法
-  * 设计目的：都用于定义类的接口，以确保子类实现某些特定的方法
-* 不同点
-  * 接口主要用于对类的**行为**进行约束，你实现了某个接口就具有了对应的行为，强调“做什么”。抽象类主要适用于提供一些默认行为以及共享状态的时候，强调“是什么”
-    * 还有点抽象...
-  * 一个类只能继承一个类，但是可以实现多个接口
-  * 接口中的成员变量默认是`public static final`类型的(即常量)，不能被修改且必须有初始值，而抽象类的成员变量默认 default，可在子类中被重新定义，也可被重新赋值
-
 #### 引用拷贝 vs. 浅拷贝 vs. 深拷贝
-
-> 值类型：基本数据类型
-> 引用类型：java包装类(Integer, String...)和自定义类
 
 浅拷贝和深拷贝的主要区别：如何处理对象内部的引用成员
 
-* 引用拷贝: 最简单直接，仅仅将一个对象的引用赋值给另一变量，不会在内存中创建新对象，两个变量指向同一对象；`Persona = new Person();Person b = a`
+* 引用拷贝: **不会创建新对象**，仅仅将一个对象的引用赋值给另一变量(栈中)，两个变量指向堆中同一对象；`Persona = new Person();Person b = a`
 * 对象拷贝：**创建一个新的对象**，分为shallow copy和deep copy
-  * shallow copy: 如果原型对象的成员变量是值类型，将复制一份给克隆对象，也就是说在堆中拥有独立的空间；如果原型对象的成员变量是引用类型，则将引用对象的**地址复制**一份给克隆对象，也就是说原型对象和克隆对象的成员变量指向相同的内存地址。
+  * shallow copy: 如果原对象的成员变量是值类型，复制一份给克隆对象；如果原对象的成员变量是引用类型，则将引用对象的**地址复制**一份给克隆对象，即原对象和克隆对象的成员变量指向相同的堆内存地址。
     * Object类提供了`clone()`方法，用以实现浅拷贝（前提是被复制类implements Cloneable接口，重写了clone()）
-  * deep copy: 无论是值类型还是引用类型都会完完全全的拷贝一份，在内存中生成一个新的对象，得到一个独立的副本
+  * deep copy: 无论是值类型还是引用类型都会完完全全的拷贝一份，在内存中生成一个新的对象，得到一个**独立**的副本
 
 ![picture 5](../images/344644a942118b4b413ffd8def7d969a1ce516cfbe52c6a94decf49b8f1652db.png)  
 
@@ -398,15 +388,15 @@ Object类的方法：getClass(), hashCode(), equals(), clone(), toString(), fina
 #### hashCode()
 
 * 同一对象两个引用的hashcode一致
-* 两个引用指向不同对象，hashcode不一致（但不严谨，可能碰撞）
-* hashcode将object的内部地址转换为一个整数，所以可以当做是address，但当然不是真address了
+* 两个引用指向不同对象，hashcode大概率不一致（可能碰撞）
+<!-- * hashcode将object的内部地址转换为一个整数，所以可以当做是address，但当然不是真address了 -->
 
 **`hashCode()`和`equals()`都用于比较两个对象是否相等**
 hashCode()用于比较两个对象是否相等，比如往HashSet添加对象，首先比较对象的hashCode是否与已加入的对象的hashCode相同，如果没有相同的，就假设没有重复出现；如果有相同的，进而调用`equals()`检查是否**真的相同**(因为可能**哈希冲突**嘛，即不同对象产生相同的hashCode)；
 所以，先用hashCode()判断一下是否相等比全部使用equals()要快多咯。
 
 所以进而，我们又攻克了一个问题：
-为什么override equals() 的时候必须同时override hashCode()?
+**为什么override equals() 的时候必须同时override hashCode()?**
 
 * 保持一致性：java规范要求equals()相同的对象必须具备相同的hashCode()
   * ![picture 7](../images/8c5bca49ed311dfa695a76104145c819039dbc77140ef1e71000ba9d547b6cf4.png)
@@ -421,14 +411,12 @@ hashCode()用于比较两个对象是否相等，比如往HashSet添加对象，
 
 ### String
 
-![picture 3](../images/8cfe01af0f4aada18e64c39d156c489f69d7bec27054298483aa649d414a1587.png)  
-
 #### String vs. StringBuffer vs. StringBuilder
 
 * String不可变，两个SB可变
-* String线程安全(因为不可变)，StringBuffer对方法加了同步锁，线程安全；StringBuilder则没有，非线程安全；
+* **String线程安全(因为不可变)**，StringBuffer对方法加了synchronized，线程安全；StringBuilder线程不安全；
 * 性能上：String每次改变都要搞一个新的String对象，然后把指针指向新对象，最慢。两个SB都是对对象本身操作，快一些；然后StringBuilder大概比StringBuffer快`10%-15%`（线程不安全）
-* 操作少量数据时适用String，大量数据&单线程用StringBuilder，大量数据&多线程StringBuffer
+* 操作少量数据时使用String，大量数据&单线程用StringBuilder，大量数据&多线程StringBuffer
 
 #### 为何String不可变
 
@@ -450,17 +438,26 @@ final修饰只能说明value这个引用类型的变量不可以指向另一个�
 2. 数组是**private**，且**String没有提供/暴露修改该字符串的方法**，保证了数组内容无法修改
 3. **String类也被final修饰**，故而不能被继承，避免了子类破坏String不可变
 
-> 如果String类可以被继承，子类可能会重写String的方法，potentially破坏其不可变性。例如，子类可能重写concat方法，使其直接修改内部字符数组，而不是创建新的String对象
+> 如果String类可以被继承，子类可能会重写String的方法，potentially破坏其不可变性。例如，子类可能重写concat方法，使其直接修改内部字符数组，而不是创建新的String对象(妙的)
 
 #### 字符串拼接 + vs. StringBuilder
 
 * 第一层：java不支持运算符重载(不让程序员)，但却特意为`String`类内置了两个重载，`+`和`+=`用于字符串拼接
   * 所以StringBuilder是不支持`+`的
-* 第二层：String的+实际是new一个StringBuilder，然后调用append()，然后调用toString()返回String对象；如果在循环中使用`+`，那么每次都会`new StringBuilder`，它不会聪明到复用一个SB，每次new是很累的。而如果我们主动new一个StringBuilder，就不存在这个问题了。
+* 第二层：String的+实际是new一个StringBuilder，然后调用append()，然后调用toString()来new并返回一个String对象；如果在循环中使用`+`，那么每次都会`new StringBuilder`，它不会聪明到复用一个SB，每次new是很累的。而如果我们主动new一个StringBuilder，就不存在这个问题了。
 * 第三层：JDK9之后，你可以放心使用`+`进行字符串拼接了，字符串相加+改为了用动态方法`makeConcatWithConstants()`来实现，而不是产生大量的临时对象
   * 回头刷题试一试，是否意味着String也挺好用？
 
-#### 字符串常量池
+#### 字符串常量池 StringTable
+
+##### 常量池 字符串常量池 StringTable
+
+* Constant Pool: 常量池是Class文件中的一部分，用于存储编译期生成的各种字面量和符号引用，不仅限于字符串常量。
+  * 常量池：属于字节码.class的一部分，虚拟机指令根据这张常量表找到要执行的类名、方法名、参数类型、字面量等信息
+* String Constant Pool: 是运行时常量池中的一部分，专门用于存储字符串常量; ==JDK7之前位于方法区/永久代中，JDK7之后位于堆中==
+* StringTable是字符串常量池在JVM中的实现，本质是哈希表
+
+##### 字符串常量池
 
 JVM为了提升性能和减少内存消耗针对字符串（String类）专门开辟的**一块内存区域**，主要目的是为了避免字符串的重复创建
 
