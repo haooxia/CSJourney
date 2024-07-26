@@ -3,7 +3,7 @@
 [toc]
 
 ![picture 1](../images/8c59864034ef6c2020329cd184d752e513b468797f89cba43cd3ed57ce597f0b.png)
-> linkedlist实现了Deque和Queue接口
+> Linkedlist实现了List和Queue接口
 
 <!-- ![picture 0](../images/8af828e2c5e829ba171e65eebf32ca00b9b706c5206b1c39ad1ab5b07d1a0972.png) -->
 
@@ -16,11 +16,11 @@
 * 判断是单列还是键值对
   * 单列 -> Collection接口实现类
     * 允许重复 -> List接口实现类
-      * 增删多 -> LinkedList (双向链表) 错误的！不建议使用; 依然O(n)
+      * 增删多 -> LinkedList (双向链表) `错误的！不建议使用; 依然O(n)`
       * 改查多 -> ArrayList (可变数组)
     * 不允许重复 -> Set接口实现类
-      * 无序数据 -> HashSet (使用HashMap维护一个哈希表(数组+链表/红黑树))
-      * 有序数据 -> TreeSet
+      * 无序数据 -> HashSet (HashMap(数组+链表/红黑树))
+      * 有序数据 -> TreeSet (红黑树)
       * 插入取出顺序一致 -> LinkedHashSet (数组+双向链表)
   * 键值对 -> Map接口实现子类
     * 无序key -> HashMap
@@ -67,8 +67,9 @@ for (Iterator<String> iterator = list.iterator(); iterator.hasNext(); ) {
 methods
 
 * .iterator()
-  * 返回迭代器Iterator, 指向容器首元素之前
-  * Iterator中有hasNext(), next()
+  * 返回迭代器Iterator类型, 指向容器首元素之前
+    * > Iterable和Iterator是两个interface
+  * Iterator接口中有hasNext(), next()
     * next(): 移动至下一元素 & 将该元素返回
 * forEach()
 
@@ -81,9 +82,9 @@ sout(iterator.next()); // .next()会自动将iterator后移
 ### Collection Interface
 
 * collection接口可以存放多个object元素
-* 有很多collection的实现类，比如Vector, HashSet等（通过Set和List间接实现）
+* 有很多collection的实现类，比如ArrayList, HashSet等（通过Set和List间接实现）
 
-methods (为什么没有forEach()，不是一般都会重写上面的所有method吗)
+methods (为什么没有forEach()，不是一般都会重写上面的所有method吗，因为Iterable接口的forEach()方法有默认实现)
 
 * .size()
 * .isEmpty()
@@ -132,8 +133,10 @@ public static void main(String[] args) {
 
 ### ArrayList
 
+`import java.util.ArrayList;`
+`import java.util.List;`
+
 ```java
-import java.util.ArrayList;
 ArrayList<E> objectName = new ArrayList<>(); // 初始化
 // E是泛型数据类型，用于设置对象的数据类型
 ArrayList<String> strList = new ArrayList<>();
@@ -141,7 +144,7 @@ ArrayList<String> strList = new ArrayList<>();
 
 precautions:
 
-* 如果不指定泛型`E`，默认是Object（当然也可以显式指定为Object类型），此时允许放入不同类型的数据
+* 如果不指定泛型`E`，默认是Object类型，此时允许放入不同类型的数据
 * 如果指定了E的类型，比如String，就只能放String了(**编译时检查类型**)
 * 可以存null，但无意义
 * ArrayList是线程不安全的（无synchronized）
@@ -149,7 +152,7 @@ precautions:
 底层分析jdk8.0：
 
 * ArrayList的本质是**Object[] elementData**;
-* 如果使用无参ctor**实例化ArrayList，elementData容量为0**。第一次add时，扩容elementData为10，再次扩容按照1.5翻倍（即添加50%）
+* 如果使用无参ctor**实例化ArrayList，elementData容量为0, `ie {}`**。第一次add时，扩容elementData为10，再次扩容按照1.5翻倍（即添加50%）
   * 扩容底层采用`Arrays.copyOf(elementData, newCapacity);`
 * 如果使用**指定大小n的ctor实例化，容量开始为n**，然后直接按照1.5倍扩容
 <!-- > `transient`修饰词表示该属性不会被序列化 -->
@@ -162,14 +165,14 @@ public ArrayList() {
 
 // 扩容机制核心 -> 扩容为原来的1.5倍
 int newCapacity = oldCapacity + (oldCapacity >> 1); // 右移1位 即 缩小一倍；移位要比普通运算符快很多
-
 ```
 
 ### Vector
 
-* Vector是List的古老实现类，了解即可
+* Vector是List的古老实现类（遗留类），了解即可，现代开发很少用
+  * 如果需要线程安全，通常使用Collections.synchronizedList()是ArrayList同步，来替代Vector
 * Vector的底层也是Object[] elementData;
-* Vector是线程安全的 (有Synchronized)
+* Vector是线程安全的 (有Synchronized)，适用于多线程环境
 * 如果使用无参ctor实例化，**实例化时就给elementData为10**，之后add不够用了再按照**2**倍扩容
 * 如果使用指定大小n的ctor实例化，容量开始为n，然后直接按照**2**倍扩容
   * 扩容底层也采用`Arrays.copyOf(elementData, newCapacity);`
@@ -183,11 +186,13 @@ ArrayList vs. Vector
 
 ### LinkedList
 
+`import java.util.LinkedList;`
+
 ![picture 3](../images/91feffe6cb7766844507641c9272aafe89fe6c02b47d439e869589b911c5bd9d.png)  
 
 * LinkedList底层维护了一个双向链表, 一个LinkedList维护两个属性，first指向首结点，last指向尾结点 (当然还有个size属性)
 * 每个结点是一个Node对象，里面维护了prev, next, item三个属性
-* 增删比较快（因为没涉及到数组，扩容等），改查比较慢 (其实有点问题的，增删头尾确实快，中间的话需要先O(n)遍历到为止，所以增删也并不快)
+* 增删比较快（因为没涉及到数组，扩容等;），改查比较慢 (其实有点问题的，增删头尾确实快，中间的话需要先O(n)遍历到为止，所以增删也并不快)
 * LinkedList线程不安全
 * Node是LinkedList的static内部类
 * 未实现`RandomAccess`标记接口，因为底层内存地址不连续，不支持随机访问
@@ -220,18 +225,21 @@ private static class Node<E> {
 
 ### ArrayList vs. Array (built-in)
 
-* ArrayList内部基于动态数组，Array是静态数组，前者可动态扩容、缩容，后者创建后长度就固定了
+* ArrayList内部基于动态数组，Array是静态数组，前者可动态扩容，后者创建后长度就固定了(ArrayList并不可以自动缩容)
 * ArrayList只能存对象/引用(**可以存数组int[]**)，不可存基本数据类型，Array均可
 * 前者创建时无需指定大小，后者必须
-* 前者可以使用泛型确保类型安全，后者不行
-* ArrayList提供了增删api，如add()、remove()等，而Array只有length属性
+* 前者可以使用泛型确保类型安全（编译时类型检查），后者不行
+* 功能方面：Array只有length属性，ArrayList提供了增删等api，如add(),remove(),size()等
+* 维度：Array可以多维，ArrayList只可以一维
 
 ### ArrayList vs. LinkedList
 
-* ArrayList底层是Object[], LinkedList底层是双向链表（jdk1.6之前是循环链表）
+* ArrayList底层是动态数组Object[], LinkedList底层是双向链表（jdk1.6之前是循环链表）
 * 前者支持随机访问，实现了`RandomAccess`接口，后者不可，O(n)
 * 二者都不可保证线程安全
-* 前者的空间浪费体现在list列表的结尾会预留一定的容量空间，后者体现在每个元素都要存放两个指针
+* 内存占用方面：ArrayList占用连续内存空间，但可能需要在结尾预留一定的容量空间，LinkedList无需连续，需要额外空间存储前后节点的引用
+* 前者仅实现List接口，后者实现了List和Deque接口，可作为队列或栈使用
+  * > jdk21 搞了个`SequencedCollection`，ArrayList实现了该接口，也具有了`removeLast(), addFirst()`等方法，也是可以直接作为栈或队列了。（LinkedList也实现了该接口...反正他俩都有这些函数，jdk8时ArrayList是没有的
 
 ArrayList的插入和删除时间复杂度
 
@@ -293,11 +301,39 @@ methods (定义了Collection,Iterable的方法，似乎基本只有Collection的
 * `if (len(this linked list) = TREEIFY_THRESHOLD(8) && len(table) >= MIN_TREEIFY_CAPACITY(64)`才会将该链表(this linked list)树化为红黑树；如果链表长度=8但table长度不够64，会先resize()将数组扩容两倍
   * 16->32->64 -> 树化为红黑树 (condition: 链表长度==8)
 
+---
+
+* 创建HashSet对象时会首先`new HashMap<>();`，创建HashMap时默认构造函数并不会创建数组，直到第一次put操作时才会真正创建数组（即和ArrayList一样采用==懒加载机制==）
+  * 当然你可以使用带初始容量的ctor
+* HashSet的`.add(key)`会调用`.put(key, value)`; // `value=PRESENT; static final Object PRESENT = new Object();`
+* `.put(key, value)`首先计算`hash(key)`，然后作为参数调用真正的添加函数`putVal()`
+  * 当table为空，**putVal()首先创建初始大小为16的`Node<K,V>[] table`数组**（首次扩容/resize），同时有一个**加载因子0.75**用于缓冲，**临界值为12**.
+  * 然后根据key的`hash`计算在数组中的`index`
+  * 然后判断`table[index]`是否为`null`
+    * 若为空：直接创建`Node`到`table[idx]`(key就是我们要的，value恒定为`PRESENT`, 同时还会存储hash值(为了后续比较)) （即new一个Node存储到table中，**即将一个链表(结点)挂载到数组中**）
+    * 若非空，然后分情况分析
+      * `if (table[idx].hash==hash && (p.key==key || key.equals(k)))`，说明当前索引位置对应链表的第一个元素和添加元素的hash值一样 && （是同一个对象 || 内容相同）-> 不再继续添加
+      * `else if (is红黑树)`:调用`putTreeVal`添加
+      * `else`: (此时就改插到该链表尾部了) -> 从头到尾遍历判断是否有该元素，有则不添加break，无则加到末尾;
+        * 把元素添加到链表尾部后立即判断该链表长度是否达到8个节点，是->`treeifyBin()`将当前**链表树化为红黑树**
+          * `treeifyBin()`在扩容之前会判断table的长度是否>=64，如果不满足，`resize()`进一步扩容，暂时先不树化。
+  * 检查此时是否超过负载临界值`if (++size > threshold) resize();`
+
+```java
+static final int hash(Object key) {
+    int h;
+    return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16); 
+    // 如此设计是为了避免碰撞，让不同key得到不同哈希值 (**扰动函数**)
+    // 无符号右移16位 并 按位异或
+}
+```
+
+<!-- ---
+
 **更细节的源码分析：**
 
-* `.add(key)`会调用`.put(key, value)`; // `value=PRESENT; static final Object PRESENT = new Object();`
-* put会调用`putVal()`, 执行`hash(key)`得到hash值（不完全等于`.hashCode()`）作为参数传给`putVal()`
-  * 当table为空时，**putVal()首先默认创建初始大小为16的Node<K,V>数组**（第一次扩容），同时有一个**加载因子0.75**用于缓冲，**临界值为12**.
+* **put**：先执行`hash(key)`得到hash值（不完全等于`.hashCode()`）作为参数传给`putVal()`
+  * 当table为空时，**putVal()首先默认创建初始大小为16的Node<K,V>[]数组**（第一次扩容/resize），同时有一个**加载因子0.75**用于缓冲，**临界值为12**.
     * `Node<K, V>[] table;`
     * 在哈希表的负载因子过高之前进行扩容，以确保哈希表操作的高效性，减少冲突
   * 然后根据key的hash来计算索引位置（table中idx）
@@ -312,14 +348,7 @@ methods (定义了Collection,Iterable的方法，似乎基本只有Collection的
         * 把元素添加到链表尾部后立即判断该链表长度是否达到8个节点，是->`treeifyBin()`将当前**链表树化为红黑树**
           * `treeifyBin()`在扩容之前会判断table的长度是否>=64，如果不满足，`resize()`进一步扩容，暂时先不树化。
   * 检查此时是否超过负载临界值`if (++size > threshold) resize();`
-
-```java
-static final int hash(Object key) {
-    int h;
-    return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16); // 如此设计是为了避免碰撞，让不同key得到不同哈希值 (**扰动函数**)
-    // 无符号右移16位 并 按位异或
-}
-```
+ -->
 
 ---
 详解一下`if (table[idx].hash==hash && (p.key==key || key.equals(k)))`；即判等机制
@@ -330,6 +359,7 @@ static final int hash(Object key) {
   * `p.key==key`: 如果两个引用指向同一对象，那指定相等了，也是加快速度
   * `key.equals(k)`: 如果引用不等，使用equlas()比较对象的内容
     * equals()可以自定义
+    * 注意：equals()相同的对象，未必是同一对象奥(`==`未必相同)：你两个对象属性相同，但不意味着你是同一对象；换言之：我完全可以做两个属性一样的对象，克隆人，我就不复用；equals()只是逻辑上/属性上相同，但物理内存上未必相同
 
 ---
 

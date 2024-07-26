@@ -276,22 +276,6 @@ public static Integer valueOf(int i) {
 * 对象相等一般比较的是内存中的内容value；`.equals()`通常比较的是value是否相同
 * 引用相等一般比较的是两个引用是否指向同一个对象。(指向的内存地址是否相同)；`==`通常比较的是引用是否相同
 
-关于String相等的判断：
-
-* 如果直接`String str = "hello";`是在**字符串常量池**中创建一个"hello"字符串对象(如果他还不存在)，并让str指向该对象。以便重用相同的字符串对象。
-* 如果使用new创建字符串对象`String str = new String("hello");`是在堆中创建一个新的字符串对象，即使"hello"已经存在字符串常量池。
-
-```java
-String str1 = "hello";
-String str2 = new String("hello");
-String str3 = "hello";
-String str4 = new String("hello");
-// str1==str2 : false
-// str1==str3 : true
-// str2==str4 : false
-// equals都相同
-```
-
 #### constructor
 
 构造方法特点：
@@ -385,6 +369,8 @@ Object类的方法：getClass(), hashCode(), equals(), clone(), toString(), fina
 ![picture 6](../images/47d02b9d527db04c637b39424b4d7d1ff604ce35585a5ec68d928e09e2af5f74.png)  
 **基本类型使用`==`比较value，包装类型`==`比较的是object address**，故而包装类之间的值比较使用`equals()` (同于String，**包装类型和String都重写了equals()**)
 
+**注意**：equals()相同只能说明两个对象逻辑上/属性上相同，并不意味着是同一对象，即物理内存上未必相同(`==`用于判断两个引用是否指向同一对象实例)
+
 #### hashCode()
 
 * 同一对象两个引用的hashcode一致
@@ -442,39 +428,64 @@ final修饰只能说明value这个引用类型的变量不可以指向另一个�
 
 #### 字符串拼接 + vs. StringBuilder
 
-* 第一层：java不支持运算符重载(不让程序员)，但却特意为`String`类内置了两个重载，`+`和`+=`用于字符串拼接
+* 首先，java不支持运算符重载(不让程序员)，但却特意为`String`类内置了两个重载，`+`和`+=`用于字符串拼接
   * 所以StringBuilder是不支持`+`的
-* 第二层：String的+实际是new一个StringBuilder，然后调用append()，然后调用toString()来new并返回一个String对象；如果在循环中使用`+`，那么每次都会`new StringBuilder`，它不会聪明到复用一个SB，每次new是很累的。而如果我们主动new一个StringBuilder，就不存在这个问题了。
-* 第三层：JDK9之后，你可以放心使用`+`进行字符串拼接了，字符串相加+改为了用动态方法`makeConcatWithConstants()`来实现，而不是产生大量的临时对象
-  * 回头刷题试一试，是否意味着String也挺好用？
+* String的+对应的操作是：new StringBuilder().append().toString() (toString()中会new并返回一个String对象)；
+* > 如果在循环中使用`+`，那么每次都会`new StringBuilder`，它不会聪明到复用一个SB，每次new是很累的。而如果我们主动new一个StringBuilder，就不存在这个问题了。
+* > JDK9之后，你可以放心使用`+`进行字符串拼接了，字符串相加+改为了用动态方法`makeConcatWithConstants()`来实现，而不是产生大量的临时对象
+* >回头刷题试一试，是否意味着String也挺好用？
 
-#### 字符串常量池 StringTable
+#### 运行时常量池 字符串常量池 StringTable
 
-##### 常量池 字符串常量池 StringTable
-
-* Constant Pool: 常量池是Class文件中的一部分，用于存储编译期生成的各种字面量和符号引用，不仅限于字符串常量。
-  * 常量池：属于字节码.class的一部分，虚拟机指令根据这张常量表找到要执行的类名、方法名、参数类型、字面量等信息
-* String Constant Pool: 是运行时常量池中的一部分，专门用于存储字符串常量; ==JDK7之前位于方法区/永久代中，JDK7之后位于堆中==
+* **常量池**: 就是一张存在字节码.class文件中的表格，虚拟机指令根据这张常量表找到要执行的类名、方法名、参数类型、字面量等信息
+  * ![picture 15](../images/85ed26eb4065cae4502e216ed57db7b33ca5d5b7262a203361f32622a71f2a25.png)  
+* **字符串常量池**: jvm为了优化String类(性能&内存)专门开辟的一块区域，主要是为了避免字符串的重复创建。是运行时常量池中的一部分
+  * HotSpot虚拟机的字符串常量池的实现是stringTable.cpp, 可简单理解为一个固定大小的HashTable，保存的是字符串(key)和字符串对象的引用(value属性)之间的映射，value引用指向堆中的字符串对象。
+  * ==jdk1.7之前**字符串常量池和静态变量**在方法区/永久代中，jdk1.7之后都移到了堆中==
+    * 主要是因为永久代的GC回收效率太低，只有在Full GC时才会被执行GC；堆中回收效率更高
+    * 虽然说现在串池在堆中，但和new的String的堆所处的并不是一个空间，所以判等时肯定不等咯
 * StringTable是字符串常量池在JVM中的实现，本质是哈希表
 
-##### 字符串常量池
+#### String判等 `=` vs. `new`
 
-JVM为了提升性能和减少内存消耗针对字符串（String类）专门开辟的**一块内存区域**，主要目的是为了避免字符串的重复创建
+**首先区分一下`String s1 = "hello";` 和 `String s2 = new String("hello");`：**
 
-**首先区分一下`String s1 = "abc";` 和 `String s2 = new String("abc");`：**
-
-* 首先`s1`和`s2`都在栈中嘛
+* 首先`s1`和`s2`都在栈中（虚拟机栈
 * `String s1 = "abc";`：首先检查字符串常量池有无该字符串对象，如有，s1直接指向；如无则在常量池中创建，s1再指向；即s1指向的是常量池的某一地址
-* `String s2 = new String("abc");`：首先一定会在堆中创建一个String对象(里面有个value属性引用一个字符数组还记得吧)，s2指向该对象，然后也去判断常量池有无该字符串对象，如有，value指向常量池；如无则在常量池创建，然后value指向。即s2指向的一定是堆中某一地址
-![picture 9](../images/0d560e3b336e229b94c30a31a8116158dfcfea3cf3d011936429d41f62534988.png)  
-故而new的方式创建了几个String对象呢？
-答：1或2。堆中肯定有一个，然后字符串常量池中如果之前有一个，则不再创建直接引用；如无，则创建一个。
+* `String s2 = new String("hello");`：首先new一定会在堆中创建一个String对象(**里面有个value属性引用一个字符数组**)，s2指向该对象，然后==也去判断常量池有无该字符串对象==，如有，==value指向常量池中该对象==；如无则在常量池创建，然后value指向。即s2指向的一定是堆中某一地址
+  * 故而new的方式创建了几个String对象呢？
+  * 答：1或2。堆中肯定有一个String(注意这个String的value一定是指向常量池中的字符串常量)，然后字符串常量池中如果之前有一个，则不再创建直接引用；如无，则创建一个。
 **推荐使用第一种方式创建String**
 
-关于常量池，回头看到JVM内存的时候请回顾，[javaguide](https://javaguide.cn/java/basis/java-basic-questions-02.html#string-s1-new-string-abc-%E8%BF%99%E5%8F%A5%E8%AF%9D%E5%88%9B%E5%BB%BA%E4%BA%86%E5%87%A0%E4%B8%AA%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%AF%B9%E8%B1%A1)这里似乎错了，一个矛盾的点：他说两个对象都在堆中，实际上一个在堆中一个在常量池中（我觉得是这样，似乎都没错。。。版本问题
-![picture 10](../images/fac3cb1b7597b726e4e3c60eca93e956f7dab08856b5a31f1959e23be8b77901.png)  
+![picture 9](../images/0d560e3b336e229b94c30a31a8116158dfcfea3cf3d011936429d41f62534988.png){width=70%}
 
-另外intern方法的作用待补充...
+```java
+// new vs =
+String str1 = "hello";
+String str2 = new String("hello");
+String str3 = "hello";
+String str4 = new String("hello");
+// str1!=str2; str1==str3; str2!=str4;
+// equals都相同
+```
+
+![picture 16](../images/959ceeae59741d6b1e463cd3a636f65dfc4b90b2aa33294a8613c91d132e77e0.png)  
+s4 != s3: s4=s1+s2的底层是new StringBuilder().append("a").append("b").toString() -> new String("ab");故而s3在常量池中，s4在堆中
+s5 = s3: s5="a"+"b"会在**编译期间优化**为"ab"了（编译期间已确定，编译器直接去常量池加载"ab"
+
+==i.e., 字符串常量拼接原理是**编译期优化**，字符串变量拼接原理是**StringBuilder**==
+
+#### String#intern
+
+String.intern()是一个native方法，是将指定的字符串对象的引用**尝试**保存在字符串常量池中：
+
+* jdk1.8: 将字符串对象尝试放入串池，如有则不放入，如无则放入串池，**并返回串池中的对象**(返回引用)
+  * 注意是把这个new的在堆中的String放到字符串常量池中...
+* jdk1.6: 将字符串对象尝试放入串池，如有则不放入，**==如无将该对象复制一份==**，放入串池，**并返回串池中的对象**
+
+![picture 17](../images/14cf93ac92faf664a406ef5a19f1dfc10c7eae3fca956a809b8cf3f90373ee8a.png)  
+
+String终结...
 
 ### Exception
 
