@@ -211,3 +211,48 @@ public class RedisIDWorker {
 ```
 
 ### 优惠券秒杀下单
+
+#### 超卖问题
+
+* 定义：指销售的商品数量超过了实际库存数量
+* 超卖问题是在高并发环境下，eg 电子商务和股票交易等秒杀场景中出现的一种数据不一致性问题
+* 主要由于并发访问导致的资源竞争,特别是在多线程环境下对共享资源(如库存)的竞争造成
+* 原因：多个线程操作共享资源，且代码有好几行，然后多个线程难以避免出现穿插；并发引起的资源竞争没有加锁,导致运行时序不可控；但请注意超卖是个概率问题，有概率发生而已
+* 解决方案
+  * **悲观锁思路**：认为一定会发生，因此在操作之前加锁，确保各位线程**串行执行**：e.g., synchronized, Lock; 性能差
+    * 悲观锁的种类有哪些？可以怎么分类？
+  * **乐观锁思路**：认为未必会发生，即发生概率较低；故而乐观锁并不加锁，只有当更新数据时才去判断有没有其他线程对数据做了修改，如无则安全，如有说明发生了线程安全问题，重试或抛异常；性能好很多
+    * 版本号法
+    * CAS法（Compare And Set / Swap）
+    * 但乐观锁的前提是修改数据的场景：因为乐观锁核心思想就是在修改数据的时候检查是否被别人修改过嘛
+
+```java
+// 解法一：无乐观锁：由线程安全问题：因为判断和扣减两个步骤没有原子性
+// 4.判断库存是否充足
+if (voucher.getStock() < 1) return Result.fail("库存不足！");
+// 5. 扣减库存 
+boolean success = seckillVoucherService.update()
+        .setSql("stock = stock - 1")
+        .eq("voucher_id", voucherId)
+        .update();
+
+// 悲观锁解法很简单，遂省略
+
+// 解法二：基于CAS乐观锁（业务上没问题，但很多线程执行失败，整体的成功率大大降低
+  // 4.判断库存是否充足
+  if (voucher.getStock() < 1) return Result.fail("库存不足！");
+  // 5. 扣减库存 (NOTE: 判断更新时数值是否和上述查到的数值相等(CAS乐观锁)
+  boolean success = seckillVoucherService.update()
+          .setSql("stock = stock - 1") // set stock = stock - 1
+          .eq("voucher_id", voucherId).eq("stock", voucher.getStock()) // where voucher_id = ? and stock = ?
+          .update(); // update
+
+
+// 解法三 (note 不去判断是否值相同，判断>0即可，解决成功率低的问题
+if (voucher.getStock() < 1) return Result.fail("库存不足！");
+// 5. 扣减库存 (NOTE: 判断更新时数值是否和上述查到的数值相等(CAS乐观锁)
+boolean success = seckillVoucherService.update()
+        .setSql("stock = stock - 1") // set stock = stock - 1
+        .eq("voucher_id", voucherId).gt("stock", 0) // where voucher_id = ? and stock > 0
+        .update(); // update
+```

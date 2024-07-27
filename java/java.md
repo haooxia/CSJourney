@@ -477,13 +477,40 @@ s5 = s3: s5="a"+"b"会在**编译期间优化**为"ab"了（编译期间已确�
 
 #### String#intern
 
+jdk7: intern()方法：
+
+* 当调用一个字符串对象的 intern() 方法时，Java会检查该字符串是否已经在字符串池中。
+* 如果字符串池中已经存在一个相同内容的字符串，则返回池中的这个字符串的引用。
+* 如果字符串池中不存在这个字符串，则将其添加到字符串池中，并返回该字符串的引用。
+
+```java
+// 简单理解
+String s1 = new String("hello");
+String s2 = "hello";
+// Before interning
+System.out.println(s1 == s2); // 输出 false，两个字符串对象不同
+// Interning s1
+s1 = s1.intern();
+// After interning
+System.out.println(s1 == s2); // 输出 true，两个字符串对象现在是相同的引用
+```
+
+优点
+
+* 减少内存使用
+* 提高**比较效率**(黑马点评)：直接比较对象的引用，肯定比你搁那equals()逐字符比较要快咯
+
+---
+
 String.intern()是一个native方法，是将指定的字符串对象的引用**尝试**保存在字符串常量池中：
 
 * jdk1.8: 将字符串对象尝试放入串池，如有则不放入，如无则放入串池，**并返回串池中的对象**(返回引用)
-  * 注意是把这个new的在堆中的String放到字符串常量池中...
+  * 注意==是把这个new的在堆中的String放到字符串常量池中...==（不是特别清楚
 * jdk1.6: 将字符串对象尝试放入串池，如有则不放入，**==如无将该对象复制一份==**，放入串池，**并返回串池中的对象**
 
 ![picture 17](../images/14cf93ac92faf664a406ef5a19f1dfc10c7eae3fca956a809b8cf3f90373ee8a.png)  
+
+---
 
 String终结...
 
