@@ -1,3 +1,3 @@
 # interview
 
-Personal Interview Preparation (Building Computer Science Foundation): Currently includes C++, Java, Operating Systems, Linux (Multithreading and Thread Synchronization), Computer Networks (Socket Network Communication), Algorithms, Database (MySQL and Redis), NLP, and will later include projects.
+Personal Interview Preparation (Building Computer Science Foundation): Currently includes C++, Java (SE, Collection, JUC, JVM, Spring), Operating Systems (IO multiplexing, thread pool), Computer Networks (Socket Network Communication), Algorithms, Database (MySQL, Redis), Computer Organization, Linux, NLP, and will later include projects.
