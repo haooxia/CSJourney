@@ -1,5 +1,44 @@
 # some common/important code in Java
 
+[toc]
+
+## 创建线程
+
+### 继承Thread类
+
+最直接的一种方式，用户自定义类继承java.lang.Thread类，**重写run()**方法，run()方法中定义了线程执行的具体任务。创建该类的实例后，通过**调用start()**方法启动线程。
+
+缺点:因为线程类已经继承了Thread类，所以不能再继承其他的父类
+
+```java
+public class MyThread extends Thread {
+    @Override
+    public void run() {
+        // 线程执行的代码
+    }
+    public static void main(String[] args) {
+        new MyThread().start();
+    }
+}
+```
+
+### 实现Runnable接口
+
+实现Runnable接口需要**重写run()**方法，然后**将此Runnable对象作为参数传递给Thread类的构造器**，**创建Thread对象**后调用其start()方法启动线程。
+
+```java
+public class MyThread implements Runnable {
+    @Override
+    public void run() {
+        // ...
+    }
+    public static void main(String[] args) {
+        Thread t = new Thread(new MyThread()); // 将Runnable接口实现类的对象 塞给Thread
+        t.start();
+    }
+}
+```
+
 ## 生产者消费者问题
 
 ### 实现
