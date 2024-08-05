@@ -4,9 +4,11 @@
 
 ## 创建线程
 
+* **继承Thread类、实现Runnable接口、实现Callable接口、使用线程池、使用CompletableFuture等**都可以创建线程
+
 ### 继承Thread类
 
-最直接的一种方式，用户自定义类继承java.lang.Thread类，**重写run()**方法，run()方法中定义了线程执行的具体任务。创建该类的实例后，通过**调用start()**方法启动线程。
+最直接的一种方式，用户自定义类继承java.lang.Thread类，**重写run**()方法，run()方法中定义了线程执行的具体任务。创建该类的实例后，通过**调用start**()方法启动线程。
 
 缺点:因为线程类已经继承了Thread类，所以不能再继承其他的父类
 
@@ -14,7 +16,8 @@
 public class MyThread extends Thread {
     @Override
     public void run() {
-        // 线程执行的代码
+        // 线程执行的逻辑
+        // sout(...)
     }
     public static void main(String[] args) {
         new MyThread().start();
@@ -24,20 +27,27 @@ public class MyThread extends Thread {
 
 ### 实现Runnable接口
 
-实现Runnable接口需要**重写run()**方法，然后**将此Runnable对象作为参数传递给Thread类的构造器**，**创建Thread对象**后调用其start()方法启动线程。
+实现Runnable接口需要**重写run**()方法，然后**将此Runnable对象作为参数传递给Thread类的构造器**，**创建Thread对象**后调用其start()方法启动线程。
 
 ```java
-public class MyThread implements Runnable {
+public class MyRunnable implements Runnable {
     @Override
     public void run() {
         // ...
     }
     public static void main(String[] args) {
-        Thread t = new Thread(new MyThread()); // 将Runnable接口实现类的对象 塞给Thread
+        Thread t = new Thread(new MyRunnable()); // 将Runnable接口实现类的对象 塞给Thread
         t.start();
     }
 }
 ```
+
+* **implements Runnable接口，重写run方法（底层是静态代理模式）**
+  * 创建一个Thread对象，并将Runnable接口实现类对象传递给它，然后调用start方法。
+    * 可以把同一个Runnable对象（即用户自定义的被代理类：只用关注业务逻辑的实现）丢给多个线程使用（即Thread代理类：封装了创建和管理逻辑）（一份资源，多个代理） ==太妙了==
+      * ![picture 0](../images/47183e58ad94304f65901c4ffa16a944390e2761fce0cc176a729a43c566cb84.png)  
+    * ![picture 1](../images/201740b20c191d51ffd42bc1a2972512ad5a64743acd687c47daf28f79f1b94d.png)  
+      * 详见onenote: Static Proxy
 
 ## 生产者消费者问题
 
