@@ -30,7 +30,7 @@ DNS（Domain Name System）域名管理系统，是当⽤户使⽤浏览器访�
 
 ### HTTP请求常见的状态码和字段
 
-![image-20240807161908595](images\image-20240807161908595.png)
+![image-20240807161908595](..\images\image-20240807161908595.png)
 
 ### 常见的请求方式？GET和POST请求的区别？
 
@@ -224,7 +224,7 @@ DNS（Domain Name System）域名管理系统，是当⽤户使⽤浏览器访�
 4. 客户端接收到服务端的SYN，ACK报文后，发送ACK确认服务端的SYN报文（ACK=y+1），然后处于ESTABLISHED状态，因为客户端一发一收成功了。
 5. 服务端收到ACK后，也处于ESTABLISHED状态，因为它也一发一收了。
 
-![image-20240807210345807](images\image-20240807210345807.png){width=50%}
+![image-20240807210345807](..\images\image-20240807210345807.png){width=50%}
 <!-- 
 <img src="C:\Users\szu\AppData\Roaming\Typora\typora-user-images\image-20240807210345807.png" alt="image-20240807210345807" style="zoom:50%;" /> -->
 
@@ -249,7 +249,9 @@ DNS（Domain Name System）域名管理系统，是当⽤户使⽤浏览器访�
 
 <!-- <img src="C:\Users\szu\AppData\Roaming\Typora\typora-user-images\image-20240807211844202.png" alt="image-20240807211844202" style="zoom:75%;" /> -->
 
-![image-20240807211844202](images\image-20240807211844202.png){width=75%}
+![image-20240807211844202](..\images\image-20240807211844202.png){width=75%}
+
+
 
 > 主动关闭连接的，才有 TIME_WAIT 状态
 
