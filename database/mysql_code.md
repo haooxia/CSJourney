@@ -484,3 +484,12 @@ show profiles;
 show profiles for query id;
 explain + sql语句 -- 查询该语句执行计划 挺好用的
 ```
+
+`show processlist;`: 查看有多少客户端连接了mysql服务
+`kill connect +id`: kill客户端连接
+`show variables like 'max_connections';`: 查询客户端连接数，默认151个
+
+```sql
+SELECT @@TRANSACTION_ISOLATION; -- 查看事务隔离级别
+SET [ SESSION | GLOBAL ] TRANSACTION ISOLATION LEVEL { READ UNCOMMITTED | READ COMMITTED | REPEATABLE READ | SERIALIZABLE } -- 设置事务隔离级别
+```
