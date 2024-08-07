@@ -2,6 +2,12 @@
 
 [toc]
 
+## 概括
+
+### java的集合类有哪些 ☆
+
+Java集合类主要由Collection和Map这两个接口派生而出，其中Collection又派生出三个子接口，分别是List, Set, Queue，所有Java集合都是List, Set, Queue, Map这四个接口的实现类。
+
 ![picture 1](../images/8c59864034ef6c2020329cd184d752e513b468797f89cba43cd3ed57ce597f0b.png)
 > Linkedlist实现了List和Queue接口
 
@@ -11,22 +17,35 @@
 
 ![picture 1](../images/7f78a6e082e80092db2038e2136f6cf49dcf26af263e91f81dc3797a909239a3.png)  
 
-==How to choose?==
+### 哪些是线程安全/不安全的 ☆
 
-* 判断是单列还是键值对
-  * 单列 -> Collection接口实现类
-    * 允许重复 -> List接口实现类
-      * 增删多 -> LinkedList (双向链表) `错误的！不建议使用; 依然O(n)`
-      * 改查多 -> ArrayList (可变数组)
-    * 不允许重复 -> Set接口实现类
-      * 无序数据 -> HashSet (HashMap(数组+链表/红黑树))
-      * 有序数据 -> TreeSet (红黑树)
-      * 插入取出顺序一致 -> LinkedHashSet (数组+双向链表)
-  * 键值对 -> Map接口实现子类
-    * 无序key -> HashMap
-      * 保证线程安全 -> ConcurrentHashMap
-    * 有序key -> TreeMap
-    * 读取文件 -> Properties
+* 线程安全
+  * Vector：古老的List实现类，现推荐使用ArrayList
+  * HashTable：古老的哈希表实现，现推荐使用HashMap
+  * `Collections.synchronizedList`, `Collections.synchronizedSet`, `Collections.synchronizedMap`: 这些**方法**可以将非线程安全的集合包装成线程安全的集合
+    * 底层本质是：eg synchronizedList类将List的很多方法加了synchronized，但**务必注意在迭代遍历List时必须手动添加synchronized(因为listIterator方法并没有添加synchronized)**
+* 线程不安全
+  * ArrayList, LinkedList, HashSet, HashMao
+  * TreeSet, TreeMap: 虽然它们是有序集合，但也是线程不安全的
+
+### 如何选择
+
+先判断是单列还是键值对：
+
+* 单列集合 -> `Collection`接口实现类
+  * 允许重复元素 -> `List`接口实现类
+    * 增删多 -> `LinkedList` (双向链表) `错误的！不建议使用; 依然O(n)`
+    * 改查多 -> `ArrayList` (可变数组)
+  * 不允许重复元素 -> `Set`接口实现类
+    * 无序数据 -> `HashSet` (HashMap(数组+链表/红黑树))
+    * 有序数据 -> `TreeSet` (红黑树)
+    * 维护插入顺序(插入取出顺序一致) -> `LinkedHashSet` (数组+双向链表)
+* 键值对集合 -> `Map`接口实现子类
+  * 无序key -> `HashMap`
+    * 保证线程安全 -> `ConcurrentHashMap`
+  * 有序key -> `TreeMap`
+  * 维护插入顺序 -> `LinkedHashMap`
+  * 读取文件 -> `Properties`
 
 ## prerequisite knowledge
 
@@ -95,7 +114,7 @@ methods (为什么没有forEach()，不是一般都会重写上面的所有metho
 * .clear()
 * .equals()
 
-## List Interface
+## 1.List Interface
 
 List和Set分别是两个interface
 
@@ -131,7 +150,7 @@ public static void main(String[] args) {
 }
 ```
 
-### ArrayList
+### ArrayList ☆
 
 `import java.util.ArrayList;`
 `import java.util.List;`
@@ -149,12 +168,15 @@ precautions:
 * 可以存null，但无意义
 * ArrayList是线程不安全的（无synchronized）
 
+#### 扩容机制
+
 底层分析jdk8.0：
 
 * ArrayList的本质是**Object[] elementData**;
 * 如果使用无参ctor**实例化ArrayList，elementData容量为0, `ie {}`**。第一次add时，扩容elementData为10，再次扩容按照1.5翻倍（即添加50%）
-  * 扩容底层采用`Arrays.copyOf(elementData, newCapacity);`
-* 如果使用**指定大小n的ctor实例化，容量开始为n**，然后直接按照1.5倍扩容
+* 扩容后将原数组中的元素复制到新数组
+  * 底层采用`Arrays.copyOf(elementData, newCapacity);`
+* 如果使用**指定大小n的ctor实例化，容量开始为n**，然后直接按照**1.5倍**扩容
 <!-- > `transient`修饰词表示该属性不会被序列化 -->
 
 ```java
@@ -166,6 +188,38 @@ public ArrayList() {
 // 扩容机制核心 -> 扩容为原来的1.5倍
 int newCapacity = oldCapacity + (oldCapacity >> 1); // 右移1位 即 缩小一倍；移位要比普通运算符快很多
 ```
+
+#### ArrayList线程安全吗 怎么变为线程安全
+
+* 通过方法Collections.synchronizedList
+* 直接使用线程安全类`CopyOnWriteArrayList`或者`Vector`(旧)
+
+线程不安全可能导致：下标越界异常、size与我们add的数量不一致（具体没啥好说的吧，慢慢推得）
+
+### CopyOnWriteArrayList ☆
+
+> 读写分离思想：将数据库的读操作和写操作分开处理，以减轻数据库的负载，提高并发处理能力和响应速度。通常是使用一个主数据库处理写操作，并使用一个或多个从数据库处理读操作。
+> 适合读多写少的场景
+
+#### 如何保证线程安全？
+
+* `CopyOnWriteArrayList`底层也是通过一个数组保存数据，通过**volatile修饰数组变量**，**保证当前线程更新数组引用时(即数组引用指向一个新的数组对象)，其他线程可以立即看到这个变化**（可见性）
+  * `private transient volatile Object[] array;`
+* 在写操作(增删改)时，首先通过ReentrantLock加锁，然后将当前数组拷贝一份并让长度加一(copyOf)，然后将新元素放到数组最后一位，然后**更新数组的引用**，然后unlock
+  * `Object[] newElements = Arrays.copyOf(elements, len + 1);`
+* 在读操作时并不需要加锁
+
+#### 为什么写要上锁，读不上锁？
+
+* 之所以写要上锁，是因为保证只有一个线程可以修改，如果多个线程一块改，那数据可能不一致
+* 之所以读不上锁，是因为**读操作总是基于一个稳定的快照进行**，首先是允许大家一起读的(也即读读不互斥)；此外，即使数组写时，读操作依然可以继续访问旧的数据，不受影响
+
+#### 为什么写时复制？
+
+* 写时复制的好处是，我们可以对容器进行并发的读，而无需加锁，因为容器是一个稳定的快照。
+* 不然如果你写时不复制，而是直接锁住原数组进行修改，那读会发生什么？
+  * 如果读不上锁，可能读到不一致的数据，因为读时，数组的内容可能被写操作改变，所以你可能读到部分修改后的数据和部分未修改的数据
+  * 解决方案是读也上锁，那读就得阻塞了，那读的效率就大大降低了
 
 ### Vector
 
@@ -223,21 +277,21 @@ private static class Node<E> {
 * .add()通过尾插法，new一个Node（赋值item, next, prev），添加到双向链表中
 * .remove()默认删除首元素 unlinkFirst()
 
-### ArrayList vs. Array (built-in)
+### ArrayList vs. Array (built-in) ☆
 
-* ArrayList内部基于动态数组，Array是静态数组，前者可动态扩容，后者创建后长度就固定了(ArrayList并不可以自动缩容)
-* ArrayList只能存对象/引用(**可以存数组int[]**)，不可存基本数据类型，Array均可
+* ArrayList内部基于**动态数组**，Array是静态数组，前者可动态扩容，后者创建后长度就固定了(ArrayList并不可以自动缩容)
+* ArrayList**只能存对象**/引用(**可以存数组int[]**)，不可存基本数据类型，Array均可
 * 前者创建时无需指定大小，后者必须
-* 前者可以使用泛型确保类型安全（编译时类型检查），后者不行
-* 功能方面：Array只有length属性，ArrayList提供了增删等api，如add(),remove(),size()等
+* 前者可以使用**泛型**确保类型安全（编译时类型检查），后者不行
+* 功能方面：Array只有length属性，ArrayList提供了**增删等api**，如add(),remove(),size()等
 * 维度：Array可以多维，ArrayList只可以一维
 
-### ArrayList vs. LinkedList
+### ArrayList vs. LinkedList ☆
 
-* ArrayList底层是动态数组Object[], LinkedList底层是双向链表（jdk1.6之前是循环链表）
-* 前者支持随机访问，实现了`RandomAccess`接口，后者不可，O(n)
+* ArrayList底层是**动态数组**Object[], LinkedList底层是**双向链表**（jdk1.6之前是循环链表）
+* 前者支持**随机访问**，实现了`RandomAccess`接口，后者不可，O(n)
 * 二者都不可保证线程安全
-* 内存占用方面：ArrayList占用连续内存空间，但可能需要在结尾预留一定的容量空间，LinkedList无需连续，需要额外空间存储前后节点的引用
+* **内存占用**方面：ArrayList占用连续内存空间，但可能需要在结尾预留一定的容量空间，LinkedList无需连续，需要额外空间存储前后节点的引用
 * 前者仅实现List接口，后者实现了List和Deque接口，可作为队列或栈使用
   * > jdk21 搞了个`SequencedCollection`，ArrayList实现了该接口，也具有了`removeLast(), addFirst()`等方法，也是可以直接作为栈或队列了。（LinkedList也实现了该接口...反正他俩都有这些函数，jdk8时ArrayList是没有的
 
@@ -256,7 +310,7 @@ LinkedList（底层双向链表）的头尾插入删除都是O(1)，中间插入
 
 > 我们一般不用LinkedList，其作者都说: I wrote it, and i never use it. 不要认为LinkedList适合增删，它删除头尾确实快，但删除中间元素的时间复杂度为O(n)
 
-## Set Interface
+## 2.Set Interface
 
 * Set的实现类(如TreeSet, HashSet)中元素存储顺序和添加顺序不一致、不可重复（但是取出顺序是**固定**的）
   * **不可重复性**：指添加的元素按照equals()判断时，返回false，需要同时重写hashCode()和equals()方法
@@ -280,110 +334,7 @@ methods (定义了Collection,Iterable的方法，似乎基本只有Collection的
 
 ### HashSet
 
-![picture 4](../images/95c10dad5f0e4e95866e3424bb9c6faa261ba9706d4cfca307ed391c100a9eff.png)  
-
-**底层**：(HashSet和HashMap机制相同，回头可以看一下HashMap[源码分析](https://www.bilibili.com/video/BV1fh411y7R8?t=180.3&p=538)，我直接跳过了)
-
-* HashSet的底层是HashMap
-* HashMap的底层是**数组+链表/红黑树**(jdk8)
-* 添加元素是首先计算出hash值，然后**将hash值转为索引值idx**
-  * **如何将元素映射到数组index上**? 将hash值 -> idx: `index = hash & (array_len - 1)`，确保了哈希值可以被映射到有效索引范围；即`hash % array_len`
-  * **那如何解决冲突呢**? HashMap采用链表或红黑树解决：如果索引位置链表长度<8，新元素将被添加到链表中；如果>=8（且数组长度>=64），将链表树化为红黑树，否则继续采用数组扩容机制resize （jdk88之后）
-    * `TREEIFY_THRESHOLD=8 && len(table) >= MIN_TREEIFY_CAPACITY=64`
-  * **添加元素时如何判断是否重复呢**? 首先比较hashCode，如果一致，再通过equals()对比元素，如果返回true，认定为重复
-  * **什么时候扩容**? 如果HashMap的结点个数超过临界值（负载因子default=0.75），进行扩容：将数组大小加倍，并重新计算所有元素的位置。
-  * **为什么要将HashMap的长度设置为2的幂次**？因为取余%操作中如果除数是2的幂次，等价于 和除数-1的与&操作；也即hash%length==hash&(length-1)的前提是length是2的n次方，使用&可以加速运算。
-
-注意：
-
-* **结点个数**达到临界值(数组长度*0.75)就会扩容（总长度 × 2）
-  * 注意：结点个数是指所有链表的所有结点之和（没有说只算数组的首元素）
-* `if (len(this linked list) = TREEIFY_THRESHOLD(8) && len(table) >= MIN_TREEIFY_CAPACITY(64)`才会将该链表(this linked list)树化为红黑树；如果链表长度=8但table长度不够64，会先resize()将数组扩容两倍
-  * 16->32->64 -> 树化为红黑树 (condition: 链表长度==8)
-
----
-
-* 创建HashSet对象时会首先`new HashMap<>();`，创建HashMap时默认构造函数并不会创建数组，直到第一次put操作时才会真正创建数组（即和ArrayList一样采用==懒加载机制==）
-  * 当然你可以使用带初始容量的ctor
-* HashSet的`.add(key)`会调用`.put(key, value)`; // `value=PRESENT; static final Object PRESENT = new Object();`
-* `.put(key, value)`首先计算`hash(key)`，然后作为参数调用真正的添加函数`putVal()`
-  * 当table为空，**putVal()首先创建初始大小为16的`Node<K,V>[] table`数组**（首次扩容/resize），同时有一个**加载因子0.75**用于缓冲，**临界值为12**.
-  * 然后根据key的`hash`计算在数组中的`index`
-  * 然后判断`table[index]`是否为`null`
-    * 若为空：直接创建`Node`到`table[idx]`(key就是我们要的，value恒定为`PRESENT`, 同时还会存储hash值(为了后续比较)) （即new一个Node存储到table中，**即将一个链表(结点)挂载到数组中**）
-    * 若非空，然后分情况分析
-      * `if (table[idx].hash==hash && (p.key==key || key.equals(k)))`，说明当前索引位置对应链表的第一个元素和添加元素的hash值一样 && （是同一个对象 || 内容相同）-> 不再继续添加
-      * `else if (is红黑树)`:调用`putTreeVal`添加
-      * `else`: (此时就改插到该链表尾部了) -> 从头到尾遍历判断是否有该元素，有则不添加break，无则加到末尾;
-        * 把元素添加到链表尾部后立即判断该链表长度是否达到8个节点，是->`treeifyBin()`将当前**链表树化为红黑树**
-          * `treeifyBin()`在扩容之前会判断table的长度是否>=64，如果不满足，`resize()`进一步扩容，暂时先不树化。
-  * 检查此时是否超过负载临界值`if (++size > threshold) resize();`
-
-```java
-static final int hash(Object key) {
-    int h;
-    return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16); 
-    // 如此设计是为了避免碰撞，让不同key得到不同哈希值 (**扰动函数**)
-    // 无符号右移16位 并 按位异或
-}
-```
-
-<!-- ---
-
-**更细节的源码分析：**
-
-* **put**：先执行`hash(key)`得到hash值（不完全等于`.hashCode()`）作为参数传给`putVal()`
-  * 当table为空时，**putVal()首先默认创建初始大小为16的Node<K,V>[]数组**（第一次扩容/resize），同时有一个**加载因子0.75**用于缓冲，**临界值为12**.
-    * `Node<K, V>[] table;`
-    * 在哈希表的负载因子过高之前进行扩容，以确保哈希表操作的高效性，减少冲突
-  * 然后根据key的hash来计算索引位置（table中idx）
-  * 然后判断`table[idx]`是否为`null`
-    * 若相等：
-      * 直接创建`Node`到`table[idx]`(key就是我们要的，value恒定为`PRESENT`, 同时还会存储hash值(为了后续比较)) （即new一个Node存储到table中，**即将一个链表(结点)挂载到数组中**）
-        * `if ((p = tab[i = (n - 1) & hash]) == null) tab[i] = newNode(hash, key, value, null); // 等价于hash % n`
-    * 若不相等
-      * `if (table[idx].hash==hash && (p.key==key || key.equals(k)))`，说明当前索引位置对应链表的第一个元素和添加元素的hash值一样 && （是同一个对象 || 内容相同）-> 不再继续添加
-      * `else if (is红黑树)`:调用putTreeVal添加
-      * `else`: (此时就改插到该链表尾部了) -> 从头到尾遍历判断是否有该元素，有则不添加break，无则加到末尾;
-        * 把元素添加到链表尾部后立即判断该链表长度是否达到8个节点，是->`treeifyBin()`将当前**链表树化为红黑树**
-          * `treeifyBin()`在扩容之前会判断table的长度是否>=64，如果不满足，`resize()`进一步扩容，暂时先不树化。
-  * 检查此时是否超过负载临界值`if (++size > threshold) resize();`
- -->
-
----
-详解一下`if (table[idx].hash==hash && (p.key==key || key.equals(k)))`；即判等机制
-
-* 哈希值比较：首先table[idx]是哈希表的一个桶(bucket), 比较`table[idx].hash==hash`是指比较当前元素的hash值与我们正在插入的桶的hash值，是一个快速的初步检查，如不同，立即可以知道这不是我们要找的元素。
-  * **先比较哈希值可以快速排除大多数不匹配的情况，很高效**
-* 键相等性检查：如果哈希值相同，我们还需要进一步检查键是否真的相等，因为不同的对象可能会有相同的哈希值（哈希冲突）
-  * `p.key==key`: 如果两个引用指向同一对象，那指定相等了，也是加快速度
-  * `key.equals(k)`: 如果引用不等，使用equlas()比较对象的内容
-    * equals()可以自定义
-    * 注意：equals()相同的对象，未必是同一对象奥(`==`未必相同)：你两个对象属性相同，但不意味着你是同一对象；换言之：我完全可以做两个属性一样的对象，克隆人，我就不复用；equals()只是逻辑上/属性上相同，但物理内存上未必相同
-
----
-
-注意
-
-* java规范要求如果两个对象根据equals方法时相同的，那么他们的hashCode方法也必须相同。反之如果他们的hashCode相同，equals未必相同，但不同对象应该尽量生成不同的哈希值，来减少冲突。
-  * 经常需要同时重写Object类的equals和hashCode方法（通过快捷键生成，利用Objects中的方法，示例如下）
-* 默认的hashCode()来自Object class: `public native int hashCode();` 看似并没有实现...native关键字表示一个原生函数，是在JVM中由本地代码实现（通常是c/cpp而非java），即可以理解为native的方法体在JVM中。
-  * 同一个对象的两个引用的hashCode一致
-
-```java
-@Override
-public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (obj == null || getClass() != obj.getClass()) return false;
-    Employee employee = (Employee)obj;
-    return age == employee.age && Objects.equals(name, employee.name);
-}
-
-@Override
-public int hashCode() {
-    return Objects.hash(name, age);
-}
-```
+HashSet的底层是HashMap，参考即可
 
 ### LinkedHashSet
 
@@ -399,7 +350,7 @@ public int hashCode() {
 * 那为什么TreeSet会自动排序呢?
   * TreeSet基于TreeMap使用**红黑树**数据结构来存储键值对，这种树结构保证了插入、删除、查找操作的时间复杂度为 O(logn)，并且自动维护元素的排序。
 
-## Queue Interface
+## 3.Queue Interface
 
 ### Queue vs. Deque
 
@@ -419,20 +370,108 @@ public int hashCode() {
 * 支持当队列没有元素时一直阻塞，直到有元素；还支持如果队列已满，一直等到队列可以放入新元素时再放入。常用于生产者-消费者模型
 ![picture 2](../images/69fa290502aef18c786779b48643a7cbfdcfd53ea05766043f121d5828f12d99.png)  
 
-## Map Interface
+## 4.Map Interface
 
 * Map保存key-value映射关系的数据；Set中底层也是Map，但只用了K，V使用的是常量`PRESENT`
 * K不可重复; 新KV会替换旧KV (K相同时); V可重复
 * 可以通过key找到value: `.get(key)`
 
-### HashMap
+### HashMap ☆
 
-* HashMap的扩容机制和HashSet完全一致
+![picture 4](../images/95c10dad5f0e4e95866e3424bb9c6faa261ba9706d4cfca307ed391c100a9eff.png)  
 
-HashMap底层细节
+* HashMap将数据以键值对的形式存储(存在内部的HashMap$Node对象中)，并通过"数组+链表/红黑树"的结构组织成一个table，是线程不安全的
+* **HashMap的底层实现？**
+  * jdk7中HashMap是`数组+链表`，即拉链法
+    * 哈希冲突时，会在冲突位置形成链表，将新增元素加入到链表末尾，问题是：冲突过多时链表会特别长，导致查找复杂度逐渐退化为O(n)
+  * jdk8引入红黑树(Red-Black Tree)，链表长度超过8时，会将链表转换为红黑树(Treeify)，以提高查找性能(**降为O(logn)**)。长度小于6时重新变回链表(untreeify)
+    * 红黑树是一种**兜底**策略，牺牲空间换时间
+* **为什么>8树化，<=6时重新变回链表？**
+  * 源码注释中所述：根据泊松分布，在负载因子是0.75时，一个hash桶中元素个数为8的概率小于百万分之一，所以7作为分水岭，=7时不转换，>=8时树化，<=6时反树化。
+* **为什么引入红黑树，而非其他树？**
+  * 二叉搜索树BST(左 < root < 右)，极端情况下会退化为链表(O(n))：比如插入有序数据，BST一边可能无限长 -> 平衡二叉树
+  * 平衡二叉树AVL(左右子树高差不超过1，追求**绝对平衡**): 旋转操作频繁：在添加元素时需要进行**左旋、右旋**操作维持根节点左右两端的平衡，复杂度和开销很高。
+  * 红黑树：**不追求绝对的平衡**，相比于AVL减少了很多性能开销
 
-* 存储结构：HashMap存储键值对（key-value）在其内部的HashMap$Node对象中，并通过"数组+链表/红黑树"的结构组织成一个table。(same to HashSet)
-  * Node是HashMap的一个内部类，包含以下成员：hash, key, value, next。
+#### 如何解决Hash冲突？HashMap中是如何解决的？
+
+解决Hash冲突的算法：
+
+* **再散列法**/开放地址法：当key的哈希地址`p=H(key)`出现冲突时，以p为基础产生另一个哈希地址p1，如还冲突产生p2..., 将相应元素存入地址pi中
+  * 再散列法函数：$H_i = (H(Key) + d_i) \% m$； // m为表长
+  * 根据**增量序列di**的取值不同，再散列法可分为：
+    * **线性探测再散列**：`di=1,2,3...`, 顺序查找表中下一个单元
+    * **伪随机探测再散列**：加个随机数
+    * **二次探测再散列**：`1^2, -1^2, 2^2, -2^2...`，即左右横跳试探
+* 链地址法/拉链法：每个数组元素bucket上都有一个链表结构,bucket中存头指针，元素存入链表
+  * HashMap
+
+#### HashMap的put流程
+
+> HashMap的put/扩容机制和HashSet完全一致
+
+![picture 7](../images/ff2a59570488e94fa9175ce524dc73385e8f570a58d8c1a61ae6084a58cf3e18.png){width=70%}
+
+1. 根据key计算hashCode：`(h = key.hashCode()) ^ (h >>> 16)`
+2. 数组首次扩容：`resize()` (初始大小为16的`Node<K,V>[] table`数组，加载因为0.75)
+3. 根据hashCode计算在数组中的索引：`(n - 1) & hash`
+4. 检查索引处bucket是否存放数据(是否为空)，
+   1. 如果为空则插入一个新的Entry对象
+   2. 如果非空，**判断key是否相同**，是则直接覆盖(用新value替换旧value)，如果key不同，判断集合的结构是链表还是红黑树
+      1. 如果是链表，==**从头开始遍历链表逐个比较key的hashCode和equals()**== 直到找到相同key或到达末尾，如找到相同key，更新，如没找到相同key就**尾插法(jdk8)** (jdk7头插)
+         1. 注意在插入时，如果 ==**链表长度>=8且HashMap的数组长度>=64**==，**树化**
+      2. 如果是红黑树，在红黑树中使用hashCode和equals()方法进行查找，如找到相同key，更新value，如没找到就插入
+5. 元素put过后，最后，检查**负载因子**是否超过阈值(0.75)，如果键值对的数量/数组长度 > 0.75，扩容
+6. **扩容**：搞一个两倍长的数组，重新计算所有元素的位置，算完按照put的思路插入进去即可（该树化就树化），**链表和红黑树的结构也可能被打散**分到不同的bucket中。
+
+> 一方面HashMap通过hashcode确定bucket存储位置，另一方面HashMap在equals()之前利用hashcode来提高查找效率（虽然hashcode相同不能直接推出两个key相同，但hashcode不同两个key一定不同）
+---
+
+注意：
+
+* **结点个数**达到临界值(数组长度*0.75)就会扩容（总长度 × 2）
+  * 注意：结点个数是指所有链表的所有结点之和（没有说只算数组的首元素）
+* `if (len(this linked list) = TREEIFY_THRESHOLD(8) && len(table) >= MIN_TREEIFY_CAPACITY(64)`才会将该链表(this linked list)树化为红黑树；如果链表长度=8但table长度不够64，会先插入到链表，然后如果size超过临界值，resize()将数组扩容两倍
+  * 16->32->64 -> 树化为红黑树 (condition: 链表长度==8)
+
+##### 详解HashMap中的hashCode() + equals()
+
+详解一下判等机制：`if (table[idx].hash==hash && (p.key==key || key.equals(k)))`
+
+* 哈希值比较：首先table[idx]是哈希表的一个桶(bucket), 比较`table[idx].hash==hash`是指比较当前元素的hash值与我们正在插入的桶的hash值，是一个快速的初步检查，如不同，立即可以知道这不是我们要找的元素
+  * **先比较哈希值可以快速排除大多数不匹配的情况，很高效**
+* key相等性检查：如果hashcode相同，我们还需要进一步检查key是否真的相等，因为不同的key可能会有相同的hashcode（哈希冲突）
+  * `p.key==key`: 如果两个引用指向同一对象，那指定相等了，也是加快速度
+  * `key.equals(k)`: 如果引用不等，使用equlas()比较key的内容
+    * 如果key相同，则更新其value
+
+> java规范要求如果两个对象equals方法时相同，那么他们的hashCode也必须相同。反之如果他们的hashCode相同，equals未必相同，但不同对象应该尽量生成不同的哈希值，来减少冲突
+
+##### 如果只重写了equals() 没重写hashCode()，put的时候会怎么样？
+
+导致equals()相同的两个对象hashCode不同，这两个对象本应该放入一个bucket，被放到了两个bucket，get的时候就找不到了
+
+##### HashMap的hash()是如何设计的 / 扰动函数
+
+为了降低哈希冲突的概率，HashMap 的哈希函数是先拿到 key 的 hashcode，是一个 32 位的 int 类型的数值，然后**让hashcode的高16位和低16位进行异或操作**
+为何？
+我们知道hashcode得到32位，但HashMap的长度n一般较小，我们通过 `hash & (n - 1)` aka `hash % n`来获得索引位置，与&操作就只能捕获到32位hashcode的低位的特征，故而将hashcode右移16位，然后亦或高低位，这就**同时考虑到了低位和高维的特征**，特征越多，哈希碰撞的概率就越低。
+
+```java
+static final int hash(Object key) {
+    int h;
+    // key的hashCode和key的hashCode右移16位做异或运算
+    return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
+}
+```
+
+##### HashMap为什么按2倍扩容
+
+HashMap的容量设置为2的幂次方，是为了快速定位元素所在的数组下标
+hash % length == hash & (length - 1)的前提是length是2的n次方，使用&可以加速运算。
+
+#### 遍历HashMap
+
 * Node实现了`Map.Entry<K,V>`接口（实现了`getKey(), getValue()`）;
 * 底层会自动创建一个存储了Entry对象的entrySet集合`Set<Map.Entry<K,V>>`，这个Set就支持使用iterator遍历了
 * `Map.Entry`中存储的key和value实际是Node中key和value的**引用**，因为Node实现了Map.Entry接口，所以可以将Node对象赋给该接口（多态）
@@ -535,40 +574,53 @@ HashMap<String, String> map = new HashMap<>();
 >   * Hashtable扩容：2倍+1：11->23；而HashMap是2倍；
 >   * HashMap比Hashtable新，之所有不用Entry改为Node，是为了支持新的数据结构红黑树，
 
-### ConcurrentHashMap
-
-![picture 5](../images/e86a29fecb5c24c37017bf12871f670c5971aa208aa5667184f66af496d16fd8.png)  
-
-* 将数据分段(segment)存储，每一段数据配一把锁，当一个thread占用锁访问其中一个数据段时，其他段的数据也能被其他线程访问。
-* Segment扮演锁的角色，所以Segment数组是一个锁数组，HashEntry用于存储键值对数据。
-* Segment数组默认大小为16，即默认可以同时支持16个线程并发写。每个Segment守护一个HashEntry数组。即当需要修改某个HashEntry数组中的数据，必须先获得对应的Segment锁。对同一Segment的并发写入会被阻塞，不同Segment并不会
-
-> Segment extends ReentrantLock，所以是一种可重入锁（后续可以深入了解
-
----
-
-![picture 6](../images/e1b7477f3031601bdb1ad31f774e5f1faa86bd1bbee8284d19ea9c391490d7da.png)
-
-取消了Segment分段锁，采用**Node + CAS + synchronized**来保证并发。锁粒度更细，直到锁定bucket级别，减少了并发冲突，大幅度提升效率（1.7是锁到一个segment，即多个bucket
-
----
-
-ConcurrentHashMap 1.7 vs. ConcurrentHashMap 1.8
-
-* 1.7采用Segment分段锁，1.8采用`Node+CAS+synchronized`（不懂，锁粒度更细，synchronized只锁定当前链表或红黑二叉树的首节点。（不懂
-* hash碰撞解决方法不同：1.7采用拉链法，1.8采用拉链法+红黑树（可能树化嘛
-* 1.7的最大并发度是Segment的个数（默认16），1.8最大并发度是Node数组的大小，会大的多
-
-ConcurrentHashMap vs. Hashtable
-Hashtable也是用synchronized保证线程安全，但仅用同一把锁，锁住整个table，效率非常低下
-
 ### HashMap vs. HashSet
 
-![picture 3](../images/43fd1797d3e44128e71d720e685815aab8eb75a8ce38ee204a129c2705045c75.png)  
+![picture 3](../images/43fd1797d3e44128e71d720e685815aab8eb75a8ce38ee204a129c2705045c75.png)
 
 ### 为什么HashMap线程不安全
 
-数据覆盖问题：我们将多个键值对分配到同一个bucket，如果多个线程同时对HashMap进行put操作，可能产生数据覆盖。比如俩线程同时put，发生了哈希冲突，然后呢俩线程可能在不同的时间片获得cpu，线程1先抢到cpu（线程2被挂起），线程1执行插入，然后线程2获得cpu，此时**由于已经经过了hash碰撞的判断**，所以会直接插入，那就覆盖了。（即核心就是，俩线程都经过了hash碰撞的判断，然后其一插入，另一挂起，然后另一插入覆盖。
+数据覆盖问题：多线程同时执行put操作，如果计算出来的索引位置是相同的，那就会造成前一个key被后一个key覆盖，从而导致元素的丢失
+
+### ConcurrentHashMap是如何实现的 ☆
+
+#### jdk1.7 数组 + 链表
+
+> Segment数组 + HashEntry数组 + 链表
+
+![picture 10](../images/059978a656395d4bc1a5310f20814d7f0c6a37a6723f63daf81bc633fb3c4a4d.png){width=80%}
+
+* ConcurrentHashMap将整个哈希表分为多个小的哈希表，称作Segment[]数组，每个Segment包含一个HashEntry[]数组，每个HashEntry是一个链表，来村键值对数据。（即把原来的数组分成了多个segment
+  * 每个**segment是一种可重入锁**，当一个thread访问其中一个数据段上锁时，其他segment的数据可以并行访问
+    * `Segment<K,V> extends ReentrantLock`，segment继承自ReentrantLock
+  * segment数组可称作所数组，无他，就是扮演锁的角色
+  * Segment数组默认大小为16(不能扩容)，即默认可以同时支持16个线程并发写。每个Segment守护一个HashEntry数组
+
+> HashTable会用一把锁锁住整个哈希表，效率很低 -> 1.7分段锁好点了 -> 1.8每个Node一把锁并发度更好了
+
+#### jdk1.8 数组 + 链表/红黑树
+
+> **Node数组** + 链表/红黑树 (和jdk1.8 HashMap类似)
+
+![picture 6](../images/e1b7477f3031601bdb1ad31f774e5f1faa86bd1bbee8284d19ea9c391490d7da.png)
+
+jdk1.8几乎完全重写了ConcurrentHashMap，取消了Segment分段锁，采用 ==Node+**CAS+synchronized**== 来保证并发。锁粒度更细，synchronized只锁定当前链表或红黑树的首节点，即锁定到单个bucket级别，每个Node都可以并行操作，大幅度提升效率（1.7是锁到一个segment，即多个bucket
+
+##### 为什么同时需要CAS和synchronized
+
+ConcurrentHashMap使用这俩手段来保证线程安全，使用哪个主要是**根据锁竞争程度**来判断（我们知道竞争激烈的场景适合悲观锁，因为乐观锁在激烈场景下会爆炸）
+
+* 在put中，如果计算出的hash槽没有存放元素，就直接通过CAS设置值
+  * 这是因为我们的hash值经过各种扰动之后，造成**hash碰撞的概率是比较低的**，所以比较适合乐观锁
+* 而发生hash碰撞时说明哈希表的容量不太够用，或者有大量的线程访问，所以**此时线程竞争是很激烈的**，故而此时采用悲观锁synchronized来处理hash碰撞；上锁后，遍历bucket中的数据，并替换或新增节点到该bucket，再判断是否需要转为红黑树
+
+> 即就能用乐观锁的话，效率还是蛮高的，竞争激烈了就悲观锁
+
+#### ConcurrentHashMap 1.7 vs. 1.8
+
+* 结构不同/hash碰撞解决方法不同：1.7采用拉链法，1.8采用拉链法+红黑树
+* 线程安全实现方式：1.7采用Segment分段锁，1.8采用`Node+CAS+synchronized`，锁粒度更细，synchronized只锁定当前链表或红黑二叉树的首节点
+* **并发度**：1.7的最大并发度是Segment的个数（默认16），1.8最大并发度是Node数组的大小，会大的多
 
 ## java.utils.Collections
 
