@@ -4,7 +4,7 @@
 
 ![picture 1](../images/8c59864034ef6c2020329cd184d752e513b468797f89cba43cd3ed57ce597f0b.png)  
 
-==How to choose?==
+<!-- ==How to choose?==
 
 * 判断是单列还是键值对
   * 单列 -> Collection接口实现类
@@ -19,7 +19,7 @@
     * 无序key -> HashMap
     * 有序key -> TreeMap
     * key插入取出顺序一致 -> LinkedHashMap
-    * 读取文件 -> Properties
+    * 读取文件 -> Properties -->
 
 注意：
 
@@ -27,10 +27,28 @@
 
 ## ACM template
 
+常用库
+
+```java
+import java.util.*; // 导入常用的集合类，eg ArrayList, LinkedList, HashSet, HashMap, PriorityQueue...
+// import java.lang.*; // JAVA语言的核心部分，eg Object, String, Math, System, Thread, Exception...
+// 这个一般是无需显式导入的，编译器应该自带的有
+```
+
+常用API
+
+```java
+sc.hasNext() // 检查输入流中是否有下一个token(可以是任意类型)
+sc.hasNextInt() // 检查输入流中是否有下一个整数, 返回true/false
+sc.nextInt()
+sc.hasNextLine()
+sc.nextLine()
+```
+
 ```java
 import java.util.Scanner;
-public class Main {
-    public static void main(String[] args) {
+public class Main { // 1. 记得加public; 2.Main后无();
+    public static void main(String[] args) { // .别忘了String[] args
         Scanner scanner = new Scanner(System.in);
         while (scanner.hasNext()) {
             int a = scanner.nextInt();
