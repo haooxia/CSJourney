@@ -1,6 +1,18 @@
 # Java API
 
-[toc]
+- [Java API](#java-api)
+  - [ACM template](#acm-template)
+  - [Arrays](#arrays)
+  - [ArrayList](#arraylist)
+  - [LinkedList](#linkedlist)
+  - [HashSet / unordered\_set](#hashset--unordered_set)
+  - [HashMap / unordered\_map](#hashmap--unordered_map)
+  - [String](#string)
+  - [StringBuilder](#stringbuilder)
+  - [Stack-about](#stack-about)
+  - [Queue-about](#queue-about)
+    - [PriorityQueue](#priorityqueue)
+
 
 ![picture 1](../images/8c59864034ef6c2020329cd184d752e513b468797f89cba43cd3ed57ce597f0b.png)  
 

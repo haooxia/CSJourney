@@ -1,5 +1,17 @@
 # Redis
 
+- [Redis](#redis)
+  - [install](#install)
+  - [use](#use)
+    - [通用命令](#通用命令)
+    - [String](#string)
+    - [Hash](#hash)
+    - [List](#list)
+    - [Set](#set)
+    - [SortedSet / ZSet](#sortedset--zset)
+    - [发布订阅](#发布订阅)
+    - [java](#java)
+
 Redis: Remote dictionary server
 是一个开源的基于内存的数据存储系统，可以用作数据库DB，缓存Cache和消息队列MQ等各种场景。是最热门**NoSQL**之一。
 

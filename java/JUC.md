@@ -1,6 +1,67 @@
 # 并发编程
 
-[toc]
+- [并发编程](#并发编程)
+  - [线程基础](#线程基础)
+    - [进程 vs. 线程 ☆](#进程-vs-线程-)
+      - [简单了解一下协程](#简单了解一下协程)
+    - [用户线程 vs. 内核线程](#用户线程-vs-内核线程)
+    - [java线程和os线程的区别](#java线程和os线程的区别)
+    - [java线程创建有几种方式 ☆](#java线程创建有几种方式-)
+    - [线程生命周期和状态](#线程生命周期和状态)
+      - [blocked vs. waiting](#blocked-vs-waiting)
+      - [notify() vs notifyall()](#notify-vs-notifyall)
+      - [Thread#sleep() vs. Object#wait()](#threadsleep-vs-objectwait)
+    - [线程调用的本质 start() vs. run() ☆](#线程调用的本质-start-vs-run-)
+    - [线程相关method](#线程相关method)
+  - [多线程](#多线程)
+    - [java如何保证多线程安全/概括](#java如何保证多线程安全概括)
+    - [单核 CPU 上运行多个线程效率一定会高吗](#单核-cpu-上运行多个线程效率一定会高吗)
+    - [死锁 ☆](#死锁-)
+      - [什么是死锁](#什么是死锁)
+      - [如何预防、避免死锁](#如何预防避免死锁)
+      - [死锁检测 (java)](#死锁检测-java)
+    - [Java内存模型 JMM](#java内存模型-jmm)
+      - [JMM抽象了线程和主内存之间的关系](#jmm抽象了线程和主内存之间的关系)
+      - [happens-before](#happens-before)
+        - [定义](#定义)
+        - [happens-before常见规则](#happens-before常见规则)
+      - [并发编程的三特性](#并发编程的三特性)
+    - [volatile ☆](#volatile-)
+    - [乐观锁与悲观锁](#乐观锁与悲观锁)
+      - [版本号机制 vs. CAS](#版本号机制-vs-cas)
+        - [java中是如何实现CAS的](#java中是如何实现cas的)
+        - [CAS的问题](#cas的问题)
+    - [java中有哪些锁](#java中有哪些锁)
+      - [公平锁 vs. 非公平锁](#公平锁-vs-非公平锁)
+      - [可重入锁](#可重入锁)
+      - [独享锁 vs. 共享锁](#独享锁-vs-共享锁)
+      - [乐观锁 vs. 悲观锁](#乐观锁-vs-悲观锁)
+      - [分段锁](#分段锁)
+      - [偏向锁/轻量级锁/重量级锁](#偏向锁轻量级锁重量级锁)
+      - [自旋锁](#自旋锁)
+    - [synchronized](#synchronized)
+      - [对synchronized的理解 ☆](#对synchronized的理解-)
+      - [如何使用synchronized？](#如何使用synchronized)
+      - [synchronized的底层本质](#synchronized的底层本质)
+      - [synchronized vs. volatile ☆](#synchronized-vs-volatile-)
+    - [ReentrantLock / Lock](#reentrantlock--lock)
+      - [ReentrantLock vs. synchronized ☆](#reentrantlock-vs-synchronized-)
+    - [ReentrantReadWriteLock / ReadWriteLock](#reentrantreadwritelock--readwritelock)
+    - [ThreadLocal](#threadlocal)
+      - [ThreadLocal原理](#threadlocal原理)
+      - [ThreadLocal内存泄漏](#threadlocal内存泄漏)
+    - [BlockingQueue](#blockingqueue)
+    - [线程池](#线程池)
+      - [线程池三大创建方法](#线程池三大创建方法)
+      - [ThreadPoolExecutor线程池7大参数](#threadpoolexecutor线程池7大参数)
+      - [线程池处理任务的流程](#线程池处理任务的流程)
+      - [拒绝策略](#拒绝策略)
+      - [阻塞队列](#阻塞队列)
+      - [参数设置](#参数设置)
+      - [execute() vs. submit()](#execute-vs-submit)
+      - [线程池关闭 shutdown() vs. shutdownnow()](#线程池关闭-shutdown-vs-shutdownnow)
+    - [AQS](#aqs)
+
 
 TODO：
 
@@ -20,9 +81,18 @@ TODO：
 * **通信与同步**：
   * 进程：由于进程间相互隔离，进程之间的通信需要使用一些**特殊机制**，如管道、消息队列、共享内存等（比较复杂，详见进程通信section）。
   * 线程：由于线程共享相同的内存空间，它们之间可以直接访问共享数据(比如直接使用全局变量等)，线程间通信更加方便。（当然，需要一些互斥同步机制：互斥锁、条件变量、信号量；当然，进程通信的共享内存也需要同步机制：信号量、信号等）
-<!-- * **安全性**：
+* **安全性**：
   * 进程：由于进程间相互隔离，一个进程的崩溃不会直接影响其他进程的稳定性。
-  * 线程：由于线程共享相同的内存空间，一个线程的错误可能会影响整个进程的稳定性。 -->
+  * 线程：由于线程共享相同的内存空间，**一个线程的错误可能会影响整个进程的稳定性**
+
+#### 简单了解一下协程
+
+* java中协程(coroutine)是一比线程更轻量级的存在
+* 协程在用户态运行，完全由程序员自己控制，可以简单理解为用户态的线程，线程间切换无需陷入内核态，减少了开销
+  * java中虚拟线程(visual threads)类似于协程
+    * 和我早期的java线程(用户级)有什么区别呢？
+
+> please ref: [link](https://javaguide.cn/java/concurrent/virtual-thread.html#%E8%99%9A%E6%8B%9F%E7%BA%BF%E7%A8%8B%E5%92%8C%E5%B9%B3%E5%8F%B0%E7%BA%BF%E7%A8%8B%E6%80%A7%E8%83%BD%E5%AF%B9%E6%AF%94)
 
 ### 用户线程 vs. 内核线程
 
@@ -103,8 +173,9 @@ TODO：
 #### Thread#sleep() vs. Object#wait()
 
 * sleep()是Thread类的静态方法，而wait()是Object的实例方法
-* 二者都可以暂停线程执行，进入waiting
-* sleep()执行完毕不会释放锁，wait()会释放，允许其他线程获得锁
+* 二者都可以暂停线程执行，进入waiting，都会释放cpu资源
+* **sleep不会释放锁(抱着锁睡觉)**，其他线程无法获取该锁，但可以获得cpu时间片；wait暂停时会释放持有的锁
+  * 主要是二者设计目的不同：sleep()目的是暂停当前线程一段时间，让出cpu资源给其他线程，是线程级别的方法；wait()目的是让当前线程等待某个条件，并释放当前线程持有的锁，是对象级别的方法
 * sleep()常用于暂停，到时间后会自动苏醒，wait常用于**线程间通信**，需要其他线程调用同一对象的**notify()或notifyAll()**（此时是WAITING）
   * > 而wait(long timeout)这个有参版本可以设定超时参数，**会自动苏醒**（此时是**TIMED_WAITING状态**）
 * 为什么wait()在Object中，而非定义在Thread中？
@@ -155,16 +226,38 @@ TODO：
 * IO密集型：主要进行输入输出操作，如读写文件、网络通信等，需要等待IO设备的响应，而不占用太多的CPU资源
   * 多个线程同时运行可以利用 CPU 在等待 IO 时的空闲时间，提高了效率
 
-### 死锁
+### 死锁 ☆
 
-死锁：多个线程同时被阻塞，它们中的一个或者全部都在等待某个资源被释放。由于线程被无限期地阻塞，因此程序不可能正常终止
+#### 什么是死锁
 
-### 死锁检测 (java)
+死锁：**两个或多个进程在争夺系统资源时，由于互相等待对方释放资源而无法继续执**行的状态
 
-* 使用jmap、jstack等命令查看 JVM 线程栈和堆内存的情况。如果有死锁，jstack 的输出中通常会有 Found one Java-level deadlock:的字样，后面会跟着死锁相关的线程信息。另外，实际项目中还可以搭配使用top、df、free等命令查看操作系统的基本情况，出现死锁**可能**会导致 CPU、内存等资源消耗过高
-* 采用VisualVM、JConsole等工具进行排查
+> 如果互斥锁应用不当，可能会造成**两个线程都在等待对方释放锁**，所谓死锁
 
-> 死锁预防与避免见os section
+死锁只有在同时满足四个条件时才会发生：
+
+ 1. 互斥条件: 多个进/线程**不能同时**使用同一资源
+ 2. 请求与保持条件: 一个线程因为请求资源而阻塞的时候，**不会释放自己的资源**
+ 3. 不可剥夺条件: 资源不能强制性地从一个进程中剥夺，只能由持有者**自愿释放**
+ 4. 循环等待条件: 多个进程之间形成一个循环等待资源链，每个进程都在等待下一个进程所占有的资源
+
+#### 如何预防、避免死锁
+
+只需要破坏上面一个条件就可以**破坏死锁** / **预防死锁**
+
+1. 破坏请求与保持条件：一次性申请所有的资源。
+2. 破坏不可剥夺条件：占用部分资源的线程进一步申请其他资源时，如果申请不到，**主动释放自己占有的资源**
+3. 破坏循环等待条件：靠**按序申请资源**来预防（**资源按序分配法**）。让所有进程按照相同的顺序请求资源，释放资源则反序释放
+
+如何**避免**死锁？
+
+* 首先：预防死锁是在系统设计阶段实施（静态、保守），而避免死锁在运行时动态实施（动态、灵活）
+* **银行家算法**：在资源分配之前，使用预分配的方式检查分配后的状态是否安全（使其进入安全状态）
+
+#### 死锁检测 (java)
+
+* 使用**jstack命令**查看JVM线程栈和堆内存的情况。如果有死锁，jstack的输出中通常会有Found one Java-level deadlock:的字样，后面会跟着死锁相关的线程信息
+* 采用**VisualVM、JConsole**等工具进行排查
 
 <!-- ### 虚拟线程
 

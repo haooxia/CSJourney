@@ -1,6 +1,29 @@
 # some common/important code in Java
 
-[toc]
+- [some common/important code in Java](#some-commonimportant-code-in-java)
+  - [创建线程](#创建线程)
+    - [继承Thread类](#继承thread类)
+    - [实现Runnable接口](#实现runnable接口)
+    - [实现Callable泛型接口](#实现callable泛型接口)
+    - [线程池](#线程池)
+      - [Executors.FixedThreadPool](#executorsfixedthreadpool)
+      - [ThreadPoolExecutor](#threadpoolexecutor)
+    - [按序执行三个线程](#按序执行三个线程)
+  - [生产者消费者问题](#生产者消费者问题)
+    - [实现](#实现)
+    - [应用场景](#应用场景)
+  - [单例模式](#单例模式)
+    - [饿汉式](#饿汉式)
+    - [懒汉式](#懒汉式)
+      - [线程不安全](#线程不安全)
+      - [双重校验锁模式 (线程安全) DCL](#双重校验锁模式-线程安全-dcl)
+  - [排序算法](#排序算法)
+    - [冒泡排序](#冒泡排序)
+    - [选择排序](#选择排序)
+    - [插入排序](#插入排序)
+    - [希尔排序](#希尔排序)
+    - [快速排序](#快速排序)
+
 
 TODO: plz read this and sum up: [link](https://www.nowcoder.com/discuss/650808006875127808?sourceSSR=dynamic)
 

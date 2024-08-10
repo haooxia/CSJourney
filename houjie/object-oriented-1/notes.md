@@ -1,6 +1,22 @@
 # KeyNotes for C++面向对象高级编程-上 侯捷
 
-[toc]
+- [KeyNotes for C++面向对象高级编程-上 侯捷](#keynotes-for-c面向对象高级编程-上-侯捷)
+  - [Object Based Programming](#object-based-programming)
+    - [P1-6: Complex](#p1-6-complex)
+    - [P7: String (Big Three)](#p7-string-big-three)
+    - [P8: 堆，栈与内存管理 new/operartor new/malloc](#p8-堆栈与内存管理-newoperartor-newmalloc)
+      - [new/operator new/malloc/constructor](#newoperator-newmallocconstructor)
+      - [smart pointer](#smart-pointer)
+      - [overloading new/delete](#overloading-newdelete)
+  - [Object Oriented Programming](#object-oriented-programming)
+    - [P11: 组合与继承](#p11-组合与继承)
+      - [Composition](#composition)
+      - [Delegation / Composition by reference](#delegation--composition-by-reference)
+      - [Inheritance](#inheritance)
+    - [p12: 虚函数与多态](#p12-虚函数与多态)
+  - [keypoint](#keypoint)
+  - [QA](#qa)
+
 
 ## Object Based Programming
 

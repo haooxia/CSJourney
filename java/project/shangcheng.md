@@ -1,6 +1,25 @@
 # hmall
 
-[toc]
+- [hmall](#hmall)
+  - [begin](#begin)
+    - [单体架构 vs. 微服务架构](#单体架构-vs-微服务架构)
+      - [有什么拆分原则/目标](#有什么拆分原则目标)
+    - [SpringCloud](#springcloud)
+      - [你用过那些微服务组件 / 概括](#你用过那些微服务组件--概括)
+    - [注册中心](#注册中心)
+      - [为什么本项目需要注册中心](#为什么本项目需要注册中心)
+      - [注册中心功能](#注册中心功能)
+      - [注册中心原理](#注册中心原理)
+        - [负载均衡算法 load balancer](#负载均衡算法-load-balancer)
+    - [远程调用](#远程调用)
+      - [HTTP vs. RPC](#http-vs-rpc)
+      - [Feigh vs. Dubbo](#feigh-vs-dubbo)
+      - [Feign是什么](#feign是什么)
+      - [Feign如何实现负载均衡 / Ribbon](#feign如何实现负载均衡--ribbon)
+      - [常见负载均衡算法](#常见负载均衡算法)
+        - [一致性哈希算法](#一致性哈希算法)
+      - [服务端/七层负载均衡 vs. 客户端负载均衡](#服务端七层负载均衡-vs-客户端负载均衡)
+
 
 ![picture 0](../../images/a396ef237ee36cc0eed530d09019288900bcd7917b03fbe564e64b1c442d7a5f.png)  
 

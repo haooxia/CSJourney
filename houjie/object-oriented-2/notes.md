@@ -1,6 +1,24 @@
 # KeyNotes for C++面向对象高级编程(下) 兼谈对象模型 侯捷
 
-[toc]
+- [KeyNotes for C++面向对象高级编程(下) 兼谈对象模型 侯捷](#keynotes-for-c面向对象高级编程下-兼谈对象模型-侯捷)
+  - [conversion function, (explicit)-one-argument ctor](#conversion-function-explicit-one-argument-ctor)
+  - [pointer-like classes: 智能指针, 迭代器](#pointer-like-classes-智能指针-迭代器)
+  - [function-like classes: 仿函数, 函数对象](#function-like-classes-仿函数-函数对象)
+  - [template](#template)
+    - [class template](#class-template)
+    - [function template](#function-template)
+    - [member template](#member-template)
+  - [specialization: 特化](#specialization-特化)
+    - [full specialization, 全特化](#full-specialization-全特化)
+    - [partial specialization, 偏特化](#partial-specialization-偏特化)
+  - [c++标准库](#c标准库)
+  - [c++11: variadic templates, auto, range-based for loop](#c11-variadic-templates-auto-range-based-for-loop)
+    - [variadic templates](#variadic-templates)
+    - [auto](#auto)
+    - [range-based for](#range-based-for)
+  - [reference](#reference)
+  - [虚函数 虚指针 虚表 动态绑定](#虚函数-虚指针-虚表-动态绑定)
+
 
 ## conversion function, (explicit)-one-argument ctor
 

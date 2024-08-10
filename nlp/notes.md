@@ -1,4 +1,14 @@
 # question
+- [question](#question)
+  - [Transformer](#transformer)
+    - [1.为什么使用multi-head attention？在相同维度下单头和多头的区别是什么？](#1为什么使用multi-head-attention在相同维度下单头和多头的区别是什么)
+    - [2.为什么Q和K使用不同的权重矩阵生成，为何不能使用同一个值进行自身的点乘？](#2为什么q和k使用不同的权重矩阵生成为何不能使用同一个值进行自身的点乘)
+    - [3.Transformer计算attention的时候为何选择点乘而不是加法？](#3transformer计算attention的时候为何选择点乘而不是加法)
+    - [4.为什么在进行softmax之前需要对attention进行scaled（为什么除以dk的平方根），并使用公式推导进行讲解](#4为什么在进行softmax之前需要对attention进行scaled为什么除以dk的平方根并使用公式推导进行讲解)
+    - [5.embedding方案](#5embedding方案)
+    - [6.位置编码](#6位置编码)
+  - [BERT](#bert)
+    - [question](#question-1)
 
 ## Transformer
 
