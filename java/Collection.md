@@ -604,7 +604,7 @@ HashMap<String, String> map = new HashMap<>();
 
 ![picture 6](../images/e1b7477f3031601bdb1ad31f774e5f1faa86bd1bbee8284d19ea9c391490d7da.png)
 
-jdk1.8几乎完全重写了ConcurrentHashMap，取消了Segment分段锁，采用 ==Node+**CAS+synchronized**== 来保证并发。锁粒度更细，synchronized只锁定当前链表或红黑树的首节点，即锁定到单个bucket级别，每个Node都可以并行操作，大幅度提升效率（1.7是锁到一个segment，即多个bucket
+jdk1.8几乎完全重写了ConcurrentHashMap，取消了Segment分段锁，采用 ==**CAS+synchronized+volatile**== 来保证并发。锁粒度更细，synchronized只锁定当前链表或红黑树的首节点，即锁定到单个bucket级别，每个Node都可以并行操作，大幅度提升效率（1.7是锁到一个segment，即多个bucket
 
 ##### 为什么同时需要CAS和synchronized
 
@@ -615,6 +615,10 @@ ConcurrentHashMap使用这俩手段来保证线程安全，使用哪个主要是
 * 而发生hash碰撞时说明哈希表的容量不太够用，或者有大量的线程访问，所以**此时线程竞争是很激烈的**，故而此时采用悲观锁synchronized来处理hash碰撞；上锁后，遍历bucket中的数据，并替换或新增节点到该bucket，再判断是否需要转为红黑树
 
 > 即就能用乐观锁的话，效率还是蛮高的，竞争激烈了就悲观锁
+
+##### get是否需要加锁 / volatile起到的作用
+
+注意：ConcurrentHashMap的get操作是无需加锁的，因为其该容器对Node的value字段使用了==volatile==修饰，这意味着一个线程修改了某个Node的value时，其他线程可以立马看见这个变化（volatile保证可见性）；此外volatile可以禁止指令重排序，确保了对Node的读取和写入操作不会被重排序
 
 #### ConcurrentHashMap 1.7 vs. 1.8
 

@@ -2,6 +2,10 @@
 
 [toc]
 
+TODO: plz read this and sum up: [link](https://www.nowcoder.com/discuss/650808006875127808?sourceSSR=dynamic)
+
+TODO: 冒泡排序、快排（递归和非递归形式）、手撕LRU
+
 ## 创建线程
 
 * **继承Thread类、实现Runnable接口、实现Callable接口、使用线程池、使用CompletableFuture等**都可以创建线程
@@ -10,17 +14,23 @@
 
 最直接的一种方式，用户自定义类继承java.lang.Thread类，**重写run**()方法，run()方法中定义了线程执行的具体任务。创建该类的实例后，通过**调用start**()方法启动线程。
 
-缺点:因为线程类已经继承了Thread类，所以不能再继承其他的父类
+* 优点：直接继承Thread类，简单
+* 缺点：
+  * java不支持多继承，继承Thread类后，不能再继承其他的父类，灵活性较差
+  * **线程任务和控制逻辑耦合**，代码复用性较差
 
 ```java
-public class MyThread extends Thread {
+public class MyThread extends Thread{
     @Override
     public void run() {
-        // 线程执行的逻辑
-        // sout(...)
+        System.out.println("Running thread: " + Thread.currentThread().getName());
     }
+
     public static void main(String[] args) {
-        new MyThread().start();
+        MyThread t1 = new MyThread();
+        MyThread t2 = new MyThread();
+        t1.start();
+        t2.start();
     }
 }
 ```
@@ -29,25 +39,157 @@ public class MyThread extends Thread {
 
 实现Runnable接口需要**重写run**()方法，然后**将此Runnable对象作为参数传递给Thread类的构造器**，**创建Thread对象**后调用其start()方法启动线程。
 
+* 优点：可避免单继承的局限性，java支持接口的多实现
+* **线程任务和控制逻辑分离**，便于复用和扩展
+
 ```java
 public class MyRunnable implements Runnable {
     @Override
     public void run() {
-        // ...
+        System.out.println("Running Thread: " + Thread.currentThread().getName());
     }
+
     public static void main(String[] args) {
-        Thread t = new Thread(new MyRunnable()); // 将Runnable接口实现类的对象 塞给Thread
-        t.start();
+        // 仅需创建一个MyRunnable对象
+        MyRunnable mr = new MyRunnable();
+        Thread t1 = new Thread(mr);
+        Thread t2 = new Thread(mr);
+        t1.start();
+        t2.start();
     }
 }
 ```
 
-* **implements Runnable接口，重写run方法（底层是静态代理模式）**
-  * 创建一个Thread对象，并将Runnable接口实现类对象传递给它，然后调用start方法。
-    * 可以把同一个Runnable对象（即用户自定义的被代理类：只用关注业务逻辑的实现）丢给多个线程使用（即Thread代理类：封装了创建和管理逻辑）（一份资源，多个代理） ==太妙了==
-      * ![picture 0](../images/47183e58ad94304f65901c4ffa16a944390e2761fce0cc176a729a43c566cb84.png)  
-    * ![picture 1](../images/201740b20c191d51ffd42bc1a2972512ad5a64743acd687c47daf28f79f1b94d.png)  
-      * 详见onenote: Static Proxy
+---
+
+* 底层是静态代理模式：即通过Thread类来代理Runnable的实现来执行操作；
+  * 可重用性：显著的优点是同一个Runnable对象可以被多个线程共享。这样，多个线程可以同时执行相同的业务逻辑，而不需要为每个线程创建新的资源实例（一份资源、多个代理）
+  * ![picture 1](../images/201740b20c191d51ffd42bc1a2972512ad5a64743acd687c47daf28f79f1b94d.png)
+    * 详见onenote: Static Proxy
+
+### 实现Callable泛型接口
+
+* 优点：可以返回结果，可以抛出异常，适合需要任务结果的场景
+* 缺点：相比于Runnable接口，使用复杂度更高，需要额外的工具类（如FutureTask）来管理。
+
+> Callable依赖FutureTask类来获取返回结果
+
+```java
+import java.util.concurrent.*;
+
+// Callable是一个泛型接口，指定call()返回类型为String
+public class MyCallable implements Callable<String> {
+    @Override
+    public String call() throws Exception{
+        System.out.println("Running Thread: " + Thread.currentThread().getName());
+        return "OK";
+    }
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+        MyCallable mc = new MyCallable();
+        // 将Callable对象封装在FutureTask中，可以在多线程环境下执行任务，并获取任务执行结果
+        FutureTask<String> ft = new FutureTask<>(mc);
+        Thread t1 = new Thread(ft);
+//        Thread t2 = new Thread(ft);
+        t1.start();
+        String result = ft.get(); // 阻塞获取结果(即同步等待call()执行完毕
+        System.out.println(result);
+    }
+}
+```
+
+### 线程池
+
+#### Executors.FixedThreadPool
+
+* 实现方法：
+  * 使用Executors类创建线程池：eg `FixedThreadPool`, `CachedThreadPool`, `SingleThreadExecutor`
+  * 使用`execute()`或`submit()`方法提交`Runnable()`或`Callable()`任务给线程池
+    * 区别见`JUC.md`
+  * 使用`shutdown()`或`shutdownnow()`关闭线程池
+    * 区别见`JUC.md`
+
+```java
+import java.util.concurrent.*;
+
+public class MyExecutors implements Runnable{
+    @Override
+    public void run() {
+        System.out.println("Running Thread: " + Thread.currentThread().getName());
+    }
+    public static void main(String[] args) {
+        // 创建线程池，获取ExecutorService实例
+        ExecutorService threadPool = Executors.newFixedThreadPool(3);
+        // 向线程池提交任务
+        for (int i=0; i<10; ++i) { // 整十个吧
+            threadPool.execute(new MyExecutors());
+        }
+        // 等待线程都执行那个完毕后关闭线程池
+        threadPool.shutdown();
+    }
+}
+```
+
+#### ThreadPoolExecutor
+
+```java
+import java.util.concurrent.*;
+
+public class MyThreadPoolExecutor{
+    // 创建了一个线程池，最大线程数为5，核心线程数为2，空闲线程存活时间为10秒
+    // 任务队列容量为3。然后向线程池提交了5个任务，每个任务打印当前线程的名称和"ok"。最后关闭线程池。
+    public static void main(String[] args) {
+        ThreadPoolExecutor threadPool = new ThreadPoolExecutor(
+                2,                           // 核心线程数 corePoolSize
+                5,                                      // 最大线程数 maximumPoolSize
+                10,                                      // 空闲线程存活时间 keepAliveTime
+                TimeUnit.SECONDS,                       // 时间单位 unit
+                new LinkedBlockingQueue<>(3),   // 阻塞队列的容量 workQueue
+                Executors.defaultThreadFactory(),       // 默认线程工厂 (可忽略) threadFactory
+                new ThreadPoolExecutor.AbortPolicy()    // 默认拒绝策略 (可忽略) handler
+                );
+        for (int i=0; i<8; ++i) {
+            threadPool.execute(() -> {
+                // 这里采用lambda表达式来传入一个Runnable实现类的对象
+                System.out.println("Running Thread: " + Thread.currentThread().getName());
+            });
+        }
+        threadPool.shutdown();
+    }
+}
+```
+
+### 按序执行三个线程
+
+```java
+// TODO: 新建T1、T2、T3三个线程，并保证它们按顺序执行
+public class JoinTest {
+    public static void main(String[] args) {
+        Thread t1 = new Thread(() -> {
+            System.out.println("Thread-1");
+        });
+        Thread t2 = new Thread(() -> {
+            try {
+                t1.join(); // 当一个线程调用另一个线程的join()方法时，调用线程将被挂起，直到目标线程结束
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            System.out.println("Thread-2");
+        });
+        Thread t3 = new Thread(() -> {
+            try {
+                t2.join();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            System.out.println("Thread-3");
+        });
+
+        t1.start();
+        t2.start();
+        t3.start();
+    }
+}
+```
 
 ## 生产者消费者问题
 
@@ -147,3 +289,135 @@ public class LazyMan2 {
 3. 将lazyMan指向分配的内存空间
 
 故而可能发生指令重排，如果排序为132就废废了
+
+## 排序算法
+
+### 冒泡排序
+
+冒泡排序: n趟排序（每趟排序：从前往后，两两比较，若左>右，交换）使得最大的元素沉底
+
+* 稳定
+* 最佳O(n); 最差/平均O(n^2)
+* 排序方式：in-place
+
+```java
+import java.util.Arrays;
+
+public class BubbleSort {
+    public static void bubbleSort(int[] nums) {
+        int n = nums.length;
+        for (int i=0; i<n; ++i) { // 最多做n轮"冒泡操作"
+            boolean flag = false; // note 优化：判断本轮是否做了交换操作
+            for (int j=0; j<n-1; ++j) { // 注意冒泡的每一轮都需要从头开始 (因为最后才是有序的
+                if (nums[j] > nums[j+1]) {
+                    int tmp = nums[j];
+                    nums[j] = nums[j+1];
+                    nums[j+1] = tmp;
+                    flag = true;
+                }
+            }
+            if (!flag) return; // 说明本趟并未发生交换
+        }
+    }
+
+    public static void main(String[] args) {
+        int[] nums = {10,3,8,5,4};
+        bubbleSort(nums);
+        System.out.println(Arrays.toString(nums));
+    }
+}
+```
+
+### 选择排序
+
+最直觉:选择排序：每次从未排序序列中选择最小元素放到已排序序列末尾即可
+
+* 不稳定: `{5,8,5,2,9}` 5会和2交换
+* 最差/最佳/平均O(n^2)
+* in-place
+
+```java
+public static void selectionSort(int[] nums) {
+    int n = nums.length;
+    for (int i=0; i<n-1; ++i) {
+        int min = i; // 记录下标而非nums[i] 下标作为key会有更多的信息
+        for (int j=i+1; j<n; ++j) // 找到未排序序列的最小元素
+            if (nums[j] < nums[min])
+                min = j;
+        if (min != i) { // 如果i并非最小
+            int tmp = nums[i]; // 和末尾交换即为放至末尾
+            nums[i] = nums[min];
+            nums[min] = tmp;
+        }
+    }
+}
+```
+
+### 插入排序
+
+插入排序：将无序关键字插入到有序序列中（即把有序序列不断往后移动
+
+* 稳定
+* 最佳O(n), 最差/平均O(n^2)
+* in-place
+
+```java
+public static void insertionSort(int[] nums) {
+    int n = nums.length;
+    for (int i = 1; i < n; ++i) { // 遍历无序列表
+        int tmp = nums[i];
+        int j;
+        for (j = i-1; j >= 0 && tmp < nums[j]; --j) // 注意这个判断条件得写这儿, 写下面的话j会被多减
+            nums[j+1] = nums[j];
+        nums[j+1] = tmp; // j在不断左移 (可以画图看看
+    }
+}
+```
+
+### 希尔排序
+
+Shell Sort/增量递减排序算法: 进阶版插入排序
+思想：先将整个待排序序列分割为若干子序列分别进行直接插入排序，待整个序列“基本有序”时，再对全体序列进行一次直接插入排序
+
+* 不稳定
+* 最佳/平均 O(nlogn), 最差O(n^2)
+* 空间复杂度依然O(1)
+
+![picture 3](../images/8fe24c3ddda0b8cdfc43e2ffd86435d392fda019a8401add59c3b93a72f80108.png){width=70%}
+
+### 快速排序
+
+* 不稳定
+* 最佳/平均 O(nlogn), 最差O(n^2)
+* 空间复杂度 **O(nlogn)**
+
+```java
+public class QuickSort {
+    public static int partition(int[] nums, int low, int high) { // 左闭右闭
+        int pivot = nums[low];
+        while (low < high) {
+            while (low < high && nums[high] >= pivot) --high; // 一直找到 < pivot的值
+            nums[low] = nums[high];
+            while (low < high && nums[low] <= pivot) ++low; // 一直找到 > pivot的值
+            nums[high] = nums[low];
+        }
+        nums[low] = pivot;
+        return low; // 最终应该返回pivot的位置 而非其值
+    }
+
+    public static void quickSort(int[] nums, int low, int high) {
+        // note: 每次选一个pivot, 让左侧小于该pivot
+        if (low < high) {
+            int pivot = partition(nums, low, high);
+            quickSort(nums, low, pivot-1);
+            quickSort(nums, pivot+1, high);
+        }
+    }
+
+    public static void main(String[] args) {
+        int[] nums = {10,3,8,5,4};
+        quickSort(nums, 0, nums.length-1);
+        System.out.println(Arrays.toString(nums));
+    }
+}
+```

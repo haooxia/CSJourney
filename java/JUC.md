@@ -2,6 +2,12 @@
 
 [toc]
 
+TODO：
+
+* ReentrantLock底层原理、是如何实现可冲入的
+* 掌握AQS
+* 为什么wait和notify要在同一个synchronized块内
+
 ## 线程基础
 
 ### 进程 vs. 线程 ☆
@@ -117,8 +123,8 @@
 * `setPriority(int)`: 更改线程的**优先级**；优先级低意味着调用概率低
   * `MIN_PRIORITY=1; NORM_PRIORITY=5; MAX_PRIORITY=10`
 * `sleep(long millis)`: 休眠指定毫秒，线程被阻塞后会自动苏醒
-* `join()`: 等待线程终止
-* `yield()`: **线程礼让**，暂停当前正在执行的线程对象，并执行其他线程；注意暂停了并非阻塞，处于就绪状态，等待cpu调度
+* `join()`: 当一个线程调用另一个线程的join()方法时，**调用线程将被挂起，直到目标线程结束**。确保了线程间的**执行顺序**，常用于需要在某个线程完成后再继续执行的场景 （==**手撕题：让三个线程按顺序执行**==）
+* `yield()`: **线程礼让**：yield()是一个提示，表示当前线程已经完成了其生命周期中最重要的部分，可以让出CPU使用权给其他同优先级的线程。调用 yield()并不保证当前线程会立即停止执行，它**只是建议线程调度器可以调度其他线程**
 * `setDaemon()`: **守护线程**，用户线程结束之后，jvm不用管守护线程是否执行完毕...比如GC线程
 * `interrupt()`: 中断线程，少用；推荐使用标志位停止线程
 * `isAlive()`: 测试是否活动
@@ -411,7 +417,7 @@ public final int getAndAddInt(Object o, long offset, int delta) {
 * `ReentrantLock`和`synchronized`类似，但更灵活强大，增加了轮询、超时、中断、公平非公平锁等高级功能
   * Lock和synchronized功能类似，就是可以显示加锁 释放锁，ie `lock.lock(); lock.unlock();`还有一个尝试获取锁`lock.tryLock()`(就是非忙等待锁咯)
 * 默认是**非公平锁**，可以通过构造函数写true来指定为公平锁
-* 底层基于`AQS`，后文再说
+* 底层基于`AQS`，后文再说（TODO 重要）
 
 #### ReentrantLock vs. synchronized ☆
 
@@ -516,6 +522,13 @@ ThreadLocalMap中使用的key是ThreadLocal的弱引用，value是强引用。�
 
 #### 线程池三大创建方法
 
+* 实现方法：
+  * 使用Executors类创建线程池：eg `FixedThreadPool`, `CachedThreadPool`, `SingleThreadExecutor`
+  * 使用`execute()`或`submit()`方法提交`Runnable()`或`Callable()`任务给线程池
+  * 使用`shutdown()`或`shutdownnow()`关闭线程池
+
+---
+
 * `SingleThreadExecutor`: 线程池中仅一个线程，若提交给线程池的任务超过一个，存在任务队列中，等到线程空闲时，按照FIFO顺序执行队列中的任务
 * `FixedThreadPool`：线程数量固定不动
 * `CachedThreadPool`：线程数量不确定，可伸缩
@@ -607,7 +620,16 @@ public ThreadPoolExecutor(
   * 对于短期异步任务,可使用SynchronousQueue（不懂
   * 对于长期任务,可使用LinkedBlockingQueue或ArrayBlockingQueue
 
-#### 线程池关闭
+#### execute() vs. submit()
+
+* 任务类型：execute()只能执行Runnable任务，submit()可以执行Runnable和Callable任务。
+* 返回值：execute()没有返回值，submit()返回一个`Future`对象，可以用来获取任务的执行结果或处理异常。
+* 异常处理：execute()不提供异常处理机制，异常会被默认处理，而submit()通过Future.get()可以捕获和处理异常。
+* 使用场景：
+  * 如果你不关心任务的结果，也不需要处理可能出现的异常，execute()足够使用。eg 日志记录、状态更新
+  * 如果你需要获取任务的结果或处理异常，使用submit()；eg 计算任务、网络请求
+
+#### 线程池关闭 shutdown() vs. shutdownnow()
 
 可以通过shutdown()或者shutdownNow()
 
