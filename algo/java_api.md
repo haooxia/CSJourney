@@ -5,8 +5,9 @@
   - [Arrays](#arrays)
   - [ArrayList](#arraylist)
   - [LinkedList](#linkedlist)
-  - [HashSet / unordered\_set](#hashset--unordered_set)
-  - [HashMap / unordered\_map](#hashmap--unordered_map)
+  - [HashSet](#hashset)
+  - [HashMap](#hashmap)
+    - [遍历HashMap](#遍历hashmap)
   - [String](#string)
   - [StringBuilder](#stringbuilder)
   - [Stack-about](#stack-about)
@@ -177,7 +178,7 @@ Arrays.sort(arr, (int[] o1, int[] o2) -> {
 ## ArrayList
 
 * `List<Integer> list = new ArrayList<>();`
-* `list.add(ele)`
+* `list.add(ele)`==☆==
 * `list.add(idx, ele)`
 * `addFirst()`, `addLast()`: since Java 21
 * `list.get(idx)` ==没有[]==，不是charAt()
@@ -221,15 +222,15 @@ int[] array = list.stream().mapToInt(Integer::intValue).toArray();
 * removeFirst(), removeLast()
 * getFirst(), getLast()
 
-## HashSet / unordered_set
+## HashSet
 
 哈希表用来快速判断(O(1))一个元素是否出现在集合中
 
 * `Set<String> set = new HashSet<>();`
   * 通常使用接口定义，而非`HashSet<String> set = new HashSet<>()`
 * 下面的方法都是实现的Collection Interface
-* `set.add("element")`
-* `set.contains("element")`: 对应cpp中find
+* `set.add("element")` ==☆==
+* `set.contains("element")`: 对应cpp中find ==☆==
   * `set.find("element") != set.end()`
 * `set.size()`
 * `set.isEmpty()`
@@ -243,18 +244,23 @@ for (String ele : set) {
 }
 ```
 
-## HashMap / unordered_map
+## HashMap
 
 * `Map<String, Integer> map = new HashMap<>();`
-* `map.put(key, 1)`
-* `map.get(key)`
-* `map.getOrDefault(key, 0): 获取key的value，如果不存在返回0`
-* `map.containsKey(key)`
+* `map.put(key, value)` ==☆==
+* `map.get(key)` ==☆==
+* `map.getOrDefault(key, 0): 获取key的value，如果不存在返回0` ==☆==
+  * `map.containsKey(key) ? : map.get(key) : 0;`
+* `map.put(key, map.getOrDefault(key, 0))`: 不存在置为0，存在用当前值更新
+  * `map.computeIfAbsent(key, key->0)`: 不存在置为0，存在不动
+* `map.containsKey(key)` ==☆==
 * `map.remove(key)`
-* `map.size()`
-* `map.isEmpty()`
-* `map.containsValue(1)`
+* `map.size()` ==☆==
+* `map.isEmpty()` ==☆==
+* `map.containsValue(value)`
 * `map.clear()`
+* `map.computIfAbsent(key, k -> new ArrayList<>())`: 判断key是否存在，存在则返回对应value，不存在就new一个新的ArrayList
+  * `int shirtPrice = prices.computeIfAbsent("Shirt", key -> 280);`
 * `Set<String> keys = map.keySet()`
 * `Collection<Integer> values = map.values()`
 * `Set<Map.Entry<String, Integer>> entries = map.entrySet()`
@@ -281,15 +287,88 @@ for (int c: nums)
   map.put(c, map.getOrDefault(c, 0)+1);
 ```
 
+### 遍历HashMap
+
+* Node实现了`Map.Entry<K,V>`接口（实现了`getKey(), getValue()`）;
+* 底层会自动创建一个存储了Entry对象的entrySet集合`Set<Map.Entry<K,V>>`，这个Set就支持使用iterator遍历了
+* `Map.Entry`中存储的key和value实际是Node中key和value的**引用**，因为Node实现了Map.Entry接口，所以可以将Node对象赋给该接口（多态）
+* 为了方便操作，除了`Set<Map.Entry<K,V>> entrySet()`外还有`Set<K> keySet()`和`Collection<V> values()`
+
+![picture 0](../images/b06d6f848e2baacd03f04480bedc4a14067edbb2c2d817e74827d2f089c3dafe.png)  
+
+---
+
+* 不同视角: 灵活；
+  * entrySet()返回一个包含所有Map.Entry<K,V>对象的**Set** (`Set<Map.Entry<K,V>> entrySet()`)，可以通过.entrySet().iterator()来遍历Map；即it.getKey(), it.getValue();
+  * keySet()返回一个包含所有key的**Set** (`Set<K> keySet()`)，可以通过.keySet().iterator()来遍历获取key;
+  * values()返回一个包含所有value的**Collection** (`Collection<V> values()`)，可以通过.values().iterator()来遍历value;
+    * 由于允许重复，所以不使用Set
+* 我们知道Set和Collection接口都实现了Iterable，所以都支持.iterator()，而Map接口并未实现Iterable.
+
+---
+
+遍历（6种）
+
+* entrySet(): 获取所有k-v
+* keySet(): 获取所有key
+* values(): 获取所有value
+* 基于enhanced-for或者iterator(basic-for) 各有三种
+* 基于**entrySet最高效**，因为使用keySet会多一次哈希查找操作
+
+```java
+HashMap<String, String> map = new HashMap<>();
+    map.put("key1", "value1");
+    map.put("key2", "value2");
+
+    // 第一组(最简单): 基于keySet: .get()
+    ////////////////推荐////////////////
+    // (1) enhanced for
+    for (String key : map.keySet()) {
+        System.out.println("key: " + key + " value: " + map.get(key));
+    }
+    ////////////////////////////////
+    // (2) original for (based on iterator)
+    Iterator<String> keyIt = map.keySet().iterator();
+    while (keyIt.hasNext()) {
+        String key =  keyIt.next();
+        String value = map.get(key);
+    }
+
+    // 第二组(最高效)：基于entrySet: getKey(), getValue()
+    /////////////最推荐/////////////////
+    // (1) enhanced for (TODO 推荐)
+    for (Map.Entry<String, String> entry : map.entrySet()) {
+        System.out.println("key: " + entry.getKey() + " value: " + entry.getValue());
+    }
+    ////////////////////////////////////
+    // (2) original for (based on iterator)
+    Iterator<Map.Entry<String, String>> it = map.entrySet().iterator();
+    while (it.hasNext()) {
+        Map.Entry<String, String> entry =  it.next();
+        System.out.println("key: " + entry.getKey() + " value: " + entry.getValue());
+    }
+
+    // 第三组: 基于values
+    // (1) enhanced for
+    for (String v : map.values()) {
+        System.out.println("value: " + v);
+    }
+    // (2) original for (based on iterator)
+    Iterator<String> valueIt = map.values().iterator();
+    while (valueIt.hasNext()) {
+        String value =  valueIt.next();
+    }
+```
+
 ## String
 
 * 初始化
   * `String str = "hello";` 直接赋值
   * `String str = new String("hello");` 使用构造函数
   * `char[] charArr = {'h', 'e'}; String str = new String(charArr);` 使用字符数组
-* `str.length()`
-* `str.charAt(idx)`
-* `str.toCharArray()`: String不可修改，char[]可以; String没有实现Iterable接口不可forEach，char[]可以
+* `str.length()` ==☆==
+* `str.charAt(idx)` ==☆==
+* `str.toCharArray()` ==☆==: String不可修改，char[]可以; String没有实现Iterable接口不可forEach，char[]可以
 * `new String(charArray)`: 将char[]转为String
 * `Integer.parseInt(str)`: String -> int, 不能解析则抛出异常
 * `Integer.toString(num)`: int -> String

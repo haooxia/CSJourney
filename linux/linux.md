@@ -64,6 +64,16 @@ Authoritative answer代表来DNS服务器(实际上是来自权威域名服务�
 
 查看TCP连接：`netstat -napt`
 
+查询端口占用：
+`lsof -i:8080`: 显示占用8080端口的进程信息
+`netstat -tunlp | grep 8080`:
+
+* t: 显示TCP协议相关的连接
+* u: 显示UDP协议相关的连接
+* n: 以数字形式显示地址和端口号,不进行域名解析 number
+* l: 仅显示正在监听的连接 listen
+* p: 显示相关联的进程ID和程序名称 program
+
 #### 网络性能指标
 
 1. 带宽：链路最大传输速率(bit/s)

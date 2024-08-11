@@ -6,20 +6,23 @@
       - [有什么拆分原则/目标](#有什么拆分原则目标)
     - [SpringCloud](#springcloud)
       - [你用过那些微服务组件 / 概括](#你用过那些微服务组件--概括)
-    - [注册中心](#注册中心)
-      - [为什么本项目需要注册中心](#为什么本项目需要注册中心)
-      - [注册中心功能](#注册中心功能)
-      - [注册中心原理](#注册中心原理)
-        - [负载均衡算法 load balancer](#负载均衡算法-load-balancer)
-    - [远程调用](#远程调用)
-      - [HTTP vs. RPC](#http-vs-rpc)
-      - [Feigh vs. Dubbo](#feigh-vs-dubbo)
-      - [Feign是什么](#feign是什么)
-      - [Feign如何实现负载均衡 / Ribbon](#feign如何实现负载均衡--ribbon)
-      - [常见负载均衡算法](#常见负载均衡算法)
-        - [一致性哈希算法](#一致性哈希算法)
-      - [服务端/七层负载均衡 vs. 客户端负载均衡](#服务端七层负载均衡-vs-客户端负载均衡)
+  - [注册中心](#注册中心)
+    - [为什么本项目需要注册中心](#为什么本项目需要注册中心)
+    - [注册中心功能](#注册中心功能)
+    - [注册中心原理](#注册中心原理)
+      - [负载均衡算法 load balancer](#负载均衡算法-load-balancer)
+  - [远程调用](#远程调用)
+    - [HTTP vs. RPC](#http-vs-rpc)
+    - [Feigh vs. Dubbo](#feigh-vs-dubbo)
+    - [Feign是什么](#feign是什么)
+    - [Feign如何实现负载均衡 / Ribbon](#feign如何实现负载均衡--ribbon)
+    - [常见负载均衡算法](#常见负载均衡算法)
+      - [一致性哈希算法](#一致性哈希算法)
+    - [服务端/七层负载均衡 vs. 客户端负载均衡](#服务端七层负载均衡-vs-客户端负载均衡)
+  - [网关](#网关)
 
+
+TODO: 最后的视频笔记中有讲解如何切换负载均衡算法（我可以改造为加权轮询或者一致性哈希算法
 
 ![picture 0](../../images/a396ef237ee36cc0eed530d09019288900bcd7917b03fbe564e64b1c442d7a5f.png)  
 
@@ -94,7 +97,7 @@ SpringCloud是java领域最全的微服务组件的集合
   * Netflix: Hystrix
   * Ali: Sentinel
 
-### 注册中心
+## 注册中心
 
 **本项目中**：将商品和购物车拆为了两个服务，然后我们查询购物车时需要查询商品信息，因为我们查询购物车列表时，要判断商品最新的价格和状态，这样可以让用户看到商品涨价及降价信息(price字段)，以及是否还有库存(stock库存字段)，我们单体架构时大家在一个服务中，可以直接本地调用item的查询功能，然而拆分之后，**我们如何在服务cart-service中实现对服务item-service的查询呢?**
 
@@ -117,17 +120,17 @@ ResponseEntity<List<ItemDTO>> response = restTemplate.exchange(
 );
 ```
 
-#### 为什么本项目需要注册中心
+### 为什么本项目需要注册中心
 
 如果item-service进行了多实例部署(不同ip和port)来应该高并发，那么RestTemplate是不知道要去哪个ip和port的，上面这个url没法写...等问题
 
 即**服务治理问题**：**调用者不知道服务提供者的地址，不知道该调哪个，临时部署的实例调用者也不知道** -> 所以我们需要注册中心/家政公司来统一管理
 
-#### 注册中心功能
+### 注册中心功能
 
 注册中心主要用于**注册服务和发现服务**，用来管理和维护分布式系统中各个服务的地址和元数据的组件；
 
-#### 注册中心原理
+### 注册中心原理
 
 > 服务中心占据一个ip和port：nacos的端口为`8848`
 > 一个服务提供者可能有多个**实例**，每个实例都对应一个ip和port(可以理解为对应着一台服务器吧，至少是一个应用程序)
@@ -151,7 +154,7 @@ ResponseEntity<List<ItemDTO>> response = restTemplate.exchange(
 * 当服务有新实例启动时，会发送注册服务请求，其信息会被记录在注册中心的服务实例列表
 * 当注册中心服务列表变更时，会**主动通知微服务**，更新本地服务列表（**推送变更**
 
-##### 负载均衡算法 load balancer
+#### 负载均衡算法 load balancer
 
 服务调用者必须利用负载均衡的算法，动态地从nacos中多个实例中挑选一个实例去访问
 
@@ -160,25 +163,25 @@ ResponseEntity<List<ItemDTO>> response = restTemplate.exchange(
 * IP的hash
 * 最近最少访问
 
-### 远程调用
+## 远程调用
 
 TCP协议：作为传输层协议，TCP提供可靠的字节流传输，但在使用时会遇到“粘包”问题，即接收端无法区分消息边界。为了解决这个问题，开发者需要在TCP之上定义自定义协议。于是诞生了RPC和HTTP。
 RPC 本质上不算是协议，而是一种调用方式。而像gRPC和Thrift这样的具体实现，才是协议，它们是实现了RPC调用的协议。目的是希望程序员能像调用本地方法那样去调用远端的服务方法。同时RPC有很多种实现方式，不一定非得基于TCP协议。
 
-#### HTTP vs. RPC
+### HTTP vs. RPC
 
 * 服务发现：HTTP使用DNS解析域名获取IP地址，而RPC通常依赖于中间服务（如Consul, nacos）来管理服务名与IP的映射
 * 连接管理：HTTP1.1保持长连接以复用，而RPC协议通常会使用连接池来提升性能。
 * 数据传输内容：HTTP主要传输字符串数据，使用JSON进行序列化，十分冗余；而RPC可以使用更高效的序列化协议（如Protobuf），性能上更优，这也是为什么企业内部微服务抛弃HTTP而使用RPC的主要原因
   * read: [link](https://javaguide.cn/distributed-system/rpc/http_rpc.html#http-%E5%92%8C-rpc-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB)
 
-#### Feigh vs. Dubbo
+### Feigh vs. Dubbo
 
 Feigh和Dubbo都是用于实现远程调用的框架，Feign基于HTTP，Dubbo基于RPC
 
 ![picture 6](../../images/ae955cee266f309bdddee1d0b48857498722d8f0046211c5b5aeaed8fbeee0e1.png)  
 
-#### Feign是什么
+### Feign是什么
 
 * Feign是一个声明式web客户端,它简化了使用基于 HTTP 的远程服务的开发。
   * > 声明式接口：开发者只需定义一个接口，并通过注解来描述HTTP请求的细节。Feign会根据这些定义自动生成相应的实现类。
@@ -221,16 +224,13 @@ OpenFeigin/Feign的工作原理:
 * **负载均衡**：loadBalancer.choose()会通过Ribbon提供的默认**负载均衡**算法从注册中心中挑选一个实例/节点(将`item-service`负载均衡为`ip+port`)，然后重构URI即可，然后下一步发送http请求
 * 响应结果处理: 请求返回后,Feign 会根据接口声明的返回值类型,自动将响应结果转换为对应的对象
 
-
-
-
-#### Feign如何实现负载均衡 / Ribbon
+### Feign如何实现负载均衡 / Ribbon
 
 Ribbon是Netflix开源的一个**客户端负载均衡器**，可以与Feign无缝集成。Ribbon通过**从服务注册中心获取可用服务列表**，并通过**负载均衡算法**选择合适的服务实例进行请求转发，实现**客户端**的负载均衡。
 
 OpenFeign默认采用RoundRibbonLoadBalancer
 
-#### 常见负载均衡算法
+### 常见负载均衡算法
 
 > 负载均衡器 load balancer: Ribbon/Gateway; 一般都支持下面的算法
 
@@ -249,7 +249,7 @@ OpenFeign默认采用RoundRibbonLoadBalancer
   * 问题：如果节点数量发生了变化，也就是在对系统做扩容或者缩容时，**必须迁移改变映射关系的数据**，否则会出现查询不到数据的问题；这个迁移成本太高了
 * **一致性哈希算法**：解决了哈希算法在服务器数量变化后哈希值会落到不同服务器上的问题
 
-##### 一致性哈希算法
+#### 一致性哈希算法
 
 一致哈希算法也用了取模运算，但与哈希算法不同的是，哈希算法是对节点的数量进行取模运算，而一致哈希算法是对$2^{32}$进行取模运算（即所谓哈希环）
 ![picture 8](../../images/5ae2f5fa08faf82705feed7a3d020648c782fbc7298cbd859de0eb0edcc2de2d.png){width=40%}
@@ -274,7 +274,7 @@ OpenFeign默认采用RoundRibbonLoadBalancer
 解决方法：不再将真实节点映射到哈希环上，而是**将虚拟节点映射到哈希环上**，**并将虚拟节点映射到实际节点**，所以这里有「两层」映射关系。
 ![picture 10](../../images/bcb7570d2999addf8d2df4103224156643fd25d7742a1fc0eeee362872422151.png){width=40%}
 
-#### 服务端/七层负载均衡 vs. 客户端负载均衡
+### 服务端/七层负载均衡 vs. 客户端负载均衡
 
 主要是**部署位置和控制权**不同：
 
@@ -291,3 +291,8 @@ OpenFeign默认采用RoundRibbonLoadBalancer
 
 * Netflix Ribbon: 更全面；Nacos中集成了Ribbon
 * Spring Cloud Load Balancer
+
+## 网关
+
+> 建议再看一遍[link](https://www.bilibili.com/video/BV1S142197x7?t=538.5&p=58)
+

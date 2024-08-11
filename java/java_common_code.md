@@ -9,6 +9,7 @@
       - [Executors.FixedThreadPool](#executorsfixedthreadpool)
       - [ThreadPoolExecutor](#threadpoolexecutor)
     - [按序执行三个线程](#按序执行三个线程)
+    - [基于atomicLong设计高并发的计数器](#基于atomiclong设计高并发的计数器)
   - [生产者消费者问题](#生产者消费者问题)
     - [实现](#实现)
     - [应用场景](#应用场景)
@@ -213,6 +214,8 @@ public class JoinTest {
     }
 }
 ```
+
+### 基于atomicLong设计高并发的计数器
 
 ## 生产者消费者问题
 
