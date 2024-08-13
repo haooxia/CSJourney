@@ -175,6 +175,10 @@ Arrays.sort(arr, (int[] o1, int[] o2) -> {
 });
 ```
 
+注意事项：
+
+* 不允许 `return {};` 建议改为 `return new int[0];`
+
 ## ArrayList
 
 * `List<Integer> list = new ArrayList<>();`
@@ -245,6 +249,10 @@ for (String ele : set) {
 ```
 
 ## HashMap
+
+> 注意：
+> `Map<Integer, List<Integer>> map = new HashMap<>();`正确
+> `Map<Integer, List<>> map = new HashMap<>();`错误 你指定泛型类型的时候 不能再整个泛型了吧
 
 * `Map<String, Integer> map = new HashMap<>();`
 * `map.put(key, value)` ==☆==

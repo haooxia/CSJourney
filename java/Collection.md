@@ -380,9 +380,12 @@ methods (定义了Collection,Iterable的方法，似乎基本只有Collection的
 
 ### HashSet vs. LinkedHashSet vs. TreeSet
 
+> HashSet是不会自动排序的
+
 * 都是Set接口的实现类，元素唯一，都不是线程安全的
 * 主要区别于底层数据结构：HashSet底层是哈希表(基于HashMap实现)；LinkedHashSet底层是双向链表+哈希表，元素的插入取出符合FIFO；TreeSet底层是红黑树，元素有序（可自然排序or定制排序
 * HashSet用于无需保证元素插入和取出顺序的场景，LinkedHashSet用于需要保证FIFO的场景，TreeSet用于支持元素自定义排序的场景
+  * TreeSet的add时间复杂度是`O(logn)`, HashSet的add是`O(1)`
 
 ### HashSet
 
