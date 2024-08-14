@@ -68,7 +68,7 @@ TODO：
 
 * ReentrantLock底层原理、是如何实现可重入的
 * 掌握AQS底层原理
-* 为什么wait和notify要在同一个synchronized块内
+* synchronized锁升级过程
 
 ## 线程基础
 

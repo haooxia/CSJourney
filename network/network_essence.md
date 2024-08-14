@@ -22,6 +22,7 @@
     - [HTTPS](#https)
     - [HTTPS vs. HTTP](#https-vs-http)
     - [Cookie vs. Session](#cookie-vs-session)
+    - [Cookie vs. LocalStorage](#cookie-vs-localstorage)
   - [三、TCP](#三tcp)
     - [TCP vs. UDP](#tcp-vs-udp)
       - [为什么DNS基于UDP](#为什么dns基于udp)
@@ -352,20 +353,19 @@ HTTPS在HTTP和TCP层之间添加`SSL/TLS`协议，解决了HTTP的不安全：*
 
 ### Cookie vs. Session
 
-> Cookie和Session不是应用层协议,是用于在HTTP这个应用层协议的基础上实现状态管理的机制。
+> Cookie和Session不是应用层协议,是用于在HTTP这个应用层协议的基础上**管理用户的状态和身份**
 
-它们分别是什么？
 
-- Cookie和Session都用于**管理用户的状态和身份**, Cookie通过在客户端记录信息确定用户身份，Session通过在服务器端记录信息确定用户身份。
-- Cookie是存储在**浏览器**中的小型文本文件，用于在用户和服务器之间传递数据。通常，服务器会将一个或多个Cookie发送到用户浏览器，然后浏览器将这些Cookie存储在本地。服务器在接收到来自客户端的请求之后，就能够通过分析**存放于请求头的Cookie**得到客户端特有的信息，从而动态生成与该客户端相对应的内容。(注：url中的get参数和request headers没什么关系)
-- 客户端访问服务器的时候，服务器把客户端信息以某种形式**记录在服务器上**。这就是Session。Session主要用于维护用户登录状态、存储用户的临时数据和上下文信息等。
+- **存储位置**：Cookie数据存储在用户的浏览器/客户端中，当浏览器向服务器发送请求时，会自动附带Cookie中的数据。服务器在接收到来自客户端的请求之后，就能够通过分析**存放于请求头的Cookie**得到客户端特有的信息，从而动态生成与该客户端相对应的内容。Session数据存在服务器端，服务器为每个用户分配一个唯一的Session ID，这个id通常**通过cookie**的方式发给客户端, 客户端将sessionid存在cookie中, 客户端后续请求会带上这个id，服务器根据id查找对应的session数据。
+  - 服务器除了可以在Session中存储用户的身份信息，便于后续身份验证
+  - 还可以再Session中存储用户会话期间的临时数据和上下文信息
+- **数据容量**：单个Cookie大小限制一般为4KB。Session存储容量理论上不受限，取决于服务器的配置和资源
+- **安全性**：由于Cookie存储在用户浏览器中，因此可以被用户读取和篡改。相比之下，Session数据存储在服务器上，更难被用户访问和修改
+- **性能**：使用Cookie时，因为数据随每个请求发送到服务器，可能会**影响网络传输效率**，尤其是在Cookie数据较大时。使用Session时，因为数据存储在服务器端，每次请求都需要查询服务器上的Session数据，这可能会**增加服务器的负载**，特别是在高并发场景下。
 
-二者的区别：
+### Cookie vs. LocalStorage
 
-- 存储位置：Cookie数据存储在用户的浏览器中，而Session数据存储在服务器上
-- 数据容量：Cookie存储容量较小，一般为几KB。Session存储容量较大，通常没有固定限制，取决于服务器的配置和资源
-- 安全性：由于Cookie存储在用户浏览器中，因此可以被用户读取和篡改。相比之下，Session数据存储在服务器上，更难被用户访问和修改
-- 传输方式：Cookie在每次HTTP请求中都会被自动发送到服务器，而SessionID通常通过Cookie或URL参数传递
+Cookie 适合用于在**客户端和服务器之间传递数据**、跨域访问和设置过期时间，而 LocalStorage 适合用于在同一域名下的不同页面之间**共享数据、存储大量数据和永久存储数据**。
 
 ## 三、TCP
 
