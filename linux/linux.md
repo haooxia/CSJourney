@@ -2,7 +2,7 @@
 
 - [Linux](#linux)
   - [commands](#commands)
-    - [进程相关](#进程相关)
+    - [系统管理](#系统管理)
     - [网络相关](#网络相关)
       - [查询](#查询)
       - [网络性能指标](#网络性能指标)
@@ -11,11 +11,19 @@
 
 ## commands
 
-### 进程相关
+### 系统管理
 
-ps: 显示当前运行进程的快照
+* `ps`: 显示当前运行进程的快照，`ps -aux`显示所有进程
+* `top`: 实时显示进程动态
+* `df`: 显示文件系统的磁盘空间使用情况
+* `du`: 查看目录或文件的磁盘使用情况
+* `free`: 显示内存和交换空间的使用情况
+* `ifconfig`: 显示网络接口的配置和状态
+* `netstat`: 显示网络连接、路由表和网络接口统计，`netstat -tuln`查看所有监听的接口
+* `chmod`: 更改文件或目录的权限
 
-ps -ef: 显示进程详细信息，连同命令行
+
+**ps -ef**: 显示进程详细信息，连同命令行
 
 - UID: user ID of the process owner
 - PID: process ID, unique (>=2)
@@ -27,8 +35,8 @@ ps -ef: 显示进程详细信息，连同命令行
 - CMD: command that started the process
 
 ps -ef | grep python: 查看python进程
-ps au
-ps -aux: 显示所有进程更详细的信息，包括cpu和内存占用
+
+**ps -aux**: 显示所有进程更详细的信息，包括cpu和内存占用
 > a: show processes for all users
 > u: display the process's user/owner
 > x: 显示无控制终端的进程
@@ -43,14 +51,17 @@ ps -aux: 显示所有进程更详细的信息，包括cpu和内存占用
   - T: 停止
   - Z: 僵尸
 
-kill: 向进程发送信号
+**kill**: 向进程发送信号
 kil -l: 查询所有信号
 kill -9 [PID]: 使用SIGKILL强制杀死进程
 Ctrl-C: SIGINT: 终止该进程
 Ctrl-Z: SIGTSTP: 将前台的进程置于后台，并暂停；可以使用fg调到前台。
 
-netstat：显示网络连接
-可以查看对应的端口有没有被监听
+**chmod**: 更改文件或目录的权限，可以使用文本方法也可以用**八进制数表示法**
+![picture 0](../images/8cbcd4910b3aac0d2f20ae1ebe0b025963494931b219354e194d97bb2b135fcc.png){width=50%}
+
+chmod [{ugoa}{+-=}{rwx}] 文件/目录
++增加，-减少，=赋予； a(all)
 
 ### 网络相关
 
