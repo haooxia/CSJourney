@@ -12,7 +12,6 @@
   - [StringBuilder](#stringbuilder)
   - [Stack-about](#stack-about)
   - [Queue-about](#queue-about)
-    - [PriorityQueue](#priorityqueue)
 
 
 ![picture 1](../images/8c59864034ef6c2020329cd184d752e513b468797f89cba43cd3ed57ce597f0b.png)  
@@ -53,10 +52,19 @@ import java.util.*; // 导入常用的集合类，eg ArrayList, LinkedList, Hash
 ```java
 sc.hasNext() // 检查输入流中是否有下一个token(可以是任意类型)
 sc.hasNextInt() // 检查输入流中是否有下一个整数, 返回true/false
-sc.nextInt()
+sc.nextInt() // 注意 有时候需要使用sc.extLine()手动消费掉换行符；它会跳过空格和换行符 但不会跳过int后面的那个隐藏的换行符奥！
 sc.hasNextLine()
 sc.nextLine()
 ```
+记着has不会消费，只会检查；next会消费，有时候会消费少了有时候多了
+
+nextInt工作原理：
+
+* 读取整数：当调用nextInt()时，Scanner**会跳过空格和换行符，直到找到一个有效的整数**。它会将这个整数读取出来，**并将输入流指针移动到下一个非空白字符的位置**
+* 留存换行符：如果在调用nextInt()之后还有其他输入（如nextLine()），可能会遇到问题。**nextInt()不会消耗换行符（\n），这意味着在下次读取时，nextLine()会立即返回一个空字符串**，因为缓冲区中仍然有换行符
+
+![picture 0](../images/80f1087f52bac92d9025a843f687f927baea6aad054f2b7f22aa64f425b8c95c.png)  
+
 
 ```java
 import java.util.Scanner;
@@ -98,13 +106,26 @@ public class ListNode {
 
 ## Arrays
 
+* `Arrays.toString(nums);`: 打印输出
+* `Arrays.stream(nums).sum();`: 求和
+  * 不是`Arrays.sum(nums);`
+  * 也不是`nums.stream().sum()`
+* `Arrays.fill(nums, number);`: 将nums数组中所有元素填充为number
+* `int index = Arrays.binarySearch(nums, val);`: 二分查找之前需要是**有序数组**
+* `Arrays.sort(nums)`: 顺序排序
+* `Arrays.sort(nums, (a, b) -> b - a)`: 逆序排序
+* `Arrays.copyOf(nums, newLen)`: 深拷贝，可以指定了复制长度newLen
+* `Arrays.copyOfRange(nums, from, to)`: 指定区间拷贝
+* 不允许 `return {};` 建议改为 `return new int[0];`
+
+
 ```java
 int[] arr = {1,3,4,2,9,7};
 // 顺序排序
 Arrays.sort(arr);
 
 // 逆序排序（方法一）
-Arrays.sort(arr, Comparable.reverseOrder()); // 适用类型还不明确
+Arrays.sort(arr, Comparable.reverseOrder()); // 仅适用于引用数据类型，忘了吧
 
 // 逆序排序（方法二：匿名内部类并实现compare方法）
 Arrays.sort(arr, new Comparator<Integer>() {
@@ -118,19 +139,9 @@ Arrays.sort(arr, new Comparator<Integer>() {
 Arrays.sort(arr, (Integer a, Integer b) -> {return b - a;});
 // 进一步简化
 Arrays.sort(arr, (a, b) -> b - a);
-
-// 输出int[] nums
-Arrays.toString(nums);
-
-// 将nums数组中所有元素填充为number
-Arrays.fill(nums, number);
 ```
 
-注意：对于primitive array (eg int[]) comparator似乎不可用，目前是手撸逆序
-
-* `int index = Arrays.binarySearch(array, val);`: 二分查找之前需要是**有序数组**
-* `Arrays.copyOf(array, newLen)`: 深拷贝，可以指定了复制长度newLen
-* `Arrays.copyOfRange(array, from, to)`: 指定区间拷贝
+---
 
 ```java
 // int[]按照绝对值大小排序（由于Comparator只能与对象类型而非原始类型工作，所以必须转为Integer（很烦
@@ -138,18 +149,8 @@ int[] nums = {3, -1, 4, -1, 5, -9, 2, -6, 5, 3, -5};
         nums = IntStream.of(nums)
                 .boxed()
                 .sorted((o1, o2) -> Math.abs(o2) - Math.abs(o1))
-                .mapToInt(Integer::intValue).toArray();
-
-
-// 求和int[] nums
-Arrays.stream(nums).sum();
-
-// 错误示范
-Arrays.sum(nums);
-
+                .mapToInt(Integer::intValue).toArray()
 ```
-
----
 
 ```java
 // Arrays.sort()用于二维数组排序
@@ -174,10 +175,6 @@ Arrays.sort(arr, (int[] o1, int[] o2) -> {
     return o2[1] - o1[1]; // 然后再按第二列降序
 });
 ```
-
-注意事项：
-
-* 不允许 `return {};` 建议改为 `return new int[0];`
 
 ## ArrayList
 
@@ -467,17 +464,19 @@ Deque中stack相关的方法和Deque中的一般方法的对应关系：
 
 好好好 stack和queue都用这一句`Deque<Integer> st/que = new ArrayDeque<>();`
 
-### PriorityQueue
-
-使用Queue接口中的常见api就行了: `offer(), poll(), peek(), size()`
-
-前k个高频元素：[link](https://leetcode.cn/problems/top-k-frequent-elements/description/)
 
 ---
 
 * **Deque接口**支持同时**从两端添加或移除元素**，Deque接口的实现类可以被当做队列FIFO使用也可以当做栈LIFO使用
 * Deque有一堆方法：
+  * addFirst()/Last()
+  * removeFirst()/Last()
+  * getFirst()/Last() 足矣
+
+---
 ![picture 3](../images/6f57d93b8e1db2b779f6b7594d7b9501cf233291126415a14ae33e6f1919d5d3.png)  
 
-Deque中queue相关的方法和Deque中的一般方法的对应关系：
+Deque中queue相关的方法和Queue中的一般方法的对应关系：
 ![picture 4](../images/5d9c9b19538e645beb3acd825b932665a1a24bf2ce7ffe47bad01537351421d9.png)  
+
+有时候也是需要用一下双端队列的，当你既想两头出入的时候

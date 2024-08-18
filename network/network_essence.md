@@ -21,8 +21,11 @@
     - [HTTP特性](#http特性)
     - [HTTPS](#https)
     - [HTTPS vs. HTTP](#https-vs-http)
-    - [Cookie vs. Session](#cookie-vs-session)
-    - [Cookie vs. LocalStorage](#cookie-vs-localstorage)
+    - [通关 Cookie, Session, Token (JWT)](#通关-cookie-session-token-jwt)
+      - [详解JWT](#详解jwt)
+        - [服务端如何校验客户端发来的JWT](#服务端如何校验客户端发来的jwt)
+      - [Cookie vs. Session](#cookie-vs-session)
+      - [Cookie vs. LocalStorage](#cookie-vs-localstorage)
   - [三、TCP](#三tcp)
     - [TCP vs. UDP](#tcp-vs-udp)
       - [为什么DNS基于UDP](#为什么dns基于udp)
@@ -351,19 +354,50 @@ HTTPS在HTTP和TCP层之间添加`SSL/TLS`协议，解决了HTTP的不安全：*
 - HTTP的默认端口号是80，HTTPS是443
 - HTTPS协议需要向 CA（证书权威机构）申请数字证书，来保证服务器的身份是可信的
 
-### Cookie vs. Session
+### 通关 Cookie, Session, Token (JWT)
+
+> 然后三者都是用来**维持状态信息**的，也即**会话跟踪技术**，登录只是一个应用
+
+* 首先http是无状态的，每个请求都是独立的，所以服务器无法判断多次请求是否来自同一浏览器，故而我们需要**会话跟踪技术**
+* 会话跟踪就是让服务器去判断多个请求是否来自同一浏览器，目的是**同一次会话的多次请求之间共享数据**(很妙)
+
+---
+
+* **nothing**: 以登录为例，你登录时发送账户和密码到服务端经过鉴权/校验之后，如果正确服务端返回账户和密码，然后你后续的任何请求还需要带上账户和密码，很显然，既不安全又麻烦
+* **Cookie**: 同样客户端登录发送用户名和密码到服务端经过鉴权，如正确服务端返回一个cookie(通过响应头`Set-Cookie`实现，eg `Set-Cookie: username=xiaoming`)，浏览器存下，后续所有请求在请求头中都会**自动带上cookie**(`Cookie`字段)，服务端通过解析你这个cookie就可以验证身份，就可以生成与该客户端相对应的内容(即可以维持用户状态)。但也很显然，如果服务端返回的是`username`的话，我客户端是可以篡改cookie中的username字段的内容的，服务端这就能给我提供其他用户的内容了，风险很大。当然我服务端可以加密，但一旦加密规则泄漏，也没啥用
+  * cookie容量限制为4KB；用户还可以禁掉cookie
+  * 可能被网络窃听，在传输过程中被偷听，然后就可以伪造你构造请求了
+* **Session**: 同样客户端发用户密码服务端鉴权，如正确服务端存下这个数据，即用户和密码(**亦或者是其他会话数据**)，然后通过`Set-Cookie`字段返回一个`SessionID`(Session是基于Cookie的)，浏览器存下SessionID，下次请求会自动带上(同样是`Cookie`字段)，服务端就可以根据这个id查到对应的session会话数据了
+  * 存在服务端容量大很爽，可以存很多其他的会话的临时数据和上下文信息，但占用服务器资源
+  * **扩展性差(分布式集群)**，你一个用户信息只会存在一个服务器节点，当你下一次请求可能负载均衡到了其他节点，那会判定你没有登陆(你就带个sessionid过来，哥们这儿也没存你的数据啊)，所以**分布式集群情况下我们一般不用session了**(即我的点评用session共享数据，商城用jwt)
+  * 也可能被窃听...主要是用户不可以篡改了
+* **Token (JWT / JSON Web Token)**: Token就是个秘钥字符串，我们借助JWT规范规范(RFC 7519)；同样客户端发送用户密码服务端鉴权，如认证成功服务端会创建一个jwt字符串(include Header, Payload(你的用户名和密码是被加密到这儿了), Signature)传给客户端(eg 通过`token`字段)，客户端存下jwt，后续请求带上jwt(eg 通过`Authorization`字段)，后端就会解密token，然后检查Signature发现没篡改信息后，放行
+  * jwt存在客户端
+  * jwt是**无状态**的，无需在服务端存会话数据
+  * jwt是**自包含**的，jwt本身包含了所有必要的信息，所以便于分布式扩展
+  * jwt采用秘钥进行签名，确保令牌的完整性和真实性，比cookie和session更安全
+
+#### 详解JWT
+
+JWT = 头部Header + 载荷Payload + 签名Signature
+![picture 0](../images/c16c931d3195194e7ade5f07417151144912c1699e53c1f18724449f55331ba4.png)  
+
+##### 服务端如何校验客户端发来的JWT
+
+* 解析JWT，分割为三部分
+* 使用BASE64对header和payload**解码**，然后找到jwt指定的签名算法(header-alg)，然后**服务器选择算法相应的的秘钥对header+payload进行签名**
+* 比较这俩签名，如匹配则未篡改，登录校验成功
+
+#### Cookie vs. Session
 
 > Cookie和Session不是应用层协议,是用于在HTTP这个应用层协议的基础上**管理用户的状态和身份**
 
-
-- **存储位置**：Cookie数据存储在用户的浏览器/客户端中，当浏览器向服务器发送请求时，会自动附带Cookie中的数据。服务器在接收到来自客户端的请求之后，就能够通过分析**存放于请求头的Cookie**得到客户端特有的信息，从而动态生成与该客户端相对应的内容。Session数据存在服务器端，服务器为每个用户分配一个唯一的Session ID，这个id通常**通过cookie**的方式发给客户端, 客户端将sessionid存在cookie中, 客户端后续请求会带上这个id，服务器根据id查找对应的session数据。
-  - 服务器除了可以在Session中存储用户的身份信息，便于后续身份验证
-  - 还可以再Session中存储用户会话期间的临时数据和上下文信息
+- **存储位置**：Cookie将数据数据存在浏览器/客户端中，Session将数据存在服务端
 - **数据容量**：单个Cookie大小限制一般为4KB。Session存储容量理论上不受限，取决于服务器的配置和资源
 - **安全性**：由于Cookie存储在用户浏览器中，因此可以被用户读取和篡改。相比之下，Session数据存储在服务器上，更难被用户访问和修改
 - **性能**：使用Cookie时，因为数据随每个请求发送到服务器，可能会**影响网络传输效率**，尤其是在Cookie数据较大时。使用Session时，因为数据存储在服务器端，每次请求都需要查询服务器上的Session数据，这可能会**增加服务器的负载**，特别是在高并发场景下。
 
-### Cookie vs. LocalStorage
+#### Cookie vs. LocalStorage
 
 Cookie 适合用于在**客户端和服务器之间传递数据**、跨域访问和设置过期时间，而 LocalStorage 适合用于在同一域名下的不同页面之间**共享数据、存储大量数据和永久存储数据**。
 

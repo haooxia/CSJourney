@@ -334,7 +334,7 @@ public class BubbleSort {
         int n = nums.length;
         for (int i=0; i<n; ++i) { // 最多做n轮"冒泡操作"
             boolean flag = false; // note 优化：判断本轮是否做了交换操作
-            for (int j=0; j<n-1; ++j) { // 注意冒泡的每一轮都需要从头开始 (因为最后才是有序的
+            for (int j=0; j<n-1-i; ++j) { // 注意冒泡的每一轮都需要从头开始 (因为最后才是有序的，所以j也不用走到底
                 if (nums[j] > nums[j+1]) {
                     int tmp = nums[j];
                     nums[j] = nums[j+1];

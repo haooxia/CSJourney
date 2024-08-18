@@ -59,3 +59,38 @@ Spring框架核心特性包括：
 ### 对IoC的理解
 
 IoC是一种设计思想，IoC意味着将你设计好的对象交给容器控制，
+
+## SpringMVC
+
+### SpringMVC的核心组件
+
+* `DispatcherServlet`：前端控制器，核心的中央处理器，负责接收请求、分发，并给予客户端响应；是整个流程控制的**核心**，控制与调度
+* `HandlerMapping`：处理器映射器，根据请求URL去匹配查找能处理的**Handler**，并会**将请求涉及到的拦截器和Handler一起封装**成一个`HandlerExecutionChain`处理器执行链对象
+  * `Handler`: 处理器，完成具体的业务逻辑
+  * `HandlerInterceptor`: 处理器拦截器，是个接口，可以拦截一些请求；你可以额外添加拦截器
+    * 定义拦截器时，需要在配置类中实现`addInterceptors`方法注册拦截器，并设定拦截的路径范围
+    * 可以创建多个拦截器，然后按照注册顺序进行执行
+    * HandlerInterception中有三个方法
+      * `preHandle`: 在请求处理程序执行之前调用。用于**执行权限验证**、日志记录等操作。如果该方法返回**false，则请求将被中断，后续的拦截器和处理程序将不会被执行**(很妙)
+      * `postHandle`: 在**请求处理程序执行之后、视图渲染之前**调用。可以对请求的结果进行修改或添加额外的模型数据。
+      * `afterCompletion`: 在整个请求完成之后调用，包括视图渲染完毕。可用于进行**资源清理**等操作。
+* `HandlerAdapter`：处理器适配器，**Handler执行业务方法之前，需要进行一系列的操作**，包括表单数据的验证、数据类型的转换、将表单数据封装到JavaBean等，这些操作都是由交给他，开发者只需将注意力集中业务逻辑的处理上，DispatcherServlet通过HandlerAdapter执行不同的Handler
+<!-- * `ModelAndView`: 装载了模型数据和视图信息，作为Handler的处理结果，返回给DispatcherServlet -->
+* `ViewResolver`：视图解析器，根据Handler返回的逻辑视图，解析并渲染真正的视图，并传递给DispatcherServlet响应客户端
+
+![picture 2](../images/7c7b615ad6412412e4ef5c8d68ac0163a54f11a304b01a3da882d75a4bf3262d.png)  
+
+
+### SpringMVC工作原理 / 流程
+
+![picture 1](../images/4dc74e7703cf69f845e608769181ee77faaf9e2672a6fbab7a13d1d56b50aca1.png)
+
+1. **用户请求**：用户/客户端/浏览器发送请求，DispatcherServlet拦截请求
+2. **请求拦截**：DispatcherServlet接收到请求后，并不直接处理，而是将请求信息传递给HandlerMapping。HandlerMapping根据请求的URL来查找能处理该请求的Handler（我们常说的Controller），并会**将请求涉及到的Interceptor和Handler一起封装**为一个处理器执行链对象`HandlerExecutionChain`
+3. **处理器适配**：DispatcherServlet调用HandlerAdapter适配器执行具体的Handler
+   1. HandlerAdapter通过适配器模式，使得不同类型的处理器可以被统一调用
+4. **业务逻辑处理**：Handler完成对用户请求的处理后，会返回一个ModelAndView对象给DispatcherServlet
+   1. ModelAndView顾名思义，包含了数据模型以及相应的视图的信息。Model是返回的数据对象，View是个逻辑上的View
+5. **视图解析**：ViewResolver会根据逻辑View查找实际的View
+6. **渲染视图**：DispatcherServlet使用解析得到的视图对象，将模型数据填充到视图中，完成视图的渲染，并将结果返回给用户
+7. 把View返回给请求者（浏览器）

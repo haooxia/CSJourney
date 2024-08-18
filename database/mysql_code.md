@@ -349,8 +349,19 @@ revoke 权限列表 on 数据库名.表名 from 'userName'@'hostName'; -- 撤销
 
 ![picture 16](../images/6f9a784313a27ae3cfe11d2c7ceca5e812c3a82c0eb8da02b4411f2c533eb052.png){width=300}
 
-![picture 17](../images/c48d9cb9052a0a6cb887476398a72ea04435f8bcd259d25eccda26b6a0ff5463.png){width=600px}
-> 左外和右外都包含交集
+---
+
+* 基于连接类型的查询
+  * inner join（内连接）: 返回两个表中匹配条件的**交集**记录
+  * **left join（左外连接）**: 返回左表的所有记录和右表中满足条件的记录
+  * **right join（右外连接）**: 返回右表的所有记录和左表中满足条件的记录
+    * 右外调个顺序就变成左外了: `A right join B -> B left join A`
+  * full join（全连接）: 返回两个表中的所有记录，不论是否匹配。（MySQL 通过 UNION 实现）
+
+![picture 23](../images/47ea5e100170562d7b0755920e99efcac575e55676b596cb4dec798e3bee7099.png){width=50%}
+<!-- UNION 合并查询: 将多个 SELECT 语句的结果集合并为一个结果集。 -->
+
+
 
 #### 内连接
 
