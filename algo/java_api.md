@@ -388,17 +388,17 @@ HashMap<String, String> map = new HashMap<>();
 
 * `StringBuilder str = new StringBuilder("hello");` **创建**
 * `str.length()`
-* `str.append()`**拼接**字符串。。。不可以使用+和concat
+* `str.append()` ==☆== **拼接**字符串。。。不可以使用+和concat
   * string的+和concat每次都会创建新的string对象
 * `str.toString()`: StringBuilder->String
 * `char[] strChar = str.toString().toCharArray();// 服啦`
 * `str.charAt(idx)`
 * `str.setCharAt(idx, value)`
-* `str.deleteCharAt(idx)`
-* `str.delete(begin, end); // [)`
+* `str.deleteCharAt(idx)` ==☆==
+* `str.delete(begin, end); // [)` ==☆==
 * `str.delete(begin, begin+cnt); // [)`
 * `str.reverse()`: 整体反转
-* `str.substring(begin, end); //[)` 返回一个**string**
+* `str.substring(begin, end); //[)` ==☆== 返回一个**string**
 
 cpp中的`reverse(str.begin(), str.end());`在java中竟然没有对应函数：
 

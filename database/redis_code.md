@@ -155,7 +155,7 @@ sdif
 
 ### SortedSet / ZSet
 
-Redis的SortedSet是一个可排序的set集合，与Java中的TreeSet有些类似，但底层数据结构却差别很大。SortedSet中的**每一个元素都带有一个score属性**，可以基于score属性对元素排序，底层的实现是一个跳表（SkipList）加 hash表。
+Redis的SortedSet是一个可排序的set集合，与Java中的TreeSet有些类似，但底层数据结构却差别很大。SortedSet中的**每一个元素都带有一个score属性**，可以基于score属性对元素排序，底层的实现是一个**跳表（SkipList）+ hash表**。
 
 可排序、不重复、查询速度快
 

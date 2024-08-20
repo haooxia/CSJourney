@@ -56,6 +56,9 @@
 TODO
 * 说一下红黑树的特点
 * 判断一个集合类是否为线程安全的机制是什么？[fail-fast源码](https://javabetter.cn/sidebar/sanfene/collection.html#_5-%E5%BF%AB%E9%80%9F%E5%A4%B1%E8%B4%A5-fail-fast-%E5%92%8C%E5%AE%89%E5%85%A8%E5%A4%B1%E8%B4%A5-fail-safe-%E4%BA%86%E8%A7%A3%E5%90%97)
+* synchronized原理
+* 锁升级，锁膨胀，偏向锁（synchronized
+* 
 
 
 ## 概括
