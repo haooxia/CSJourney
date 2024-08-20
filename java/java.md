@@ -5,7 +5,6 @@
   - [基础-1](#基础-1)
     - [基础](#基础)
       - [为什么说java是编译与解释并存](#为什么说java是编译与解释并存)
-      - [AOT是什么](#aot是什么)
       - [java vs. c++](#java-vs-c)
       - [java只有值传递](#java只有值传递)
     - [keywords](#keywords)
@@ -46,6 +45,7 @@
     - [注解 反射 动态代理](#注解-反射-动态代理)
     - [API vs. SPI](#api-vs-spi)
     - [序列化与反序列化](#序列化与反序列化)
+    - [泛型](#泛型-1)
 
 TODO
 
@@ -70,54 +70,48 @@ TODO
 * Java SE vs. Java EE vs. Java ME
   * Java SE(Standard): 包含JVM和Java核心类库等核心组件
   * Java EE(Enterprise): 基于Java SE，包含了支持企业级应用程序开发和部署的标准和规范(servlet, JSP, JDBC, ...)
-  > Java ME(Micro): 用于开发嵌入式电子产品的应用程序，手机冰箱空调等
 * 源代码 vs. 字节码
   * 源代码 `test.java`: 计算机无法直接理解和执行
   * 字节码 `test.class`: `javac`编译后的**中间表示形式**，**平台无关**，可以实现“一次编写、到处运行” (write once, run anywhere)
     * C语言编译后会直接生成特定平台的机器码，可以直接在该平台运行。 `gcc -> a.out`
     * 而java编译生成的字节码文件**不是可以直接执行的机器码**，需要通过jvm解释执行
-      * ![picture 2](../images/863c34fb681c5a4420aaca3760482ac0383ee6b8fc0737e070cafa6073c4c0ae.png)  
-    * 一次编写到处运行 和 一次编译到处运行 本质上是一样的，前者是**强调开发者只需要编写一次**(编写费程序员脑子)java code，无需针对不同平台修改代码；后者**强调只需编译一次**(编译耗cpu)生成class文件，可以在任何安装了对应版本jvm的平台上运行，无需重新编译(无需重新编译还是挺吊的)
-      * cpp有时不同平台会有不同接口，比如socket(但我们通常说.c是跨平台的(大部分情况下是**一次编写，到处编译**的))；其次cpp在不同平台编译产生的结果还不同(.out和.exe)
 * JVM vs. JDK vs. JRE
-  * JVM/java虚拟机: 解释并执行java字节码，jvm还负责java程序的内存管理，包括垃圾回收机制。不同平台有不同的jvm，如此jvm便屏蔽了底层平台的差别，一份编译后的class字节码文件就可以run anywhere.
+  * JVM: ==**解释并执行java字节码**==；负责java程序的**内存管理**，包括垃圾回收机制。不同平台有不同的jvm，如此jvm便屏蔽了底层平台的差别，一份编译后的class字节码文件就可以run anywhere.
     * 每个公司/个人都可以开发自己的jvm
   * JRE: java runing environment = JVM + java基础类库(eg, lang, io, util, math, reflect...)；JRE是运行java程序所需的内容集合（即你想要运行java程序，jre就够了，无需jdk
   * JDK: java development kit = JRE + Java tools (编译java源码的编译器javac, javadoc（文档注释工具）, jdb（调试器）, jconsole（基于JMX的可视化监控⼯具）, javap（反编译工具）etc)，工具齐全，供开发者编码使用。
-  <!-- * ![picture 0](../images/fb9e4431103917c964c5c06948db3727b595d9572409876f9ead4b313bb03b74.png)   -->
-  * ![picture 1](../images/47b7966847e929bc03b3a6d2d131ba888a7ad8c7ae38f8f337648a654ec17679.png)  
 
 #### 为什么说java是编译与解释并存
 
 首先高级语言按照程序的执行方式分为：
 
-* 编译型：通过编译器将源码**一次性翻译**成可被特定平台执行的机器码；执行速度快，开发效率低。e.g., c, cp, go, rust...
-  * 执行时直接执行机器码当然快咯，编译时候都给全局优化好了；而解释型语言需要在运行时逐行翻译源码，那当然慢（而且还缺乏全局优化）；开发低效是因为每次改完代码都得重新编译，那大型项目确实难顶...而且编译后的程序通常只能在特定平台运行
+* 编译型：通过编译器将源码**一次性翻译**成可被特定平台执行的机器码；执行速度快，开发效率低。e.g., c, cpp, go, rust...
+  * 执行时直接执行机器码所以快；而解释型语言需要在运行时逐行翻译源码，那当然慢（而且还缺乏全局优化）；开发低效是因为每次改完代码都得重新编译，那大型项目确实难顶...而且编译后的程序通常只能在特定平台运行
 * 解释型：通过解释器**一句一句**将代码解释interpret为机器代码后再执行；开发效率高，执行速度慢。e.g., python, js, php...
 
 java**首先编译**：.java->.class字节码（将人类可读的源码编译为jvm可理解的中间代码
-**然后解释**：JVM逐行读取字节码，将其解释为机器码并执行
+**然后解释**：JVM逐行读取字节码，将其**解释为机器码并执行**
 所以兼具二者的优点吧
 
-即时编译JIT(Just-in-time compilation)：jvm引入jit来提高性能：JIT会在运行时将热点代码(频繁执行的代码)编译成本地机器码,以提高执行效率
+<!-- 即时编译JIT(Just-in-time compilation)：jvm引入jit来提高性能：JIT会在运行时将热点代码(频繁执行的代码)编译成本地机器码,以提高执行效率 -->
 
 一个典型的Java程序执行过程是:源代码 -> 编译器 -> 字节码 -> JVM解释执行/JIT编译执行
 
-#### AOT是什么
+<!-- #### AOT是什么
 
 > jdk9引入了一种新的编译模式AOT(Ahead of Time Compilation). 不同于JIT，AOT会在程序被执行之前编译为机器码，属于静态编译。AOT 避免了 JIT 预热等各方面的开销，可以提高 Java 程序的启动速度，避免预热时间长。
 >
 >* AOT的主要优势在于启动时间、内存占用和打包体积。JIT的主要优势在于具备更高的极限处理能力，可以降低请求的最大延迟。
->* AOT 编译无法支持 Java 的一些动态特性，如反射、动态代理、动态加载等，所以用不了Spring等框架。
+>* AOT 编译无法支持 Java 的一些动态特性，如反射、动态代理、动态加载等，所以用不了Spring等框架。 -->
 
 #### java vs. c++
 
 * 编译与解释不同
-  * cpp是编译型语言，直接编译生成可执行的机器码；java混合了编译型和解释型，编译之后仍然需要一个解释器来执行
+  * cpp是编译型语言，直接编译生成可执行的机器码；java混合了编译型和解释型，编译之后仍然需要jvm充当解释器来解释执行
 * 平台依赖性：cpp平台依赖，java平台独立
-  * cpp是一次编写到处**编译**，即不同平台编译结果不同（不同os甚至cpu使用的机器指令集不同）；java一次编写，到处**运行**
+  * cpp是一次编写到处**编译**，即不同平台、不用cpu指令集编译结果不同；java一次编写，到处**运行**
 * 内存管理不同
-  * java内存管理由jvm自动处理（包括GC，无需人来手动free；java中没有destructor；cpp需要手动delete，增加了内存泄漏的风险
+  * java内存管理由jvm(GC)自动处理（无需人来手动free；cpp需要手动delete，增加了内存泄漏的风险
 * 多重继承
   * java不支持多重继承，类只可以单继承。但java的接口可以多继承；c++允许多重继承
 * java没有指针，不可以直接访问内存，内存更安全
@@ -129,13 +123,9 @@ java**首先编译**：.java->.class字节码（将人类可读的源码编译�
 
 #### java只有值传递
 
-* 当传递基本数据类型时,是直接传递值的副本。方法内对参数的修改不会影响原始值。
-* 对于对象类型:虽然传递的是对象的引用,但这个**引用本身是按值传递的**。方法**接收的是引用的副本,而不是原始引用**。==方法内部可以修改引用的对象的属性（影响到原始对象），但不可以修改原始引用指向的对象（不可指向新对象）==
-* 传地址值的副本(java) vs. 传地址值(cpp)
-  * 前者接收**原始引用的副本**，方法内部可以通过该副本访问和修改对象，但不可修改调用者的原始引用，调用者的引用仍指向该对象（更加安全）
-  * 后者接收**原始引用**，方法内部不仅可以访问和修改对象，还可以修改该引用，使其指向新对象（即直接在方法内部修改调用者的变量
-
-> [source](https://javaguide.cn/java/basis/why-there-only-value-passing-in-java.html)
+* 当传递基本数据类型时,传递的是该类型的值的副本。方法内对形参的任何修改不会影响到实际参数。
+* 对于对象类型，传递的是**原始引用的副本**（即对象的内存对峙），而非**原始引用**(c++)。==方法内部可以通过该副本访问和修改对象的属性（影响到原始对象），但不可以修改原始引用指向的对象（不可指向新对象）==
+  * c++接收**原始引用**，方法内部不仅可以访问和修改对象，还可以修改该引用，使其指向新对象（即直接在方法内部修改调用者的变量(更不安全)
 
 ### keywords
 
@@ -152,9 +142,9 @@ java**首先编译**：.java->.class字节码（将人类可读的源码编译�
 
 #### Access Modifier
 
-* public: 开放，所有用户可直接调用；
-* protected: 保护，只有自己，以及自己的子女、同一个包内的朋友可以调用，其他人不行；
-* private: 私有，除自己外，其他人不可调用，自己子女也不可以；
+* public: 所有用户可直接调用；
+* private: 只有自己可以访问，子女朋友都不行
+* protected: 只有自己，子女以及同一个包内的朋友可以调用
 * default: 同一包内的类可见
 
 #### abstract final static
@@ -167,8 +157,6 @@ java**首先编译**：.java->.class字节码（将人类可读的源码编译�
   * 修饰引用类型变量时这个变量的值也是不能更改（**值为所指向的内存地址**），即不能指向其他对象，然而该引用的对象本身的内容是可以修改的（除非该对象本身不可变）
     * > 类似cpp的**指针常量**（指针本身是常量，指向不可改，但指向的值可改）
     * 注意==java中数组变量属于引用类型==，故而`final int[] arr = ...`;arr不可以指向另一个数组对象，但该数组的内容(元素的值)可以改变
-    * > 常量在定义时必须赋值，但可以在三个地方赋初值：(定义时，构造器中，代码块中)
-    * > 如果final修饰的属性是static，不能在构造器中赋值，只能在定义时或static代码块中。因为static属性是在实例化(ctor)之前，类加载时就要赋值。
 * ==static==
   * static修饰的方法称作静态方法，static修饰的变量称作类变量；static还可以修饰内部类和代码块
   * static不可修饰外部类、局部变量
@@ -183,18 +171,16 @@ java**首先编译**：.java->.class字节码（将人类可读的源码编译�
   * float(32b), double(32b): IEEE754
   * boolean(1bit)
   * char(**16bit**): unicode
-    * 提一嘴：char用单引号，String用双引号
-    * 注意cpp的char本质上是小整数(8bit, ASCII, -128~128 or 0-255)，而java中是16bit的unicde字符
-      * java的char参与算数运算时会提升为int类型，所以char和int运算结果为int，想要char的话，需要强制类型转换； `char ch = (char) ('0' + 1); int i = '0' + 1`
+    * 注意cpp的char本质上是小整数(8bit, ASCII, -128~128 or 0-255)，而java中是16bit的unicode字符
+      * java的char参与算数运算时会提升为int类型，所以char和int运算结果为int，想要char的话，需要强制类型转换； `char ch = (char) ('0' + 1);`
         * 而cpp中会自动隐式转换为char`char ch = '0'+1;`
 
 这8中类型对应列8中**包装类型**Warpper: Byte, Short, Integer, Long, Float, Double, Boolean, Character
 
 #### 基本类型 vs. 包装类型
 
-* 用途层面：**方法参数**、==对象属性==常常使用包装类型来定义变量。局部变量常常使用基本数据类型（性能考虑+简洁）。
+* 用途层面：**方法参数**、==对象属性==常常使用包装类型来定义变量。局部变量常常使用基本数据类型（性能考虑+简洁）
   * 包装类型可用于泛型，基本类型不可。
-  * but, 对象属性使用基本类型感觉也挺常见的
 * 存储方式：基本类型的局部变量存在jvm栈中，基本类型的non-static成员变量存在jvm的堆中。而**包装类型属于对象类型**，均存在堆中。
   * 注意基本类型未必都存在stack中
 * 占用空间：基本类型更小，对象类型有个对象头Object Header（存储对象的元数据信息: 标记字段mark word：hashcode, 锁状态标志, GC标记等；类型指针(用于确定对象类型)） (the size of object header is about 8-12B)
@@ -206,8 +192,8 @@ java**首先编译**：.java->.class字节码（将人类可读的源码编译�
 
 * autoboxing: primitive type -> wrapper: `Integer i = 10;`
   * 等价于`Integer i = Integer.valueOf(10);`
-  * jdk5引入自动性（底层调用`.valueOf()`），之前就需要手动；
-  * 还有一种方式创建Integer: `Integer i = new Integer(10);`j
+    * jdk5引入自动性（底层调用`.valueOf()`），之前就需要手动；
+  * 还有一种方式创建Integer: `Integer i = new Integer(10);`
     * ==**new和valueOf()区别是什么？**==
     * new Integer(val): 即直接调用constructor, ==每次都会创建一个新Integer对象，不使用缓存机制== (java9中废弃); 底层自然不会调用valueOf(), 没什么鸟关系
     * Integer.valueOf(): 一个成员方法，超出缓存的值才会new一个新对象。
@@ -232,9 +218,9 @@ Java基本数据类型的包装类型很多都采用了缓存机制来提升性�
 * 补充：多处访问同一个Integer缓存对象实例时，不会出现问题，因为：
   * Integer对象是不可变的（类的设计便是如此，搞了个private的value，但没暴露修改方法）
 
-**详解Integer 缓存机制**：
+**详解Integer缓存机制**：
 创建Integer时，调用valueOf():
-IntegerCache.low = -128; IntegerCache.high = 127
+`IntegerCache.low = -128; IntegerCache.high = 127`
 所以在[-128, 127]之间并没有真的new一个Interger，否则会new；
 内部缓存了个Interger数组吧，len=256
 
@@ -245,8 +231,6 @@ public static Integer valueOf(int i) {
     return new Integer(i);
 }
 ```
-
-![picture 4](../images/4e2e648545fd77162046c66979434868e8bcd6a6de5c8a54c942f3044c9d4a54.png)  
 
 #### other question
 
@@ -628,3 +612,12 @@ Exception vs. Error
 * 常见的序列化协议：Kryo, Hessian, Protobuf, ProtoStuff
 
 ![picture 12](../images/791df1b2ed7d8cd3e88af425cc2d663d17c7321f7361da9980ad1eee9ce0ae15.png)  
+
+### 泛型
+
+泛型提供了一种机制，使得**类、接口和方法**可以操作不同的数据类型
+
+作用：
+
+* 代码复用：适用于多种数据类型执行相同的代码，比如 int, float, double的加法
+* **编译时类型检查**，避免了运行时类型转换错误
