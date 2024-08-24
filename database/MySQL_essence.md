@@ -71,6 +71,7 @@ NoSQL (Non-SQL): 非关系型数据库, 存储方式可以是JSON文档、哈希
 **选择SQL还是NoSQL?**
 
 关系型数据库支持ACID (原子性，一致性，隔离性和持续性)。相对而言，NoSQL采用更宽松的模型BASE， 即基本可用(Basically Available)，软状态(Soft stat)和最终一致性(Eventual Consistency)
+> BASE详见`microService.md`
 
 * 选择哪种模型取决于应用的具体需求。**ACID适合需要严格数据一致性的场景**，而**BASE则适合需要高可用性和扩展性的场景**。
   * **NoSQL数据之间无关系，所以很容易扩展**，比如redis自带主从复制模式、哨兵模式、切片集群模式
@@ -329,7 +330,7 @@ CREATE INDEX index_product_no_name ON product(product_no, name)
 ### 索引下推优化 (Index Condition Pushdown)
 
 * 传统索引扫描：在没有ICP的情况下，MySQL存储引擎**使用索引**查找满足索引条件的记录，然后**从表中读取完整的行数据**返回给MySQL Server，MySQL Server **==再对==其他非索引条件进行过滤**。这意味着MySQL可能需要从表中读取大量数据，即使其中有很多不满足查询条件
-* 启用 ICP：当ICP被启用时，MySQL存储引擎会**在使用索引扫描数据的同时，尽可能地应用额外的查询条件（非索引条件）(由MySQL Server==下推==给存储引擎的部分条件)**。即在索引扫描阶段，MySQL就可以排除不满足非索引条件的记录，从而减少需要从磁盘中读取的数据量。这种方式减少了不必要的I/O操作，提高了查询效率
+* 启用 ICP：当ICP被启用时，MySQL存储引擎会**在使用索引扫描数据的同时，尽可能地应用额外的查询条件（非索引条件(即联合索引中索引失效的字段)）(由MySQL Server==下推==给存储引擎的部分条件)**。即在索引扫描阶段，MySQL就可以排除不满足非索引条件的记录，从而减少需要从磁盘中读取的数据量。这种方式减少了不必要的I/O操作，提高了查询效率
 
 ![picture 1](../images/1fffbb3b899edaa4b0d44ae2814c899ab4e21c4a18490264d271e522aab775a1.png)  
 

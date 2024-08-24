@@ -387,7 +387,7 @@ HashMap<String, String> map = new HashMap<>();
 ## StringBuilder
 
 * `StringBuilder str = new StringBuilder("hello");` **创建**
-* `str.length()`
+* `str.length()` ==☆==
 * `str.append()` ==☆== **拼接**字符串。。。不可以使用+和concat
   * string的+和concat每次都会创建新的string对象
 * `str.toString()`: StringBuilder->String
