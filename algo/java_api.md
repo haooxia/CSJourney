@@ -10,6 +10,7 @@
     - [遍历HashMap](#遍历hashmap)
   - [String](#string)
   - [StringBuilder](#stringbuilder)
+  - [Character](#character)
   - [Stack-about](#stack-about)
   - [Queue-about](#queue-about)
 
@@ -432,6 +433,16 @@ public void reverse(StringBuilder sd, int left, int right) { // [)
     }
 }
 ```
+
+## Character
+
+* `Character.isLetter()`: 'a-z, A-Z'
+* `Character.isDigit()`: '0-9'
+* `Character.isLetterOrDigit()`
+* `Character.isLowerCase()`
+* `Character.isUpperCase()`
+* `Character.toLowerCase()`: 如果输入是数字字符，不受影响，即转换前后ASCII不变
+* `Character.toUpperCase()`
 
 ## Stack-about
 

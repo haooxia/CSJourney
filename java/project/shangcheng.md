@@ -15,7 +15,8 @@
     - [HTTP vs. RPC](#http-vs-rpc)
     - [Feigh vs. Dubbo](#feigh-vs-dubbo)
     - [Feign是什么](#feign是什么)
-    - [Feign如何实现负载均衡 / Ribbon](#feign如何实现负载均衡--ribbon)
+    - [Feign及LoadBalancer工作原理](#feign及loadbalancer工作原理)
+      - [修改LoadBalancer](#修改loadbalancer)
     - [常见负载均衡算法](#常见负载均衡算法)
       - [一致性哈希算法](#一致性哈希算法)
     - [服务端/七层负载均衡 vs. 客户端负载均衡](#服务端七层负载均衡-vs-客户端负载均衡)
@@ -215,7 +216,7 @@ Feigh和Dubbo都是用于实现远程调用的框架，Feign基于HTTP，Dubbo�
 * Feign是一个声明式web客户端,它简化了使用基于 HTTP 的远程服务的开发。
   * > 声明式接口：开发者只需定义一个接口，并通过注解来描述HTTP请求的细节。Feign会根据这些定义自动生成相应的实现类。
 * Feign是在**RestTemplate**和**Ribbon**的基础上进一步封装，使用RestTemplate实现Http调用，使用Ribbon实现负载均衡。
-  * OpenFeign目前支持两种负载均衡策略：Ribbon和Spring Cloud LoadBalancer，但随着时间的发展，Spring Cloud LoadBalancer 正逐渐取代 Ribbon。
+  * OpenFeign目前支持两种负载均衡策略: Ribbon(早期)和Spring Cloud LoadBalancer(2020之后取代Ribbon)
 
 
 主要特点和功能：
@@ -245,19 +246,33 @@ public interface ItemClient {
 }
 ```
 
-OpenFeigin/Feign的工作原理:
+### Feign及LoadBalancer工作原理
 
-* **Feign接口声明**: 开发者定义一个接口,并使用@FeignClient注解标记服务名称,以及使用SpringMVC注解声明请求方式、路径、参数等信息
+OpenFeigin/Feign的工作原理(包括内部的Spring Cloud LoadBalancer负载均衡的过程):
+
+* **Feign接口声明**: 开发者定义一个接口,并使用@FeignClient注解标记服务名称,以及使用SpringMVC注解声明请求方式(get)、路径(item-service/items)、参数(ids)等信息（feign客户端）
 * **动态代理生成**: Feign在运行时会为这个接口生成一个**动态代理实现类**,实现类会根据接口上的注解信息构造出正确的HTTP请求
-  * 动态代理实现类是FeiginInvocationHandler，里面的invoke函数：首先根据接口的注解**构造http请求**(但没有ip和port)
-* **负载均衡**：loadBalancer.choose()会通过Ribbon提供的默认**负载均衡**算法从注册中心中挑选一个实例/节点(将`item-service`负载均衡为`ip+port`)，然后重构URI即可，然后下一步发送http请求
-* 响应结果处理: 请求返回后,Feign 会根据接口声明的返回值类型,自动将响应结果转换为对应的对象
+  * 动态代理实现类是`FeiginInvocationHandler`，里面的`invoke()`最终会发远程调用（通过`FeignBlockingLoadBalancerClient`，此时请求request知道请求方式、路径和参数，但没有ip和port）：
+    * 获取服务名称：serviceId(`item-service`)
+    * 根据serviceId从注册中心拉取服务列表 (`loadBalancerClient`)
+    * 利用负载均衡算法选择一个服务
+      * 默认时RoundRobin算法
+    * 重构请求的URI路径(将`item-service`改为`ip:port`)，发起远程调用/http请求
+* 响应结果处理: 请求返回后,Feign会根据接口声明的返回值类型,自动将响应结果转换为对应的对象
 
-### Feign如何实现负载均衡 / Ribbon
+![picture 34](../../images/b7c18ab5eed4360777f9328cc15052973da3c12de505e29678fc2a13f4b006cf.png)  
 
-Ribbon是Netflix开源的一个**客户端负载均衡器**，可以与Feign无缝集成。Ribbon通过**从服务注册中心获取可用服务列表**，并通过**负载均衡算法**选择合适的服务实例进行请求转发，实现**客户端**的负载均衡。
+#### 修改LoadBalancer
 
-OpenFeign默认采用RoundRibbonLoadBalancer
+[官方文档 link](https://docs.spring.io/spring-cloud-commons/docs/current/reference/html/#switching-between-the-load-balancing-algorithms)
+
+Spring Cloud LoadBalancer默认使用RoundRobbin轮询算法
+![picture 36](../../images/6369d26873e55915705de53aacab96152d22ab28e607583e63e72976bbbed31c.png)
+> 这也太弱了，就这三种，Nacos本质是RandomWeight
+
+源码用了`@ConditionalOnMissingBean`修饰，意味着我们自己写一个Bean(自定义负载均衡算法)的话，可以替换默认实现
+
+**NacosLoadBalancer**：先优先试用本集群，然后就是随机加权RandomWeight；[课程讲解](https://www.bilibili.com/video/BV1S142197x7?t=3.1&p=166)
 
 ### 常见负载均衡算法
 
@@ -270,7 +285,7 @@ OpenFeign默认采用RoundRibbonLoadBalancer
   * 无法应对**水平切分**的分布式数据库系统，因为每个服务器节点存的数据不同；比如一个分布式KV缓存系统，某个key应该到哪个或者哪些节点上获得，应该是确定的，不是说任意访问一个节点都可以得到缓存结果的。遂**哈希算法**
   * 水平切分：是将同一张表的数据按行拆分到多个数据库中，例如将用户表中的数据根据用户ID范围分散到不同的数据库中。
 * **简单随机**（Random）：将请求随机分发给后端服务器上，请求越多，各个服务器接收到的请求越平均
-* 加权随机 (Weighted Random)：根据服务器自身的性能给服务器设置不同的权重，将请求按各个服务器的权重随机分发给后端服务器
+* **加权随机** (Weighted Random)：根据服务器自身的性能给服务器设置不同的权重，将请求按各个服务器的权重随机分发给后端服务器
 * **最少连接算法**（Least Connection）：将请求分配给当前连接数最少的服务器，适合处理能力差异较大的服务器，能够有效防止某些服务器过载
 * **最少活跃算法**：类似于最少连接，不过是以活动连接数为标准，即当前正在处理的请求数；活跃数越低，说明处理能力越强，这样就可以使处理能力强的服务器处理更多请求。
 * **哈希算法**：将请求的参数信息通过哈希函数映射为一个哈希值，然后根据哈希值来决定请求被哪一台服务器处理。**在服务器数量不变的情况下**，相同参数的请求总是发到同一台服务器处理，有注意**利用缓存**，比如同个IP的请求、同一个用户ID的请求
@@ -307,8 +322,8 @@ OpenFeign默认采用RoundRibbonLoadBalancer
 
 主要是**部署位置和控制权**不同：
 
-* 七层负载均衡通常部署在服务器端，控制权在服务器端
-* 客户端负载均衡由客户端直接实施，负载均衡逻辑集成在客户端的代码中，控制权在客户端；客户端根据服务实例的健康状况、负载情况等指标来决定选择哪个节点进行调用
+* 七层负载均衡通常部署在服务器端，控制权在服务器端（通过专门的负载均衡器或代理服务器, eg nginx）
+* 客户端负载均衡由客户端直接实施，负载均衡逻辑集成在客户端的代码中，控制权在客户端；客户端根据服务实例的健康状况、负载情况等指标来决定选择哪个节点进行调用（比如我们的spring cloud LoadBalancer就主要用于客户端）
 
 七层负载均衡解决方案：
 
@@ -318,8 +333,8 @@ OpenFeign默认采用RoundRibbonLoadBalancer
 
 客户端负载均衡一般通过现成的组件来实现：
 
-* Netflix Ribbon: 更全面；Nacos中集成了Ribbon
-* Spring Cloud Load Balancer
+* Netflix Ribbon: 更全面；Nacos中集成了Ribbon，现代是LoadBalancer了
+* Spring Cloud LoadBalancer
 
 ## 三、网关
 
@@ -687,8 +702,6 @@ BASE权衡了一致性C和可用性A：
 
 #### 解决AT的脏写问题
 
-https://blog.csdn.net/weixin_58629963/article/details/129271541
-
 ![picture 32](../../images/f5428123e5c9ccd49a8f7b086e5d8eb75469a5446925d546f78bd7a1342770c6.png)  
 
 解决方法：在释放DB锁之前，需要先拿到**TC全局锁**，以避免同一时刻其他事务来操控该数据
@@ -697,3 +710,7 @@ https://blog.csdn.net/weixin_58629963/article/details/129271541
 
 这和XA模式有什么区别？
 https://www.bilibili.com/video/BV1S142197x7?t=647.1&p=159
+DB锁由数据库管理（XA模式就是DB锁），DB锁会锁住整行，其他任何事务都无法对这行数据进行增删改查
+TC全局锁由TC管理，其他没有被seata管理的事务仍然可以进行增删改查，所以二者有粒度的差别，性能比XA高。
+
+锁有点复杂 [link](https://blog.csdn.net/m0_45406092/article/details/121263208)

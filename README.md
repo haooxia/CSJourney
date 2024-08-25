@@ -13,7 +13,7 @@
 * [Java](https://github.com/haooxia/CSJourney/blob/main/java/java.md)
   * [Collection](https://github.com/haooxia/CSJourney/blob/main/java/Collection.md)
   * [JUC](https://github.com/haooxia/CSJourney/blob/main/java/JUC.md)
-  * [JVM](https://github.com/haooxia/CSJourney/blob/main/java/JVM.md)
+  * [JVM](https://github.com/haooxia/CSJourney/blob/main/java/JVM_zhihong.md)
 * [C++](https://github.com/haooxia/CSJourney/blob/main/cpp/cpp.md) 
   * [STL](https://github.com/haooxia/CSJourney/blob/main/houjie/STL/notes.md)
   * [OOP-1](https://github.com/haooxia/CSJourney/blob/main/houjie/object-oriented-1/notes.md)
