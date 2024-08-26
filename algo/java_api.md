@@ -115,7 +115,7 @@ public class ListNode {
 * `int index = Arrays.binarySearch(nums, val);`: 二分查找之前需要是**有序数组**
 * `Arrays.sort(nums)`: 顺序排序
 * `Arrays.sort(nums, (a, b) -> b - a)`: 逆序排序
-* `Arrays.copyOf(nums, newLen)`: 深拷贝，可以指定了复制长度newLen
+* `Arrays.copyOf(nums, newLen)`: ==☆== 深拷贝，可以指定了复制长度newLen
 * `Arrays.copyOfRange(nums, from, to)`: 指定区间拷贝
 * 不允许 `return {};` 建议改为 `return new int[0];`
 

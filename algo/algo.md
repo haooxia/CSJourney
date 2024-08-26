@@ -328,15 +328,17 @@ void DFS(AGraph* G, int v)//从v节点开始遍历
 }
 ```
 
-- **经典海岛问题**200：dfs是感染函数，将点[x,y]周围的1全部感染成0；主函数中可用双层for循环，也可用一层for循环，通过/和%的方法取到结点坐标。
+
 
 ```cpp
 void dfs(vector<vector<char>>& grid, int x, int y, int row, int column)
     {
         if(x<0 || y<0 || x>=row || y>=column || grid[x][y]=='0') return;
         grid[x][y] = '0';
-        dfs(grid, x-1, y, row, column); dfs(grid, x+1, y, row, column);
-        dfs(grid, x, y-1, row, column); dfs(grid, x, y+1, row, column);
+        dfs(grid, x-1, y, row, column); 
+        dfs(grid, x+1, y, row, column);
+        dfs(grid, x, y-1, row, column); 
+        dfs(grid, x, y+1, row, column);
     }
 ```
 
