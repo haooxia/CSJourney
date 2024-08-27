@@ -2,7 +2,9 @@
 
 - [黑马点评](#黑马点评)
   - [alias \& bg](#alias--bg)
+    - [数据库表设计](#数据库表设计)
   - [1.登录功能](#1登录功能)
+    - [关于session](#关于session)
     - [基于Session的短信登录](#基于session的短信登录)
       - [为什么要把用户信息保存到ThreadLocal中？](#为什么要把用户信息保存到threadlocal中)
       - [登录校验拦截器详解](#登录校验拦截器详解)
@@ -34,29 +36,74 @@
 介绍：
 我做的这个项目是一个仿大众点评的评价类项目，实现了优惠券秒杀，好友关注，点赞评论，查看附近娱乐场所等功能
 
+介绍：该项目是一个聚焦运动健身领域的点评平台，为运动爱好者提供便捷的功能，包括短信登录、运动场所查询、运动课程优惠券抢购、用户点评等功能
+
+### 数据库表设计
+
+* tb_user: 用户表: id主键, phone, name
+  * 存用户基本信息
+* tb_user_info: 用户详情表: user_id主键, city, fans, followee, gender, level...
+  * 存用户详情信息
+* tb_shop: 店铺信息表: id主键, name, type_id(逻辑外键), images, address, score, avg_price
+  * 存店铺基本信息
+* tb_shop_type: 店铺类型表: id主键, 类型name, sort
+  * 店铺类型：健身中心、游泳馆、球类运动(乒乓、羽毛球、篮球、足球、高尔夫)、武术搏击、溜冰、马术、攀岩
+* tb_blog：用户探店日记: id主键, shop_id(逻辑外键), user_id(逻辑外键), titile标题, content内容, images
+* tb_voucher：优惠券表: id, shop_id, 代金券名title, 
+* tb_voucher_order：优惠券的订单表: id主键, user_id(逻辑外键), voucher_id(逻辑外键)
+* tb_follow：用户关注表: id, user_id, follow_user_id
+
 ## 1.登录功能
 
 使用Redis解决了在集群模式下的Session共享问题，使用双拦截器实现用户的登录校验和权限刷新。
 实现手机短信登录功能，并使用Redis实现Session token的存储，解决服务器集群中共享登录用户信息问题；采用双拦截器实现刷新token有效期和鉴权功能。
 
+### 关于session
+
+* Session用来存放会话内的数据，这里存了验证码、用户信息
+* **一个客户端对应一个会话**，该**客户端后续的请求都属于该会话**(有效期内)，因为会带上sessionID，所以服务端将其视为一个会话内
+* **不同客户端对应不同会话**（不同的浏览器、设备、用户），这样大家就可以各登录各的，互不干扰
+* 一个客户端发送请求给服务端，如果没带sessionid，就意味着是一个**新客户端**，服务端为其创建一个会话，并返回一个sessionid
+* 默认情况下session有效期是30min，超时了就要重新登陆
+* HttpSession参数会有SpringMVC自动注入，当你发送请求的时候
+
 ### 基于Session的短信登录
 
-**发送验证码：**
-用户在提交手机号后，服务端会校验手机号是否合法，如果不合法，则要求用户重新输入手机号 如果手机号合法，后台此时生成对应的验证码(RandomUtil)，同时将验证码进行保存(session.setAttribute)，然后再通过短信的方式将验证码发送给用户(我只是模拟了下，可以借助阿里云短信服务)
+**发送验证码**：[code](https://github.com/cs001020/hmdp/blob/master/src/main/java/com/hmdp/service/impl/UserServiceImpl.java#L52-L67)
+1. 用户提交手机号
+2. 服务端校验手机号的合法性: `regex正则表达式`
+   1. 不合法则返回错误
+3. 服务端生成验证码(`code=Random(6)`)，同时**将验证码进行保存到当前客户端对应的会话session中**(`session.setAttribute("code", code)`)，通过短信的方式将验证码发送给用户
+   1. 不同客户端对应不同session会话，这个setAttribute()是把k-v数据存到这个客户端的会话中（存在服务端）
+   3. 发送操作可以借助阿里云短信服务，暂时不做了，我目前只是模拟了下，手动从后台拿到验证码登录
 
-**短信验证码登录、注册：**
-用户输入手机号和验证码，后台从session中拿到当前验证码(session.getAttribute)，然后和用户输入的验证码进行校验，如果不一致，则无法通过校验，如果一致，则后台根据手机号查询用户，如果用户不存在，则为用户创建账号信息，保存到数据库(通过mybatisplus)，无论是否存在，都会将用户信息保存到session中，方便后续获得当前登录信息
+> Session就是用来存临时数据和上下文信息的，这里存下验证码，返回id
 
-**校验登录状态（通过==拦截器==对一些路径进行拦截）:**
-用户在请求时候，会在cookie中携带者sessionId到后台，**后台通过sessionId从session中拿到用户信息**，如果没有session信息，则进行拦截，如果有session信息，则将用户信息保存到threadLocal中，并且放行
+**短信验证码登录、注册**：[code](https://github.com/cs001020/hmdp/blob/master/src/main/java/com/hmdp/service/impl/UserServiceImpl.java#L71-L110)
+1. 用户输入验证码，将手机号和验证码一块发给服务端
+2. 服务端**从session拿到当前验证码**(`session.getAttribute("code")`)，然后和用户输入的验证码进行校验
+   1. 如果不一致，校验失败
+3. 一致则，根据手机号去`tb_user`查询用户，如果用户不存在，则为用户**创建用户信息**并保存
+4. **将用户信息保存到session中**(`session.setAttribute("user", user)`)，方便后续获得当前登录信息
 
-![picture 0](../../images/9cfa785533e5b7d34ffe66d02d20f8afcfac04c6624622f97b1f9b072634d844.png)  
+
+**校验登录状态**(use interceptor): 
+
+1. 用户在发送一些请求(not exclude)到controller时，请求的cookie中会带着sessionID
+2. 服务端从`HttpServeletRequest`中获得该客户端对应的session`getSession()`
+3. 从session中取出"user"的数据(`session.getAttribute("user)`)，如果不存在就拦截返回401
+4. 如果存在，将用户信息存入ThreadLocal
+   1. 这个session是用户登录时创建的，有效期内后来的http请求会带上sessionid，服务端就可以解析http请求拿到sessionid，然后根据该id拿到session对象，就可以拿到里面存的"user"对应的数据了
+
+![picture 0](../../images/9cfa785533e5b7d34ffe66d02d20f8afcfac04c6624622f97b1f9b072634d844.png)
 
 #### 为什么要把用户信息保存到ThreadLocal中？
 
+> 如果小伙伴们看过threadLocal的源码，你会发现在threadLocal中，无论是他的put方法和他的get方法， 都是先从获得当前用户的线程，然后从线程中取出线程的成员变量map，只要线程不一样，map就不一样，所以可以通过这种方式来做到线程隔离
+
 ThreadLocal可实现线程隔离：ThreadLocal为每个线程提供独立的变量副本，各个线程可以独立地改变自己的副本，而不会影响其他线程的副本；ThreadLocal的本质类似HashMap；
 
-在处理单个web请求时，由一个线程负责。（即使服务器使用线程池，在单个请求的生命周期内，处理该请求的线程是不变的。）
+在处理单个web请求时，由一个线程负责。
 
 在Web应用中，将用户信息保存到ThreadLocal中的主要目的是为了**在当前处理的线程中**方便、 快捷地获取用户相关信息，而不需要频繁地从Session或其他存储中检索。这样做有以下几个好处：
 
@@ -70,9 +117,20 @@ ThreadLocal可实现线程隔离：ThreadLocal为每个线程提供独立的变�
 
 ![picture 1](../../images/6866ee00629f2f93a07c072de37db894564aaccc53d8084d8394db000e1d5022.png)
 
-在项目中，有很多Controller，随着业务的开发，**越来越多的业务都需校验用户的登录**，不可能在每一个业务的Controller类中都编写“校验登录状态”的逻辑。在SpringMVC中，拦截器可以在所有Controller执行之前去做，有了拦截器之后，用户的各种请求就不用直接访问Controller，必须先经过拦截器，判断是否放行。可以把用户校验登录的功能交给拦截器做，但是需要把拦截器中拿到的用户信息传递到各个Controller层去，传递的过程中还需注意线程安全问题。那么在拦截器中拦截到的用户信息，可以保存到ThreadLocal中。
+项目中很多Controller/业务需要校验用户的登录，我们不可能在每个业务中都写校验逻辑
+
+SpringMVC中，请求会先走interceptor组件的`preHandle()`，成功后再到达相应的controller, 你可以配置所有请求都走拦截器，也可以通过`execludePathPatterns()`排除路径，比如我们排除了`/shop/**`看看商铺肯定是不用校验登录的；
+
+因此我们把用户校验登录的功能交给拦截器做
+
+但是需要把拦截器中拿到的用户信息传递到各个Controller层去，传递的过程中还需注意线程安全问题。那么在拦截器中拦截到的用户信息，可以保存到ThreadLocal中。
 
 ok，到这儿基于session登录结束，但有集群的session共享问题
+
+
+
+
+
 
 #### 利用redis解决集群的session共享问题
 
@@ -94,7 +152,7 @@ redis替代session实现登录注册功能的好处：
 而如果将权限刷新功能写到登录校验拦截器中，该拦截器A只会拦截需要登陆的路径。
 解决：在这个拦截器A前再加一个拦截器B，用于拦截所有路径，把获取token、查询Redis用户、刷新token有效期的操作放到这个拦截器B上做。而拦截需要登陆的路径的拦截器A只需要判断ThreadLocal中有没有用户即可
 
-![picture 2](../../images/af34cc78c69e15bd951872cc1ba5864cb996a46d6237d86b88c8e38f450bd2c7.png)  
+![picture 2](../../images/af34cc78c69e15bd951872cc1ba5864cb996a46d6237d86b88c8e38f450bd2c7.png)
 
 ## 2.缓存店铺信息
 
