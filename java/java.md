@@ -348,7 +348,7 @@ public static Integer valueOf(int i) {
     * Object类提供了`clone()`方法，用以实现浅拷贝（前提是被复制类implements Cloneable接口，重写了clone()）
   * deep copy: 无论是值类型还是引用类型都会完完全全的拷贝一份，在内存中生成一个新的对象，得到一个**独立**的副本
 
-![picture 5](../images/344644a942118b4b413ffd8def7d969a1ce516cfbe52c6a94decf49b8f1652db.png)  
+![picture 5](../images/344644a942118b4b413ffd8def7d969a1ce516cfbe52c6a94decf49b8f1652db.png)
 
 ### Object
 
