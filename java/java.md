@@ -30,7 +30,7 @@
       - [constructor](#constructor)
       - [面向对象的三大特性](#面向对象的三大特性)
       - [编译时多态 vs. 运行时多态](#编译时多态-vs-运行时多态)
-      - [接口 vs 抽象类](#接口-vs-抽象类)
+      - [接口 vs. 抽象类](#接口-vs-抽象类)
       - [引用拷贝 vs. 浅拷贝 vs. 深拷贝](#引用拷贝-vs-浅拷贝-vs-深拷贝)
     - [Object](#object)
       - [== vs. equals()](#-vs-equals)
@@ -148,7 +148,7 @@ java**首先编译过程**：.java->.class字节码（将人类可读的源码�
 
 * final: pass
 * finally: 用于异常处理，确保在try或catch块之后执行代码，通常用于清理操作。确保**无论是否发生异常**，都会执行其中的代码
-* finalize(): Object类下的一个方法，每个对象都有，用于在对象被垃圾回收之前执行清理操作（todo
+* finalize(): 当对象被回收时，系统自动调用该对象的finalize方法，子类可以重写该方法，做一些释放资源的操作。Object类下的一个方法，每个对象都有
 
 ### 数据类型
 
@@ -327,7 +327,7 @@ public static Integer valueOf(int i) {
   * 编译时多态主要依赖于⽅法的签名（⽅法名和参数列表），根据调⽤时提供的参数类型和数量来确定具体调⽤的⽅法。
 * 运⾏时多态也被称为**动态多态**或**晚期绑定**。指的是在程序**运⾏时，根据实际对象的类型来确定调⽤的⽅法**，这是通过⽅法的**重写**来实现的。运⾏时多态主要依赖于对象的实际类型，⽽不是引⽤类型。
 
-#### 接口 vs 抽象类
+#### 接口 vs. 抽象类
 
 > 抽象方法 abstract method: 没有方法体的方法
 
@@ -344,9 +344,10 @@ public static Integer valueOf(int i) {
 
 * 引用拷贝: **不会创建新对象**，仅仅将一个对象的引用赋值给另一变量(栈中)，两个变量指向堆中同一对象；`Persona = new Person();Person b = a`
 * 对象拷贝：**创建一个新的对象**，分为shallow copy和deep copy
-  * shallow copy: 如果原对象的成员变量是值类型，复制一份给克隆对象；如果原对象的成员变量是引用类型，则将引用对象的**地址复制**一份给克隆对象，即原对象和克隆对象的成员变量指向相同的堆内存地址。
-    * Object类提供了`clone()`方法，用以实现浅拷贝（前提是被复制类implements Cloneable接口，重写了clone()）
+  * shallow copy: 如果原对象的成员变量是**基本数据类型**，复制一份给克隆对象；如果原对象的成员变量是**引用类型**，则只会复制该引用，两个引用指向同一对象，即**不会复制指引所指向的实际对象本身**。
+    * Object类提供了`clone()`方法，用以实现浅拷贝（前提是被复制类implements Cloneable接口，重写了clone()
   * deep copy: 无论是值类型还是引用类型都会完完全全的拷贝一份，在内存中生成一个新的对象，得到一个**独立**的副本
+    * 通过**序列化**实现，或手动遍历为每个引用类型属性创建新的实例
 
 ![picture 5](../images/344644a942118b4b413ffd8def7d969a1ce516cfbe52c6a94decf49b8f1652db.png)
 
@@ -357,40 +358,42 @@ Object类的方法：getClass(), hashCode(), equals(), clone(), toString(), fina
 
 #### == vs. equals()
 
-* ==是运算法，equals()是方法
+* ==是运算符，equals()是方法
 * 对于基本类型，==比较的是value
 * 对于引用类型，==比较的是对象的内存地址，即判断是否是同一对象
 * equals()**不能判断基本数据类型**，只能用于判断两个对象是否相同
-* Object中默认的`equals()`就是`==`
+* Object中默认的`equals()`就是`==`，但很多类重写了该方法，以判断俩对象的属性是否相同(eg, Integer, String)
 
 ![picture 6](../images/47d02b9d527db04c637b39424b4d7d1ff604ce35585a5ec68d928e09e2af5f74.png)  
-**基本类型使用`==`比较value，包装类型`==`比较的是object address**，故而包装类之间的值比较使用`equals()` (同于String，**包装类型和String都重写了equals()**)
 
-**注意**：equals()相同只能说明两个对象逻辑上/属性上相同，并不意味着是同一对象，即物理内存上未必相同(`==`用于判断两个引用是否指向同一对象实例)
+**注意**：equals()相同只能说明两个对象逻辑上/属性上相同，并不意味着是同一对象，即物理内存上未必相同(`==`用于判断两个引用是否指向同一对象实例，物理上相同)
 
 #### hashCode()
 
 * 同一对象两个引用的hashcode一致
+  * 因为hashcode()底层是基于对象的**内存地址**生成的整数；重写时我们通常基于对象的**属性值**重写hashCode(), 以确保equals相等的对象具有相同的hash值
 * 两个引用指向不同对象，hashcode大概率不一致（可能碰撞）
-<!-- * hashcode将object的内部地址转换为一个整数，所以可以当做是address，但当然不是真address了 -->
 
 **`hashCode()`和`equals()`都用于比较两个对象是否相等**
-hashCode()用于比较两个对象是否相等，比如往HashSet添加对象，首先比较对象的hashCode是否与已加入的对象的hashCode相同，如果没有相同的，就假设没有重复出现；如果有相同的，进而调用`equals()`检查是否**真的相同**(因为可能**哈希冲突**嘛，即不同对象产生相同的hashCode)；
+hashCode()用于比较两个对象是否相等，比如往HashMap添加对象，首先比较对象的hashCode是否与已加入的对象的hashCode相同，如果没有相同的，就假设没有重复出现；如果有相同的，进而调用`equals()`检查是否**真的相同**(因为可能**哈希冲突**嘛，即不同对象产生相同的hashCode)；
 所以，先用hashCode()判断一下是否相等比全部使用equals()要快多咯。
 
 所以进而，我们又攻克了一个问题：
 **为什么override equals() 的时候必须同时override hashCode()?**
 
-* 保持一致性：java规范要求equals()相同的对象必须具备相同的hashCode()
+* 保持一致性：**java规范要求equals()相同的对象必须具备相同的hashCode()**
   * ![picture 7](../images/8c5bca49ed311dfa695a76104145c819039dbc77140ef1e71000ba9d547b6cf4.png)
-* 保持正确性：比如上述hashSet，它需要**先使用hashCode()确定对象的存储位置，然后再利用equals()判等**
+* 保持正确性：比如HashMap，它需要**先使用hashCode()确定对象的存储位置，然后再利用equals()判等**（TODO
+  * 如果你违反了这一要求，即使两个对象通过 equals() 相等，但它们的 hashCode() 不同，可能会导致集合行为异常，例如无法正确地查找、删除或插入对象
+
+![picture 18](../images/75c7ecbeb4ddf51b472a1748a4c06471eb91ee60f99c7928e23ba808b846a77b.png){width=30%}
 
 #### toString()
 
 ![picture 8](../images/71b2aef51b4f08d3f4e8d0aab00f3cf647647bda8c0838089c2fad3bb32ca091.png)
 
-* Wrapper classes, String, StringBuffer, StringBuilder, HashSet, ArrayList......本身或父类重写了toString()，反正应该是可以直接用
-* 当我们输出一个object时`sout(obj)`，会自动调用`obj.toString()`方法来获得其字符串；同样，字符串连接操作`"Str" + obj`也会隐式调用`obj.toString().`
+* Wrapper classes, String, StringBuffer, StringBuilder, HashSet, ArrayList......本身或父类重写了toString()，可以直接用，而int[]并没有
+* 当我们输出一个object时`sout(obj)`，会自动调用`obj.toString()`方法来获得其字符串；同样，字符串连接操作`"Str" + obj`也会隐式调用`obj.toString()`
 
 ### String
 
@@ -532,9 +535,9 @@ Exception vs. Error
     * 可以有多个catch blok，捕获不同的异常；要求子类异常在前，父类在后（河狸
   * finally block: 一定会执行，无论是否有异常发生，通常搁这儿释放资源
 * throws: 抛出异常，交给调用者处理，**最顶级的处理者是JVM**，但JVM的处理方式很暴力：**直接输出并退出**
-  * 可以抛出具体的异常（推荐）也可以抛出器父类
+  * 可以抛出具体的异常（推荐）也可以抛出其父类
 
-![picture 14](../images/d6fbebaf7abb61389b062b70e005e5a153b21672823c9b61ef2e10380e153bdf.png)  
+![picture 14](../images/d6fbebaf7abb61389b062b70e005e5a153b21672823c9b61ef2e10380e153bdf.png){width=50%}
 
 ### 泛型
 
