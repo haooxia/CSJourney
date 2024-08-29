@@ -40,8 +40,8 @@
       - [版本链数据访问规则](#版本链数据访问规则)
   - [四、锁](#四锁)
     - [锁分类](#锁分类)
-    - [InnoDB行锁的实现](#innodb行锁的实现)
-    - [mysql死锁排查](#mysql死锁排查)
+      - [InnoDB行级锁的实现](#innodb行级锁的实现)
+      - [乐观锁 vs. 悲观锁](#乐观锁-vs-悲观锁)
   - [五、日志](#五日志)
     - [日志文件分为几种](#日志文件分为几种)
     - [为何需要undo log](#为何需要undo-log)
@@ -60,7 +60,8 @@
     - [explain](#explain)
 
 TODO: https://xiaolincoding.com/interview/mysql.html#sql%E5%9F%BA%E7%A1%80
-读写分离
+* 读写分离
+* 一条update语句是如何执行的（各种log看看，xiaolin
 
 ## 一、基础
 
@@ -522,26 +523,53 @@ readview主要用来处理 读已提交 和 可重复读 隔离级别，为了�
 
 ### 锁分类
 
-![picture 9](../images/cc398d40fd72695cfbd193b0d0edc80e505ff4b61a8c99acba852214a135124f.png)
+![picture 19](../images/9125f3798e1e58922bb2c622760bb92c60894075b5ac7f92355ee8c2340d70ff.png)  
 
-MySQL按**锁粒度**可分为：
+MySQL InnoDB按**锁粒度**可分为：
 
-* **全局锁**：锁定整个数据库的所有表，通常用于**全库逻辑备份**等操作，因为我们想保证备份期间数据不被修改，要能让这个备份可以真是反映这一时刻的真实状态(ie 数据一致性)
-  * 通过`flush tables with read lock`会将整个数据库设置为只读，这时**其他线程如果增删改(DML)或修改表结构(DDL)都会阻塞**
+* **全局锁**：锁定整个数据库的所有表，通常用于**全库逻辑备份**等操作，因为我们想保证备份期间数据不被修改，要能让这个备份可以真是反映这一时刻的真实状态(不然会违背数据一致性 consistency)
+  * 通过`flush tables with read lock`会将整个数据库设置为**只读**，这时**其他线程如果增删改(DML)或修改表结构(DDL)都会阻塞**
   * `mysqldump -uroot -pxiahao table_name > tmp.sql;` (逻辑备份即**导出为一些sql语句**(创建表+insert语句))
-* **表锁**：**开销小，加锁快**；锁定粒度大，发生**锁冲突概率高**，**并发度最低**，不会出现死锁；`lock tables`
-  * **元数据锁(MDL)**：对数据库表进行操作时，会**自动**给这个表加上元数据锁，是为了保证当用户对表执行 **CRUD 操作时，防止其他线程对这个表结构做了变更**
-  * **意向锁**：执行增删改时，需要先对表加上意向独占锁，然后对该记录加独占锁。**意向锁的目的是为了快速判断表中是否有记录被加锁**；意向锁的出现是为了支持InnoDB的多粒度锁，它解决的是表锁和行锁共存的问题
-  * **AUTO-INC锁**：用来实现主键自动自增(AUTO_INCREMENT)
-* **行锁**：开销大，加锁**慢**；会出现**死锁**；锁定粒度小，发生锁冲突的概率低，**并发度高**
+* **表级锁**：锁粒度大，发生**锁冲突概率高**，**并发度最低**，不会出现死锁；`lock tables`
+  * **表锁**：`lock tables name read/write;`
+    * 表共享读锁（ie**读锁** read lock）: 读锁会阻塞自己和其他客户端的写，但不阻塞读
+    * 表独占写锁（ie**写锁** write lock）: 写锁会阻塞自己和其他客户端的写和读
+  * **元数据锁(MDL)**：对数据库表进行操作时，会**自动**给这个表加上元数据锁，是为了保证当用户对表执行**CRUD操作时，防止其他线程对这个表结构做了变更**，即执行DML时会自动阻塞DDL
+    * 即为了避免DML(增删改)和DDL(定义语言,修改表结构 eg alter)的冲突
+    * **原理**：DML会自动对表加共享MDL，DDL会自动加独占MDL，故而DML之间兼容，和DDL就不兼容了
+  * **意向锁**：为了避免执行DML时，加的**行锁与表锁冲突**，故引入意向锁，使得表锁不用检查每行数据是否枷锁，使用意向锁来减少表锁的检查；故线程A对某条行进行CRUD加行锁时(参见后文)，然后**线程A会同时对表加上意向锁**，然后另一线程B加表锁时无需再去遍历了，可直接判断是否可以加锁；
+    * 一言以蔽之：加行锁时会顺道加个意向锁，后续加表锁时就可以快速判别了
+    * 具体的意向锁也分为意向共享锁和意向排他锁，共享锁和表锁共享锁兼容，和表锁排他锁互斥...
+  * ~~**AUTO-INC锁**：用来实现主键自动自增(AUTO_INCREMENT)~~
+* **行级锁**：锁定粒度小，发生锁冲突的概率低，**并发度高**
   * InnoDB支持 MyISAM不支持
-  * 行锁基于索引，即对索引上的索引项加锁，而非基于记录
-* **页锁**：开销和加锁速度介于表锁和行锁之间；会出现死锁；锁定粒度介于表锁和行锁之间，并发度一般
+  * **行锁基于索引**，即对索引上的索引项加锁，而非基于记录；**如果不通过索引字段检索数据**，InnoDB将对表中所有记录加锁，即**升级为表锁**
+  * **行级锁分为行锁、间隙锁和临键锁**
+<!-- * ~~**页锁**：开销和加锁速度介于表锁和行锁之间；会出现死锁；锁定粒度介于表锁和行锁之间，并发度一般~~ -->
 
-按**兼容性**划分：
+#### InnoDB行级锁的实现
 
-* **共享锁** (S Lock)：也叫读锁（read lock），相互不阻塞
-* **排他锁** (X Lock)：也叫写锁（write lock），相互阻塞
+* **Record Lock 记录锁/行锁**：直接锁定某行记录。当我们使用唯一性的索引(包括唯一索引和聚簇索引)进行等值查询且精准匹配到一条记录时，此时就会直接将这条记录锁定。
+  * 例如`select * from t where id =6 for update;`就会将id=6的记录锁定
+  * ![picture 14](../images/1d7575ff2db171736e8c7ca2af1f09efaa9fc972980f84d3eac47408883374c8.png)  
+  * 行锁也分为共享锁S和排他锁X
+  * **常见CRUD上的行锁**： ![picture 18](../images/dda2a9806ba116ea07626841aff4bbf8e5cb8025e231d3d952c191b23de45127.png)
+  * > 默认select不加锁，是快照读
+* **Gap Lock 间隙锁**：指的是两个记录之间逻辑上尚未填入数据的**左开右开区间**；
+  * **唯一**索引上的等值查询，给不存在的记录加锁时会优化为间隙锁
+  * 例如`select * from t where id =3 for update;` 或者`select * from t where id > 1 and id < 6 for update`;就会将(1,6)区间锁定。
+  * ![picture 13](../images/5c6bf9d36cbf29b01cf4a40c16f0a1e5e2908ff8c6dcfe03c2f94fd22af4af2b.png)
+  * **间隙锁的唯一目的是防止其他事务插入间隙，==避免幻读==**；（**在可重复读事务隔离级别下**）
+* **Next-Key Lock 邻键锁**(默认行锁类型)：间隙加上它右边的记录组成的**左开右闭区间**；也即记录锁+间隙锁
+  * `select * from t where id between 1 and 10 for update;`
+  * **唯一**索引上的范围查询会加临键锁
+* ~~**Insert Intention Lock 插入意向锁**~~
+<!-- * 一个事务在插入一条记录时需要判断一下插入位置是不是被别的事务加了意向锁，如果有的话，插入操作需要等待，直到拥有gap锁的那个事务提交。但是事务在等待的时候也需要在内存中生成一个锁结构，表明有事务想在某个 间隙 中插入新记录，但是现在在等待。这种类型的锁命名为 Insert Intention Locks ，也就是插入意向锁 。（不同于意向锁）~~ -->
+
+
+在InnoDB中，**普通的SELECT语句不加锁(属于快照读(MVCC))**。对于使用`FOR UPDATE`或`LOCK IN SHARE MODE`的SELECT语句，InnoDB会**根据查询条件自动加上相应的行级锁**(是否精确匹配到一行，是否范围匹配等)。
+
+#### 乐观锁 vs. 悲观锁
 
 按**加锁机制**/锁的特性划分：
 
@@ -553,7 +581,8 @@ MySQL按**锁粒度**可分为：
 
 ```sql
 # 乐观锁
-UPDATE inventory SET count = count - 1, version = version + 1 WHERE product_id = 1 AND version = current_version;
+UPDATE inventory SET count = count - 1, version = version + 1
+WHERE product_id = 1 AND version = current_version;
 
 # 悲观锁
 START TRANSACTION; # 开启事务
@@ -562,29 +591,15 @@ UPDATE inventory SET count = count - 1 WHERE product_id = 1;
 COMMIT; # commit时才释放锁，也即锁定了整个事务
 ```
 
-### InnoDB行锁的实现
 
-* **Record Lock 记录锁**：直接锁定某行记录。当我们使用唯一性的索引(包括唯一索引和聚簇索引)进行等值查询且精准匹配到一条记录时，此时就会直接将这条记录锁定。
-  * 例如`select * from t where id =6 for update;`就会将id=6的记录锁定
-  * ![picture 14](../images/1d7575ff2db171736e8c7ca2af1f09efaa9fc972980f84d3eac47408883374c8.png)  
-* **Gap Lock 间隙锁**：指的是两个记录之间逻辑上尚未填入数据的**左开右开区间**；当我们使用用等值查询或者范围查询，并且没有命中任何一个record，此时就会将对应的间隙区间锁定
-  * 例如`select * from t where id =3 for update;` 或者`select * from t where id > 1 and id < 6 for update`;就会将(1,6)区间锁定。
-  * ![picture 13](../images/5c6bf9d36cbf29b01cf4a40c16f0a1e5e2908ff8c6dcfe03c2f94fd22af4af2b.png)  
-* **Next-Key Lock 邻键锁**(默认行锁类型)：间隙加上它右边的记录组成的**左开右闭区间**；也即记录锁+间隙锁
-  * `SELECT * FROM t WHERE id BETWEEN 1 AND 10 FOR UPDATE;`
-* **Insert Intention Lock 插入意向锁**：一个事务在插入一条记录时需要判断一下插入位置是不是被别的事务加了意向锁，如果有的话，插入操作需要等待，直到拥有gap锁的那个事务提交。但是事务在等待的时候也需要在内存中生成一个锁结构，表明有事务想在某个 间隙 中插入新记录，但是现在在等待。这种类型的锁命名为 Insert Intention Locks ，也就是插入意向锁 。（不同于意向锁）
-
-
-在InnoDB中，**普通的SELECT语句不加锁(属于快照读(MVCC))**。对于使用`FOR UPDATE`或`LOCK IN SHARE MODE`的SELECT语句，InnoDB会**根据查询条件自动加上相应的行级锁**(是否精确匹配到一行，是否范围匹配等)。
-
-### mysql死锁排查
+<!-- ### mysql死锁排查
 
 1. 查看死锁日志 `show engine innodb status;`
 2. 找出死锁sql
 3. 分析sql加锁情况
 4. 模拟死锁案发
 5. 分析死锁日志
-6. 分析死锁结果
+6. 分析死锁结果 -->
 
 ## 五、日志
 
