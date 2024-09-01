@@ -5,11 +5,12 @@
     - [java的集合类有哪些 ☆](#java的集合类有哪些-)
     - [哪些是线程安全/不安全的 ☆](#哪些是线程安全不安全的-)
     - [如何选择](#如何选择)
-  - [prerequisite knowledge](#prerequisite-knowledge)
+  - [前置知识](#前置知识)
     - [enhanced for](#enhanced-for)
-  - [general interface](#general-interface)
+  - [接口](#接口)
     - [Iterable Interface](#iterable-interface)
     - [Collection Interface](#collection-interface)
+      - [Collection vs. Collections](#collection-vs-collections)
   - [1.List Interface](#1list-interface)
     - [ArrayList ☆](#arraylist-)
       - [扩容机制](#扩容机制)
@@ -21,7 +22,7 @@
     - [Vector](#vector)
     - [LinkedList](#linkedlist)
     - [ArrayList vs. Array (built-in) ☆](#arraylist-vs-array-built-in-)
-    - [ArrayList vs. LinkedList ☆](#arraylist-vs-linkedlist-)
+    - [ArrayList vs. LinkedList ☆☆](#arraylist-vs-linkedlist-)
   - [2.Set Interface](#2set-interface)
     - [HashSet vs. LinkedHashSet vs. TreeSet](#hashset-vs-linkedhashset-vs-treeset)
     - [HashSet](#hashset)
@@ -42,6 +43,7 @@
       - [遍历HashMap](#遍历hashmap)
     - [Properties](#properties)
     - [TreeMap](#treemap)
+    - [LinkedHashMap](#linkedhashmap)
     - [HashMap vs. Hashtable](#hashmap-vs-hashtable)
     - [HashMap vs. HashSet](#hashmap-vs-hashset)
     - [为什么HashMap线程不安全](#为什么hashmap线程不安全)
@@ -56,10 +58,6 @@
 TODO
 * 说一下红黑树的特点
 * 判断一个集合类是否为线程安全的机制是什么？[fail-fast源码](https://javabetter.cn/sidebar/sanfene/collection.html#_5-%E5%BF%AB%E9%80%9F%E5%A4%B1%E8%B4%A5-fail-fast-%E5%92%8C%E5%AE%89%E5%85%A8%E5%A4%B1%E8%B4%A5-fail-safe-%E4%BA%86%E8%A7%A3%E5%90%97)
-* synchronized原理
-* 锁升级，锁膨胀，偏向锁（synchronized
-* 
-
 
 ## 概括
 
@@ -68,23 +66,32 @@ TODO
 Java集合类主要由Collection和Map这两个接口派生而出，其中Collection又派生出三个子接口，分别是List, Set, Queue，所有Java集合都是List, Set, Queue, Map这四个接口的实现类。
 
 ![picture 1](../images/8c59864034ef6c2020329cd184d752e513b468797f89cba43cd3ed57ce597f0b.png)
-> Linkedlist实现了List和Queue接口
+> LinkedList实现了List和Queue接口，LinkedList底层是双向链表，可作为栈、单向队列和双向队列来使用（但可以使用idx增删中间元素，有点儿难受）; ArrayDeque没实现List，仅实现了Deque，纯粹
 
-<!-- ![picture 0](../images/8af828e2c5e829ba171e65eebf32ca00b9b706c5206b1c39ad1ab5b07d1a0972.png) -->
+我用过的一些Collection：
 
-![picture 0](../images/f97e09cc89eb520675f3094b3f22eb1155c48a59e9408e259a4648c456ad9675.png)  
-
-![picture 1](../images/7f78a6e082e80092db2038e2136f6cf49dcf26af263e91f81dc3797a909239a3.png)  
+* `ArrayList`: 动态数组，实现了List接口，支持动态增长。
+* `LinkedList`: 双向链表，也实现了List接口，支持快速的插入和删除操作。
+* `ArrayDeque`: 双端队列，实现了Queue接口，可以充当栈，FIFO队列和双端队列结构。
+* `HashMap`: 基于哈希表的Map实现，存储键值对，通过键快速查找值。
+* `HashSet`: 基于HashMap实现的Set集合，用于存储唯一元素。
+* `TreeMap`: 基于红黑树实现的有序Map集合，可以按照键的顺序进行排序。
+* `LinkedHashMap`: 基于哈希表和双向链表实现的Map集合，保持插入顺序或访问顺序。
+* `PriorityQueue`: 优先级队列，可以按照比较器或元素的自然顺序进行排序。可用来充当堆数据结构。
 
 ### 哪些是线程安全/不安全的 ☆
 
-* 线程安全
-  * Vector：古老的List实现类，现推荐使用ArrayList
-  * HashTable：古老的哈希表实现，现推荐使用HashMap
+* java.util包中线程安全
+  * Vector：古老的List实现类，内部方法基本通过synchronized修饰，现推荐使用ArrayList
+  * HashTable：古老的哈希表实现，同样适用synchronized修饰内部方法，现推荐使用HashMap
   * `Collections.synchronizedList`, `Collections.synchronizedSet`, `Collections.synchronizedMap`: 这些**方法**可以将非线程安全的集合包装成线程安全的集合
     * 底层本质是：eg synchronizedList类将List的很多方法加了synchronized，但**务必注意在迭代遍历List时必须手动添加synchronized(因为listIterator方法并没有添加synchronized)**
+* java.util.concurrent包中线程安全
+  * 并发list: `CopyOnWriteArrayList`
+  * 并发set: `CopyOnWriteArraySet`
+  * 并发map: `ConcurrentHashMap`
 * 线程不安全
-  * ArrayList, LinkedList, HashSet, HashMao
+  * ArrayList, LinkedList, HashSet, HashMap
   * TreeSet, TreeMap: 虽然它们是有序集合，但也是线程不安全的
 
 ### 如何选择
@@ -106,7 +113,7 @@ Java集合类主要由Collection和Map这两个接口派生而出，其中Collec
   * 维护插入顺序 -> `LinkedHashMap`
   * 读取文件 -> `Properties`
 
-## prerequisite knowledge
+## 前置知识
 
 ### enhanced for
 
@@ -138,7 +145,7 @@ for (Iterator<String> iterator = list.iterator(); iterator.hasNext(); ) {
 } // list.iterator()指向首元素之前，第一次调用.next()才返回列表首元素
 ```
 
-## general interface
+## 接口
 
 ### Iterable Interface
 
@@ -160,63 +167,49 @@ sout(iterator.next()); // .next()会自动将iterator后移
 ### Collection Interface
 
 * collection接口可以存放多个object元素
-* 有很多collection的实现类，比如ArrayList, HashSet等（通过Set和List间接实现）
 
-methods (为什么没有forEach()，不是一般都会重写上面的所有method吗，因为Iterable接口的forEach()方法有默认实现)
 
-* .size()
-* .isEmpty()
-* .iterator()
-* .contains()
-* .add()
-* .remove()
-* .clear()
-* .equals()
+#### Collection vs. Collections
+
+* Collection是一个**interface**，是所有集合类的基础接口。定义了一组通用的操作和方法，如add(), remove(), size(), isEmpty(), contains(), iterator(), clear(), equals(); Collection接口下有很多子接口，如List，Set和Queue。
+  * 即Collection下的所有实现类都有这些方法，尽管实现不同，但我们无需考虑; 比如ArrayList和HashSet都用add()，而HashMap不属于Collection实现类，是Map的实现类，他们喜欢put()
+* Collections是一个**工具类**，提供了一系列**静态方法**，用于对集合进行操作，比如排序、查找、翻转等。
 
 ## 1.List Interface
 
-List和Set分别是两个interface
-
-* List的实现类(如ArrayList, LinkedList...)中元素存储顺序和添加顺序一致、可重复
+* List的常见实现类有ArrayList, LinkedList和Vector
 * List支持(顺序)索引: .get(), 不一定支持随机索引哦
 
-methods (定义了Collection,Iterable的方法(未必都重写了，可能只定义而无需改变))
+methods (Collection和Iterable的方法应该都有)
 
-* get(idx)
+* **get**(idx)
 * getFirst(), getLast()
-* indexOf()
-* set(idx, element)
-* subList(start, end)
-* sort()
+* **indexOf**()
+* **set**(idx, element)
+<!-- * subList(start, end) -->
+* **sort**()
+
+> List相比于Collection多了很多下标相关的操作，Set是不支持下标的
 
 List的三种遍历方式（即List的所有实现子类均可用: e.g.,Vector, LinkedList...）：
 
 ```java
-public static void main(String[] args) {
-    ArrayList arrayList = new ArrayList();
-    arrayList.add("aa");
-    arrayList.add("bb");
-    // 遍历的三种方式
-    for (int i=0; i<arrayList.size(); ++i)
-        System.out.println(arrayList.get(i)); // Object -> int
+// 遍历的三种方式
+for (int i=0; i<arrayList.size(); ++i)
+    System.out.println(arrayList.get(i)); // Object -> int
 
-    for (Iterator iter=arrayList.iterator(); iter.hasNext();)
-        System.out.println(iter.next());
+for (Iterator iter=arrayList.iterator(); iter.hasNext();)
+    System.out.println(iter.next());
 
-    // for-range: based on the iterator
-    for (Object obj : arrayList)
-        System.out.println(obj);
-}
+// for-range: based on the iterator
+for (Object obj : arrayList)
+    System.out.println(obj);
 ```
 
 ### ArrayList ☆
 
-`import java.util.ArrayList;`
-`import java.util.List;`
-
 ```java
 ArrayList<E> objectName = new ArrayList<>(); // 初始化
-// E是泛型数据类型，用于设置对象的数据类型
 ArrayList<String> strList = new ArrayList<>();
 ```
 
@@ -231,12 +224,15 @@ precautions:
 
 底层分析jdk8.0：
 
-* ArrayList的本质是**Object[] elementData**;
-* 如果使用无参ctor**实例化ArrayList，elementData容量为0, `ie {}`**。第一次add时，扩容elementData为10，再次扩容按照1.5翻倍（即添加50%）
-* 扩容后将原数组中的元素复制到新数组
-  * 底层采用`Arrays.copyOf(elementData, newCapacity);`
-* 如果使用**指定大小n的ctor实例化，容量开始为n**，然后直接按照**1.5倍**扩容
-<!-- > `transient`修饰词表示该属性不会被序列化 -->
+* ArrayList的本质是**Object[] elementData**，当当前元素个数达到数组容量上限就会触发扩容操作;
+* 如果使用无参ctor**实例化ArrayList，elementData容量为0, `ie {}`**。第一次add时，扩容elementData为**10**，再次扩容按照**1.5**翻倍（即添加50%）
+  * 扩容步骤：
+    * 计算新容量：新容量为1.5倍
+    * 创建新的更大的数组
+    * 逐个复制元素：通过`Arrays.copyOf(elementData, newCapacity);`
+    * **更新引用**：将ArrayList内部指向原数组的引用指向新数组
+* 如果使用**指定大小n的ctor实例化，容量开始为n**，然后直接按照**1.5倍**扩容；
+  * 频繁扩容可能影响性能，故而在初始化ArrayList时可以预分配足够大的容量，避免频繁触发扩容
 
 ```java
 private static final Object[] DEFAULTCAPACITY_EMPTY_ELEMENTDATA = {};
@@ -247,6 +243,9 @@ public ArrayList() {
 // 扩容机制核心 -> 扩容为原来的1.5倍
 int newCapacity = oldCapacity + (oldCapacity >> 1); // 右移1位 即 缩小一倍；移位要比普通运算符快很多
 ```
+
+Q: 为何是1.5倍？
+A: 可充分利用移位操作，运算速度快
 
 #### ArrayList线程安全吗 怎么变为线程安全
 
@@ -345,29 +344,28 @@ private static class Node<E> {
 * 功能方面：Array只有length属性，ArrayList提供了**增删等api**，如add(),remove(),size()等
 * 维度：Array可以多维，ArrayList只可以一维
 
-### ArrayList vs. LinkedList ☆
+### ArrayList vs. LinkedList ☆☆
 
-* ArrayList底层是**动态数组**Object[], LinkedList底层是**双向链表**（jdk1.6之前是循环链表）
-* 前者支持**随机访问**，实现了`RandomAccess`接口，后者不可，O(n)
-* 二者都不可保证线程安全
-* **内存占用**方面：ArrayList占用连续内存空间，但可能需要在结尾预留一定的容量空间，LinkedList无需连续，需要额外空间存储前后节点的引用
-* 前者仅实现List接口，后者实现了List和Deque接口，可作为队列或栈使用
-  * > jdk21 搞了个`SequencedCollection`，ArrayList实现了该接口，也具有了`removeLast(), addFirst()`等方法，也是可以直接作为栈或队列了。（LinkedList也实现了该接口...反正他俩都有这些函数，jdk8时ArrayList是没有的
+* **底层数据结构不同**：ArrayList底层是**动态数组**Object[], LinkedList底层是**双向链表**（jdk1.6之前是循环链表）
+* **随机访问**：前者支持**随机访问**，即O(1)访问，实现了`RandomAccess`接口，后者不可，O(n)
+* **空间占用**：ArrayList占用连续内存空间，但可能需要在结尾预留一定的容量空间，相对占用较大空间，LinkedList无需连续，只需要额外空间存储前后节点的引用，**相对较小**
+* **插入和删除的效率不同**：ArrayList在**尾部**的插入和删除操作效率较高(O(1))，但在中间或开头的增删需要移动元素，平均O(n)；LinkedList在任意位置的**纯**插入和删除操作效率都比较高，只需调整节点自身的双向指针即可（纯删除操作是O(1)没问题），但找到节点需要O(n)事件，所以除了删除**头尾**节点，其它节点的增删是O(n)的，故而效率也不高
+* **理论上使用场景**：ArrayList适合**频繁随机访问和==中间==或尾部的增删**操作，LinkedList适合频繁的 **头部的增删操作和无需随机**访问的场景
+  * 我实际的**实验**：头插、中间插和尾插，分别插入1w,10w,100w条，测试结果：
+    * 头插：AL需要移动后续的元素，LL直接插，LL更快毋庸置疑，快了上百倍吧
+    * 中间插：二位都是O(n)，结果显示**AL大概比LL快了10倍**，**100w数据的时候大概快了100倍**
+      * **==一般大家会说中间节点的增删LL更快，错误想法==**
+      * 可能是AL这种连续内存空间更有利于CPU缓存，以及内存分配啥的
+    * 尾插：二维都是O(1)，实验结果也差不多；~~LL要new对象，效率比AL低一点点~~
+  * Anyway，除了大量头部增删可能可以考虑LL，其他请用AL；或者说，请遵从LL作者意愿，使用AL；
 
-ArrayList的插入和删除时间复杂度
 
-* 插入：
-  * 头部插入：所有元素依次后移 -> O(n)
-  * 尾部插入：如果没到容量极限 -> O(1)，如果到极限 -> 扩容 -> O(n)复制所有 -> O(1)添加
-  * 中间插入：平均移动n/2个元素 -> O(n)
-* 删除：
-  * 头部删除：O(n)
-  * 尾部：O(1)
-  * 中间：移动n/2 -> O(n)
 
-LinkedList（底层双向链表）的头尾插入删除都是O(1)，中间插入删除需要表平均遍历n/2个元素 -> O(n)
+![picture 2](../images/cefa318ff6accc63831b50a907310f2d478715e193c940a287ab61147bc6f772.png){width=70%}
 
-> 我们一般不用LinkedList，其作者都说: I wrote it, and i never use it. 不要认为LinkedList适合增删，它删除头尾确实快，但删除中间元素的时间复杂度为O(n)
+
+<!-- * 前者仅实现List接口，后者实现了List和Deque接口，可作为队列或栈使用 -->
+  <!-- * > jdk21 搞了个`SequencedCollection`，ArrayList实现了该接口，也具有了`removeLast(), addFirst()`等方法，也是可以直接作为栈或队列了。（LinkedList也实现了该接口...反正他俩都有这些函数，jdk8时ArrayList是没有的 -->
 
 ## 2.Set Interface
 
@@ -622,6 +620,10 @@ HashMap<String, String> map = new HashMap<>();
 * 可以排序，默认ctor按照自然顺序，可以传入一个Comparator匿名对象
 * TreeMap底层是Entry
 
+### LinkedHashMap
+
+继承自HashMap，内部维护了一个双向链表，保留了键值对的插入顺序（即我们使用**双向链表 + HashMap** [手撕LRU的实现](https://leetcode.cn/problems/lru-cache/?envType=study-plan-v2&envId=top-interview-150)
+
 ### HashMap vs. Hashtable
 
 * Hashtable基本被淘汰，不要用
@@ -642,7 +644,7 @@ HashMap<String, String> map = new HashMap<>();
 
 ### 为什么HashMap线程不安全
 
-数据覆盖问题：多线程同时执行put操作，如果计算出来的索引位置是相同的，那就会造成前一个key被后一个key覆盖，从而导致元素的丢失
+数据覆盖问题：多线程同时执行put操作，如果计算出来的索引位置是相同的，那就会造成前一个key被后一个key覆盖，从而导致元素的丢失k
 
 ### ConcurrentHashMap是如何实现的 ☆
 

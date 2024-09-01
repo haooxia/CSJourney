@@ -331,18 +331,18 @@ import java.util.Arrays;
 
 public class BubbleSort {
     public static void bubbleSort(int[] nums) {
-        int n = nums.length;
-        for (int i=0; i<n; ++i) { // 最多做n轮"冒泡操作"
-            boolean flag = false; // note 优化：判断本轮是否做了交换操作
-            for (int j=0; j<n-1-i; ++j) { // 注意冒泡的每一轮都需要从头开始 (因为最后才是有序的，所以j也不用走到底
+        for (int i=0; i<nums.length - 1; ++i) {
+            boolean hasSwap = false;
+            for (int j=0; j<nums.length-1-i; ++j) { // 每一轮都从最左侧开始都最后有序的为止
                 if (nums[j] > nums[j+1]) {
                     int tmp = nums[j];
                     nums[j] = nums[j+1];
                     nums[j+1] = tmp;
-                    flag = true;
+                    hasSwap = true;
                 }
+                // 相邻没交换 后面还可能交换的
             }
-            if (!flag) return; // 说明本趟并未发生交换
+            if (!hasSwap) return; // 本轮从头到尾都没发生交换
         }
     }
 

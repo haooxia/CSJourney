@@ -66,9 +66,11 @@
 
 TODO：
 
-* ReentrantLock底层原理、是如何实现可重入的
+* ReentrantLock底层原理、是如何实现可重入的（why volatile? state；参考点评项目我写了）
 * 掌握AQS底层原理
 * synchronized锁升级过程
+* synchronized原理
+* 锁升级，锁膨胀，偏向锁（synchronized
 
 ## 线程基础
 

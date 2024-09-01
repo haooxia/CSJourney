@@ -13,6 +13,7 @@
   - [Character](#character)
   - [Stack-about](#stack-about)
   - [Queue-about](#queue-about)
+    - [PriorityQueue / Heap](#priorityqueue--heap)
 
 
 ![picture 1](../images/8c59864034ef6c2020329cd184d752e513b468797f89cba43cd3ed57ce597f0b.png)  
@@ -126,7 +127,7 @@ int[] arr = {1,3,4,2,9,7};
 Arrays.sort(arr);
 
 // 逆序排序（方法一）
-Arrays.sort(arr, Comparable.reverseOrder()); // 仅适用于引用数据类型，忘了吧
+Arrays.sort(arr, Comparable.reverseOrder()); // 仅适用于引用数据类型，忘了吧；别忘，大根堆的创建类似 把Comparable改为Collections
 
 // 逆序排序（方法二：匿名内部类并实现compare方法）
 Arrays.sort(arr, new Comparator<Integer>() {
@@ -491,3 +492,20 @@ Deque中queue相关的方法和Queue中的一般方法的对应关系：
 ![picture 4](../images/5d9c9b19538e645beb3acd825b932665a1a24bf2ce7ffe47bad01537351421d9.png)  
 
 有时候也是需要用一下双端队列的，当你既想两头出入的时候
+
+### PriorityQueue / Heap
+
+* 和Queue区别于：总是优先级最高的元素先出队，不是直接FIFO了
+* 底层数据结构是**堆**，底层是可变长数组，默认是**小顶堆**
+* 通过堆元素的上浮和下沉，插入和删除堆顶元素为O(logn)
+
+---
+
+* 创建**小根堆**：`Queue<Integer> heap = new PriorityQueue<>();`
+* 创建**大根堆**：`Queue<Integer> heap = new PriorityQueue<>(Collections.reverseOrder());`
+  * `Collections.reverseOrder()`返回一个`Comparator`，用于逆序比较元素
+* api和Queue一致
+* 添加元素，自动排序：`offer() / add()`
+* 获取并移除头部元素： `poll()`
+* 获取不移除头部元素：`peek()`
+* `size(), isEmpty(), contains(), remove()`
