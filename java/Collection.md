@@ -15,13 +15,14 @@
     - [ArrayList ☆](#arraylist-)
       - [扩容机制](#扩容机制)
       - [ArrayList线程安全吗 怎么变为线程安全](#arraylist线程安全吗-怎么变为线程安全)
+    - [Vector](#vector)
+    - [ArrayList vs. Vector](#arraylist-vs-vector)
+    - [ArrayList vs. Array (built-in) ☆](#arraylist-vs-array-built-in-)
     - [CopyOnWriteArrayList ☆](#copyonwritearraylist-)
       - [如何保证线程安全？](#如何保证线程安全)
       - [为什么写要上锁，读不上锁？](#为什么写要上锁读不上锁)
       - [为什么写时复制？](#为什么写时复制)
-    - [Vector](#vector)
     - [LinkedList](#linkedlist)
-    - [ArrayList vs. Array (built-in) ☆](#arraylist-vs-array-built-in-)
     - [ArrayList vs. LinkedList ☆☆](#arraylist-vs-linkedlist-)
   - [2.Set Interface](#2set-interface)
     - [HashSet vs. LinkedHashSet vs. TreeSet](#hashset-vs-linkedhashset-vs-treeset)
@@ -34,12 +35,14 @@
     - [BlockingQueue](#blockingqueue)
   - [4.Map Interface](#4map-interface)
     - [HashMap ☆](#hashmap-)
-      - [如何解决Hash冲突？HashMap中是如何解决的？](#如何解决hash冲突hashmap中是如何解决的)
+      - [HashMap的底层实现](#hashmap的底层实现)
       - [HashMap的put流程](#hashmap的put流程)
         - [详解HashMap中的hashCode() + equals()](#详解hashmap中的hashcode--equals)
         - [如果只重写了equals() 没重写hashCode()，put的时候会怎么样？](#如果只重写了equals-没重写hashcodeput的时候会怎么样)
         - [HashMap的hash()是如何设计的 / 扰动函数](#hashmap的hash是如何设计的--扰动函数)
-        - [HashMap为什么按2倍扩容](#hashmap为什么按2倍扩容)
+      - [get()流程](#get流程)
+      - [如何解决Hash冲突？HashMap中是如何解决的？](#如何解决hash冲突hashmap中是如何解决的)
+      - [HashMap线程不安全](#hashmap线程不安全)
       - [遍历HashMap](#遍历hashmap)
     - [Properties](#properties)
     - [TreeMap](#treemap)
@@ -218,14 +221,14 @@ precautions:
 * 如果不指定泛型`E`，默认是Object类型，此时允许放入不同类型的数据
 * 如果指定了E的类型，比如String，就只能放String了(**编译时检查类型**)
 * 可以存null，但无意义
-* ArrayList是线程不安全的（无synchronized）
+<!-- * ArrayList是线程不安全的（无synchronized） -->
 
 #### 扩容机制
 
 底层分析jdk8.0：
 
 * ArrayList的本质是**Object[] elementData**，当当前元素个数达到数组容量上限就会触发扩容操作;
-* 如果使用无参ctor**实例化ArrayList，elementData容量为0, `ie {}`**。第一次add时，扩容elementData为**10**，再次扩容按照**1.5**翻倍（即添加50%）
+* 如果使用无参ctor**实例化ArrayList，elementData容量为0, `ie {}`**。第一次add时，扩容elementData为 **==10==**，再次扩容按照**1.5**翻倍（即添加50%）
   * 扩容步骤：
     * 计算新容量：新容量为1.5倍
     * 创建新的更大的数组
@@ -247,12 +250,42 @@ int newCapacity = oldCapacity + (oldCapacity >> 1); // 右移1位 即 缩小一�
 Q: 为何是1.5倍？
 A: 可充分利用移位操作，运算速度快
 
+Q: ArrayList会自动缩容吗？
+A: 源码中**没有自动缩容机制(已证实)**，remove()和clear()都不会使得elementData的长度减小，但会**把相应的元素置为null**，便于GC回收。
+
 #### ArrayList线程安全吗 怎么变为线程安全
 
 * 通过方法Collections.synchronizedList
 * 直接使用线程安全类`CopyOnWriteArrayList`或者`Vector`(旧)
 
 线程不安全可能导致：下标越界异常、size与我们add的数量不一致（具体没啥好说的吧，慢慢推得）
+
+### Vector
+
+* Vector是List的古老实现类，了解即可
+  * 如果需要线程安全，通常使用Collections.synchronizedList()是ArrayList同步，来替代Vector
+* Vector的底层也是Object[] elementData;
+* Vector是线程安全的 (有Synchronized)，适用于多线程环境
+* 如果使用无参ctor实例化，**实例化时就会预分配elementData为10**，之后add不够用了再按照 **==2==** 倍扩容
+* 如果使用指定大小n的ctor实例化，容量开始为n，然后直接按照**2**倍扩容
+  * 扩容底层也采用`Arrays.copyOf(elementData, newCapacity);`
+
+### ArrayList vs. Vector
+
+* ArrayList的无参构造器中并不会**预分配**10个空间，是在add中才会new；而Vector的无参ctor上来就new 10个空间
+* ArrayList的**扩容**频率更为频繁（因为50%嘛），但内存利用率也更高
+* ArrayList更高效，因为不考虑**线程安全**
+<!-- * ArrayList是新类(jdk1.2), Vector(jdk1.0), 如无特别需要，一般采用ArrayList -->
+
+### ArrayList vs. Array (built-in) ☆
+
+* ArrayList内部基于**动态数组**，Array是静态数组，前者可动态扩容，后者创建后长度就固定了
+* ArrayList**只能存对象**/引用(**可以存数组int[]**)，不可存基本数据类型，Array均可
+* 前者创建时无需**指定大小**，后者必须
+* 前者可以使用泛型确保类型安全（**编译时类型检查**），后者不行
+  * 如果上线后运行时报错，那就很麻烦了，所以编译时报错是好很多的
+* 功能方面：Array只有length属性，ArrayList提供了**增删等api**，如add(),remove(),size()等
+* 维度：Array可以多维，ArrayList只可以一维
 
 ### CopyOnWriteArrayList ☆
 
@@ -261,15 +294,16 @@ A: 可充分利用移位操作，运算速度快
 
 #### 如何保证线程安全？
 
-* `CopyOnWriteArrayList`底层也是通过一个数组保存数据，通过**volatile修饰数组变量**，**保证当前线程更新数组引用时(即数组引用指向一个新的数组对象)，其他线程可以立即看到这个变化**（可见性）
+> CopyOnWriteArrayList底层也是用一个数组保存数据
+
+* 在写操作(增删改)时，首先通过ReentrantLock加锁，然后将当前**数组拷贝一份(copyOf)**，然后进行元素修改，然后将CopyOnWriteArrayList内部数组的引用指向新数组的地址，然后unlock
+* 底层的数组使用**volatile**修饰，保证多线程环境中，任何线程对数组引用的更新都能被其他线程立即看到，而不会读取到旧的数组引用（可见性）
   * `private transient volatile Object[] array;`
-* 在写操作(增删改)时，首先通过ReentrantLock加锁，然后将当前数组拷贝一份并让长度加一(copyOf)，然后将新元素放到数组最后一位，然后**更新数组的引用**，然后unlock
-  * `Object[] newElements = Arrays.copyOf(elements, len + 1);`
 * 在读操作时并不需要加锁
 
 #### 为什么写要上锁，读不上锁？
 
-* 之所以写要上锁，是因为保证只有一个线程可以修改，如果多个线程一块改，那数据可能不一致
+* 如果写不上锁，那么多个线程可以一块改，那数据可能不一致
 * 之所以读不上锁，是因为**读操作总是基于一个稳定的快照进行**，首先是允许大家一起读的(也即读读不互斥)；此外，即使数组写时，读操作依然可以继续访问旧的数据，不受影响
 
 #### 为什么写时复制？
@@ -279,41 +313,9 @@ A: 可充分利用移位操作，运算速度快
   * 如果读不上锁，可能读到不一致的数据，因为读时，数组的内容可能被写操作改变，所以你可能读到部分修改后的数据和部分未修改的数据
   * 解决方案是读也上锁，那读就得阻塞了，那读的效率就大大降低了
 
-### Vector
-
-* Vector是List的古老实现类（遗留类），了解即可，现代开发很少用
-  * 如果需要线程安全，通常使用Collections.synchronizedList()是ArrayList同步，来替代Vector
-* Vector的底层也是Object[] elementData;
-* Vector是线程安全的 (有Synchronized)，适用于多线程环境
-* 如果使用无参ctor实例化，**实例化时就给elementData为10**，之后add不够用了再按照**2**倍扩容
-* 如果使用指定大小n的ctor实例化，容量开始为n，然后直接按照**2**倍扩容
-  * 扩容底层也采用`Arrays.copyOf(elementData, newCapacity);`
-
-ArrayList vs. Vector
-
-* ArrayList的无参构造器中并不会预分配10个空间，是在add中才会new；而Vector的无参ctor上来就new 10个空间
-* ArrayList的扩容频率更为频繁（因为50%嘛），但内存利用率也更高
-* ArrayList更高效，因为不考虑线程安全
-* ArrayList是新类(jdk1.2), Vector(jdk1.0), 如无特别需要，一般采用ArrayList
-
 ### LinkedList
 
-`import java.util.LinkedList;`
-
 ![picture 3](../images/91feffe6cb7766844507641c9272aafe89fe6c02b47d439e869589b911c5bd9d.png)  
-
-* LinkedList底层维护了一个双向链表, 一个LinkedList维护两个属性，first指向首结点，last指向尾结点 (当然还有个size属性)
-* 每个结点是一个Node对象，里面维护了prev, next, item三个属性
-* 增删比较快（因为没涉及到数组，扩容等;），改查比较慢 (其实有点问题的，增删头尾确实快，中间的话需要先O(n)遍历到为止，所以增删也并不快)
-* LinkedList线程不安全
-* Node是LinkedList的static内部类
-* 未实现`RandomAccess`标记接口，因为底层内存地址不连续，不支持随机访问
-
----
-
-* implements List: 说明是一个列表，支持增删改查（可通过idx访问: get(idx)，只不过其底层是不支持随机访问的
-* **implements Deque**: 说明具有双端队列的特性，方便实现stack和queue等数据结构
-  * 但一般使用ArrayDeque实现stack和queue，因为其基于动态数组实现，性能更好，更省内存（二者都实现了Deque
 
 ```java
 private static class Node<E> {
@@ -329,20 +331,26 @@ private static class Node<E> {
 }
 ```
 
-源码：
+* LinkedList底层维护了一个**双向链表**, 一个LinkedList维护两个属性，first指向首结点，**last指向尾结点**(所以尾部增删很快) (当然还有个size属性)
+  * 双向链表不同于双向循环链表链表
+* 每个结点是一个Node对象，里面维护了prev, next, item三个属性
+* 未实现`RandomAccess`标记接口，因为底层内存地址不连续，不支持随机访问
+<!-- * 增删比较快（因为没涉及到数组，扩容等;），改查比较慢 (其实有点问题的，增删头尾确实快，中间的话需要先O(n)遍历到为止，所以增删也并不快) -->
+<!-- * LinkedList线程不安全 -->
+<!-- * Node是LinkedList的static内部类 -->
+
+---
+
+* implements List: 说明是一个列表，支持增删改查（可通过idx访问: get(idx)，只不过其底层是不支持随机访问的
+* **implements Deque**: 说明具有双端队列的特性，方便实现stack和queue等数据结构
+  * 但一般使用ArrayDeque实现stack和queue，因为其基于动态数组实现，性能更好，更省内存（二者都实现了Deque），而且最重要的是，LinkedList暴露了通过中间idx修改容器的能力，这并不符合栈和队列的特性
+
+
+<!-- 源码：
 
 * new LinkedList()啥也没干，就初始化了first, last, size..
 * .add()通过尾插法，new一个Node（赋值item, next, prev），添加到双向链表中
-* .remove()默认删除首元素 unlinkFirst()
-
-### ArrayList vs. Array (built-in) ☆
-
-* ArrayList内部基于**动态数组**，Array是静态数组，前者可动态扩容，后者创建后长度就固定了(ArrayList并不可以自动缩容)
-* ArrayList**只能存对象**/引用(**可以存数组int[]**)，不可存基本数据类型，Array均可
-* 前者创建时无需指定大小，后者必须
-* 前者可以使用**泛型**确保类型安全（编译时类型检查），后者不行
-* 功能方面：Array只有length属性，ArrayList提供了**增删等api**，如add(),remove(),size()等
-* 维度：Array可以多维，ArrayList只可以一维
+* .remove()默认删除首元素 unlinkFirst() -->
 
 ### ArrayList vs. LinkedList ☆☆
 
@@ -350,45 +358,35 @@ private static class Node<E> {
 * **随机访问**：前者支持**随机访问**，即O(1)访问，实现了`RandomAccess`接口，后者不可，O(n)
 * **空间占用**：ArrayList占用连续内存空间，但可能需要在结尾预留一定的容量空间，相对占用较大空间，LinkedList无需连续，只需要额外空间存储前后节点的引用，**相对较小**
 * **插入和删除的效率不同**：ArrayList在**尾部**的插入和删除操作效率较高(O(1))，但在中间或开头的增删需要移动元素，平均O(n)；LinkedList在任意位置的**纯**插入和删除操作效率都比较高，只需调整节点自身的双向指针即可（纯删除操作是O(1)没问题），但找到节点需要O(n)事件，所以除了删除**头尾**节点，其它节点的增删是O(n)的，故而效率也不高
-* **理论上使用场景**：ArrayList适合**频繁随机访问和==中间==或尾部的增删**操作，LinkedList适合频繁的 **头部的增删操作和无需随机**访问的场景
+<!-- * **理论上使用场景**：ArrayList适合**频繁随机访问和==中间==或尾部的增删**操作，LinkedList适合频繁的 **头部的增删操作和无需随机**访问的场景 -->
+* **增删实验**
   * 我实际的**实验**：头插、中间插和尾插，分别插入1w,10w,100w条，测试结果：
     * 头插：AL需要移动后续的元素，LL直接插，LL更快毋庸置疑，快了上百倍吧
     * 中间插：二位都是O(n)，结果显示**AL大概比LL快了10倍**，**100w数据的时候大概快了100倍**
       * **==一般大家会说中间节点的增删LL更快，错误想法==**
       * 可能是AL这种连续内存空间更有利于CPU缓存，以及内存分配啥的
     * 尾插：二维都是O(1)，实验结果也差不多；~~LL要new对象，效率比AL低一点点~~
-  * Anyway，除了大量头部增删可能可以考虑LL，其他请用AL；或者说，请遵从LL作者意愿，使用AL；
+  * 故：除了 **频繁头部增删操作 && 无需随机访问** 可能可以考虑LinkedList，其他请用ArrayList；或者说，请遵从LL作者意愿，使用AL；
 
 
 
 ![picture 2](../images/cefa318ff6accc63831b50a907310f2d478715e193c940a287ab61147bc6f772.png){width=70%}
 
-
-<!-- * 前者仅实现List接口，后者实现了List和Deque接口，可作为队列或栈使用 -->
-  <!-- * > jdk21 搞了个`SequencedCollection`，ArrayList实现了该接口，也具有了`removeLast(), addFirst()`等方法，也是可以直接作为栈或队列了。（LinkedList也实现了该接口...反正他俩都有这些函数，jdk8时ArrayList是没有的 -->
-
 ## 2.Set Interface
 
-* Set的实现类(如TreeSet, HashSet)中元素存储顺序和添加顺序不一致、不可重复（但是取出顺序是**固定**的）
+* Set就是不可重复,HashSet是典型,TreeSet内部根据红黑树自动排序,LinkedHashSet会保证quchu顺序和插入顺序一致
   * **不可重复性**：指添加的元素按照equals()判断时，返回false，需要同时重写hashCode()和equals()方法
     * 为什么还需要override hashCode()? [github/haooxia](https://github.com/haooxia/interview/blob/main/java/java.md#hashcode)
-* Set不支持索引
-* 可以add(null)
+* Set不支持索引,所以set接口并不能使用索引遍历，只剩下两种遍历方式：迭代器 和 增强for
+<!-- * 可以add(null) -->
 
-set接口并不能使用索引遍历，只剩下两种遍历方式：迭代器 和 增强for
-
-methods (定义了Collection,Iterable的方法，似乎基本只有Collection的接口，自己没啥特别的接口)
-
-* ~~get(idx)~~
-* ~~set(idx, element)~~
-* ~~sort()~~
 
 ### HashSet vs. LinkedHashSet vs. TreeSet
 
 > HashSet是不会自动排序的
 
-* 都是Set接口的实现类，元素唯一，都不是线程安全的
-* 主要区别于底层数据结构：HashSet底层是哈希表(基于HashMap实现)；LinkedHashSet底层是双向链表+哈希表，元素的插入取出符合FIFO；TreeSet底层是红黑树，元素有序（可自然排序or定制排序
+* 都线程不安全
+* 主要区别于底层数据结构：HashSet底层是哈希表+单链表/红黑树(基于HashMap实现)；LinkedHashSet底层是**双向链表+哈希表**，元素的插入取出符合FIFO；TreeSet底层是**红黑树**，元素有序（可自然排序or定制排序
 * HashSet用于无需保证元素插入和取出顺序的场景，LinkedHashSet用于需要保证FIFO的场景，TreeSet用于支持元素自定义排序的场景
   * TreeSet的add时间复杂度是`O(logn)`, HashSet的add是`O(1)`
 
@@ -408,19 +406,20 @@ HashSet的底层是HashMap，参考即可
 * TreeSet默认构造器的元素按照**自然顺序**（元素实现的Comparable接口中的compareTo默认方法规则，比如String就是字母排序，Integer是数值大小）排序
 * TreeSet构造器**可以传入一个Comparator匿名对象来自定义排序规则**，实际上是将其赋给了底层的TreeMap的comparator属性。
 * 那为什么TreeSet会自动排序呢?
-  * TreeSet基于TreeMap使用**红黑树**数据结构来存储键值对，这种树结构保证了插入、删除、查找操作的时间复杂度为 O(logn)，并且自动维护元素的排序。
+  * TreeSet基于TreeMap使用**红黑树**数据结构来存储键值对，这种树结构保证了插入、删除、查找操作的时间复杂度为O(logn)，并且自动维护元素的排序。
 
 ## 3.Queue Interface
 
 ### Queue vs. Deque
 
 * 二者都是interface奥
-* Queue是单端队列，一头增一头删，Deque是双端队列，两头都可以增删
+* Queue是单端队列，Deque是双端队列
 
 ### PriorityQueue
 
 * 和Queue区别于：总是优先级最高的元素先出队，不是直接FIFO了
 * 底层数据结构是**堆**，底层是可变长数组，默认是小顶堆
+  * 创建大根堆: `Queue<Integer> heap = new PriorityQueue<>(Collections.reverseOrder());`
 * 通过堆元素的上浮和下沉，插入和删除堆顶元素为O(logn)
 * 非线程安全
 
@@ -438,33 +437,31 @@ HashSet的底层是HashMap，参考即可
 
 ### HashMap ☆
 
-![picture 4](../images/95c10dad5f0e4e95866e3424bb9c6faa261ba9706d4cfca307ed391c100a9eff.png)  
+<!-- ![picture 4](../images/95c10dad5f0e4e95866e3424bb9c6faa261ba9706d4cfca307ed391c100a9eff.png)   -->
 
-* HashMap将数据以键值对的形式存储(存在内部的HashMap$Node对象中)，并通过"数组+链表/红黑树"的结构组织成一个table，是线程不安全的
-* **HashMap的底层实现？**
-  * jdk7中HashMap是`数组+链表`，即拉链法
-    * 哈希冲突时，会在冲突位置形成链表，将新增元素加入到链表末尾，问题是：冲突过多时链表会特别长，导致查找复杂度逐渐退化为O(n)
-  * jdk8引入红黑树(Red-Black Tree)，链表长度超过8时，会将链表转换为红黑树(Treeify)，以提高查找性能(**降为O(logn)**)。长度小于6时重新变回链表(untreeify)
-    * 红黑树是一种**兜底**策略，牺牲空间换时间
-* **为什么>8树化，<=6时重新变回链表？**
+![picture 11](../images/ffa035437a9b673218ec23ed503041b584f37136e35fe2853e26aeef789217b6.png)  
+
+
+* HashMap将数据以键值对的形式存储(存在内部的`HashMap$Node`对象中)
+
+#### HashMap的底层实现
+
+* jdk7中HashMap是`数组+链表`，即拉链法; **HashMap通过哈希算法将元素的键key映射到数组的槽位Bucket中**
+  * 哈希冲突时(**多个不同key映射到同一bucket**)，会在冲突位置bucket形成链表，将新增元素加入到链表**头部**，问题是：冲突过多时链表会特别长，导致查找复杂度逐渐退化为O(n)
+    * 补充：redis的Dict也是拉链法，也是头插，然后会使用渐进式rehash避免扩容时进程长时间阻塞在rehash过程
+* jdk8首先头插改为**尾插**，jdk8引入**红黑树**，链表长度 **>=8**时，会将链表转换为红黑树(Treeify)，以提高查找性能 (**从O(n)降为O(logn)**)。长度 **<=6**时重新从红黑树转换回链表(**untreeify**)
+
+**Q: 为什么>=8树化，<=6时重新变回链表？**
   * 源码注释中所述：根据泊松分布，在负载因子是0.75时，一个hash桶中元素个数为8的概率小于百万分之一，所以7作为分水岭，=7时不转换，>=8时树化，<=6时反树化。
-* **为什么引入红黑树，而非其他树？**
+
+**Q: 为什么引入红黑树，而非其他树？**
   * 二叉搜索树BST(左 < root < 右)，极端情况下会退化为链表(O(n))：比如插入有序数据，BST一边可能无限长 -> 平衡二叉树
   * 平衡二叉树AVL(左右子树高差不超过1，追求**绝对平衡**): 旋转操作频繁：在添加元素时需要进行**左旋、右旋**操作维持根节点左右两端的平衡，复杂度和开销很高。
   * 红黑树：**不追求绝对的平衡**，相比于AVL减少了很多性能开销
 
-#### 如何解决Hash冲突？HashMap中是如何解决的？
-
-解决Hash冲突的算法：
-
-* **再散列法**/开放地址法：当key的哈希地址`p=H(key)`出现冲突时，以p为基础产生另一个哈希地址p1，如还冲突产生p2..., 将相应元素存入地址pi中
-  * 再散列法函数：$H_i = (H(Key) + d_i) \% m$； // m为表长
-  * 根据**增量序列di**的取值不同，再散列法可分为：
-    * **线性探测再散列**：`di=1,2,3...`, 顺序查找表中下一个单元
-    * **伪随机探测再散列**：加个随机数
-    * **二次探测再散列**：`1^2, -1^2, 2^2, -2^2...`，即左右横跳试探
-* 链地址法/拉链法：每个数组元素bucket上都有一个链表结构,bucket中存头指针，元素存入链表
-  * HashMap
+**Q: 为什么1.7的头插在1.8要改为尾插，尾插不是要遍历到末尾吗，效率不是更低吗？** / **HashMap多线程下有什么问题？**
+  * 此即**HashMap多线程操作导致死循环问题**：1.7在多线程扩容时可能死循环，是因为当哈希表进行扩容时，多个线程同时对链表进行操作，**头插法**可能导致**链表中的节点指向错误的位置**，从而形成一个**环形链表**，进而使得查询元素的操作陷入死循环无法结束; 尾插即可解决该问题。（有点抽象，但细节至此，够用了）
+  * 效率是低点，但没啥，一方面>=8就树化了，O(logn)也没啥；redis的Dict无树化，也单线程，所以头插是没问题的
 
 #### HashMap的put流程
 
@@ -472,27 +469,52 @@ HashSet的底层是HashMap，参考即可
 
 ![picture 7](../images/ff2a59570488e94fa9175ce524dc73385e8f570a58d8c1a61ae6084a58cf3e18.png){width=70%}
 
+调用`put()`添加键值对时，会按照以下流程执行(jdk1.8)：
+
 1. 根据key计算hashCode：`(h = key.hashCode()) ^ (h >>> 16)`
-2. 数组首次扩容：`resize()` (初始大小为16的`Node<K,V>[] table`数组，加载因为0.75)
-3. 根据hashCode计算在数组中的索引：`(n - 1) & hash`
-4. 检查索引处bucket是否存放数据(是否为空)，
-   1. 如果为空则插入一个新的Entry对象
-   2. 如果非空，**判断key是否相同**，是则直接覆盖(用新value替换旧value)，如果key不同，判断集合的结构是链表还是红黑树
-      1. 如果是链表，==**从头开始遍历链表逐个比较key的hashCode和equals()**== 直到找到相同key或到达末尾，如找到相同key，更新，如没找到相同key就**尾插法(jdk8)** (jdk7头插)
-         1. 注意在插入时，如果 ==**链表长度>=8且HashMap的数组长度>=64**==，**树化**
-      2. 如果是红黑树，在红黑树中使用hashCode和equals()方法进行查找，如找到相同key，更新value，如没找到就插入
-5. 元素put过后，最后，检查**负载因子**是否超过阈值(0.75)，如果键值对的数量/数组长度 > 0.75，扩容
-6. **扩容**：搞一个两倍长的数组，重新计算所有元素的位置，算完按照put的思路插入进去即可（该树化就树化），**链表和红黑树的结构也可能被打散**分到不同的bucket中。
+2. 如果table为空，数组首次扩容：`resize()` (初始大小为 **==16==** 的`Node<K,V>[] table`数组，加载因子为0.75)
+3. 根据hashCode计算在数组中的索引：`hash & (n-1)`
+4. 检查索引处bucket是否存放键值对数据(是否为空)，**如果为空**则插入一个新的Entry对象来存储键值对
+5. **如果非空**，检查该位置第一个键值对的hashCode和key是否与要添加的相同；**如果相同**，则表示找到相同的key，直接替换进行更新
+6. **如果hashcode和key不同**，则需要判断集合的结构是链表还是红黑树，然后进行遍历找到是否有相同的key
+   1. 如果是链表结构，==**从头开始遍历链表逐个比较key的hashCode和equals()**== 直到找到相同key或到达**链表末尾**，如找到相同key，更新，如没找到相同key就**尾插**
+   2. 如果是红黑树结构，**在红黑树中使用hashCode和equals()** 方法进行查找，直到找到相同key或到达末尾，如找到相同key，更新value，没找到就插入
+7. 对于链表结构，元素put后需要**检查链表长度是否超过阈值**，ji如果 ==**链表长度>=8且HashMap的数组长度>=64**==，**树化**
+8. 最后，**检查负载因子是否超过阈值(0.75)**，如果**键值对entry的数量 / ==数组bucket长度== > 0.75**，扩容
+9. **扩容**：搞一个**2倍**长的新数组，将旧数组中所有键值对重新计算hashCode并按put到新数组对应位置，最后**更新HashMap的数组引用**
+
+---
+
+Q: 详解**扩容机制** / 以及**rehash过程**
+A: 如果entry元素个数超过了bucket长度的75%，则触发扩容：
+
+1. 搞一个2倍长度的bucket数组
+2. 将旧哈希表中的数据逐个put新哈希表中
+
+由于我们按照2次幂扩容，库容后元素要么在原位置，要么在原位置再移动2次幂的位置
+
+![picture 12](../images/3a30ab901622e6569637ff111328b24b2ab35a4d5d0d8986ba42848df6ad3fc2.png)  
+
+* 因此，在扩充HashMap时，无需重新计算hash，只需看看原来的hash值新增的那个bit是1还是0，0则索引不变，1则新索引=旧索引+旧数组容量；
+* 省去了计算hashCode的时间，而且新增的1bit是0还是1可以认为是随机的(因为原本的hashcode每一位都是随机的)，因此resize时，将之前冲突的点均匀地分散到了新的bucket中。
+
+![picture 13](../images/ff1eb04ffe4cc94bafa17ff25aefe2dc42396304b5c100a0a649f3160ca96869.png){width=70%}
+
+Q: HashMap为什么按2倍扩容
+
+HashMap的容量设置为2的幂次方，是为了快速定位元素所在的数组下标
+hash % length == hash & (length - 1)的前提是length是2的n次方，使用&可以加速运算。
+
+---
 
 > 一方面HashMap通过hashcode确定bucket存储位置，另一方面HashMap在equals()之前利用hashcode来提高查找效率（虽然hashcode相同不能直接推出两个key相同，但hashcode不同两个key一定不同）
 ---
 
-注意：
-
-* **结点个数**达到临界值(数组长度*0.75)就会扩容（总长度 × 2）
-  * 注意：结点个数是指所有链表的所有结点之和（没有说只算数组的首元素）
-* `if (len(this linked list) = TREEIFY_THRESHOLD(8) && len(table) >= MIN_TREEIFY_CAPACITY(64)`才会将该链表(this linked list)树化为红黑树；如果链表长度=8但table长度不够64，会先插入到链表，然后如果size超过临界值，resize()将数组扩容两倍
+* **扩容机制**：$负载因子 = \dfrac{entry数}{bucket数} > 0.75$
+  * entry数是所有链表的所有结点之和（没有说只算数组的首元素）
+* **树化机制**：`if (len(this linked list) = TREEIFY_THRESHOLD(8) && len(table) >= MIN_TREEIFY_CAPACITY(64)`才会将该链表(this linked list)树化为红黑树；如果链表长度=8但table长度不够64，会先插入到链表，然后如果size超过临界值，resize()将数组扩容两倍
   * 16->32->64 -> 树化为红黑树 (condition: 链表长度==8)
+  * 反树化的条件？是否有个数的限制
 
 ##### 详解HashMap中的hashCode() + equals()
 
@@ -525,10 +547,30 @@ static final int hash(Object key) {
 }
 ```
 
-##### HashMap为什么按2倍扩容
+#### get()流程
 
-HashMap的容量设置为2的幂次方，是为了快速定位元素所在的数组下标
-hash % length == hash & (length - 1)的前提是length是2的n次方，使用&可以加速运算。
+#### 如何解决Hash冲突？HashMap中是如何解决的？
+
+解决Hash冲突的算法：
+
+> 前两种每个槽只放一个元素，拉链法放多个
+
+* **开放地址法**：发生冲突时，在哈希表中寻找下一个空槽位来存储元素，具体实现包括：
+  * 线性探测：依次检查下一个槽位，直至找到空槽
+  * 二次探测：使用平方函数的增量来探测下一个槽位，`1^2, -1^2, 2^2, -2^2...`
+  * 伪随机探测：加个随机数
+* **再散列法/再哈希法** (rehashing): 用多个哈希函数。当发生冲突时，依次尝试不同的哈希函数来计算新的地址，直到找到一个空槽位。可以减少聚集现象，但计算复杂
+* **拉链法**：每个数组元素bucket上都有一个链表结构,bucket中存头指针，元素存入链表；HashMap
+
+#### HashMap线程不安全
+
+* jdk1.7 HashMap在数组扩容时，存在Entry链死循环和数据丢失的问题
+* jdk1.8 HashMap优化了1.7中数组扩容的方案，解决了Entry链死循环和数据丢失问题。但是多线程背景下，put方法存在数据覆盖的问题。
+
+如果要保证线程安全，可以通过这些方法来保证：
+
+* 多线程环境可以使用Collections.synchronizedMap同步加锁的方式，还可以使用HashTable，但是同步的方式显然性能不达标，而ConurrentHashMap更适合高并发场景使用。
+* ConcurrentHashmap在JDK1.7和1.8的版本改动比较大，1.7使用Segment+HashEntry分段锁的方式实现，1.8则抛弃了Segment，改为使用CAS+synchronized+Node实现，同样也加入了红黑树，避免链表过长导致性能的问题。
 
 #### 遍历HashMap
 

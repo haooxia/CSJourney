@@ -11,8 +11,11 @@
     - [Dict](#dict)
       - [Dict扩容与缩容 (include rehash)](#dict扩容与缩容-include-rehash)
     - [ZipList](#ziplist)
+    - [QuickList](#quicklist)
+    - [SkipList](#skiplist)
+    - [RedisObject](#redisobject)
+    - [String](#string)
     - [Redis数据结构及使用场景](#redis数据结构及使用场景)
-    - [实现方式](#实现方式)
     - [Zset的底层实现](#zset的底层实现)
   - [Redis线程模型/网络模型](#redis线程模型网络模型)
     - [Redis为什么快](#redis为什么快)
@@ -106,9 +109,13 @@ Redis是一个键值型的数据库，我们可以根据键实现快速的增删
 
 哈希冲突时是头插到链表，因为比较方便，尾插你还得遍历过去，麻烦
 
+**Q: 你头插的话不用比较是否和后面的元素相同吗？为啥HashMap需要捏？**
+A: 也需要遍历判断是否有相同key，如有直接更新，如无，头插。所以这个头插必要性感觉也就那样
+
 #### Dict扩容与缩容 (include rehash)
 
-* Dict是数组+单链表，当集合中元素较多时，必然导致哈希冲突增多，**链表过长**，则查询效率会大大降低。
+* Dict是**数组+单链表**，当集合中元素较多时，必然导致哈希冲突增多，**链表过长**，则查询效率会大大降低。
+  * redis的Dict解决方案是扩容，HashMap 1.8解决方案是先扩容 + 再Treeify(len>=64 & 某单链表>=8)
 * Dict在**每次新增键值对**时都会检查负载因子（LoadFactor = **used/size**） ，满足以下两种情况时会触发**哈希表扩容**（**每次翻倍**）：
   * 哈希表的LoadFactor >= 1，并且服务器没有执行BGSAVE或者BGREWRITEAOF等**后台进程** (说明cpu比较闲)；
   * 哈希表的LoadFactor > 5（忍不了了）
@@ -124,6 +131,76 @@ Redis是一个键值型的数据库，我们可以根据键实现快速的增删
   * 将最后的`ht[1]`赋值给`ht[0]`，并将`ht[1]`初始化为空哈希表，释放原来的旧的`ht[0]`的内存
 
 ### ZipList
+
+> 由于Dict单链表使用了很多指针，内存空间分配是不连续的，容易产生内存碎片，而且指针也挺浪费内存的(一个指针8B)，浪费内存
+
+* 为了节省内存，设计了ZipList，是一种**特殊的“双向(端)链表”**，**底层不是双端链表，但具备其特性**，即任意一端的push/pop（O(1)）
+* **并非真的链表，没有通过指针进行连接，而是记录上一节点和本节点长度来寻址，占用连续内存，内存占用低**
+* 不支持随机访问，**只能正向或反向遍历**（因为里面entry元素的长度不一致）；所以列表数据不建议太多，不然遍历很慢
+* ZipList可能发生**连锁更新问题**：在一种特殊情况下产生的**连续多次空间扩展操作**，称之为连锁更新(casade update)，增删都可能导致连锁更新的发生；多米诺骨牌效应；不过概率很低啦，可以忽略；
+  * 具体来说是因为entry记录了前一节点的大小
+  * listpack是一种解决方案
+
+![picture 6](../images/4950eef528bbe880ca735d140469f32fa4379b049ba9c0fdbc59a4954226947c.png){width=80%}
+![picture 7](../images/2b73fc5b67f4df0262a0319c85a78283aeef5bb11cbdfc54ac01fc6cd87873a0.png){width=80%}
+
+* ZipListEntry中encoding编码可分为字符串和整数两种，字符串需要记录具体长度，整数记录类型即可(因为整数就2B,4B...几种类型)
+* 一句话：ZipList中有各种各样的用于字符串或者整数的编码，最终目的都是为了极致地节省内存；
+
+### QuickList
+
+> ZipList虽然节省内存，但申请的内存必须连续，如果想要申请大块连续内存，申请效率很低，故而ZipList长度不建议太大；
+
+可我就是要存大量数据，怎么办？一个ZipList放着难受，那**搞多个ZipList呗(数据分片思想)**，但多个ZipList比较分散，如何**查找和管理**呢？redis 3.2引入QuickList来管理；
+
+* **QuickList是一个双向链表(支持正向和反向遍历)，每一个节点都是一个ZipList；**
+* QuickList还要**限制ZipList的大小**，限制entry个数，或者ZipList最大内存（可以在redis中配置），默认是内存不超过8kb
+* QuickList还可以**对ZipList节点进行压缩**，压缩就是给entry内的数据搞个什么压缩算法压缩压缩。。。(笑)
+* QuickList**兼具链表和ZipList的优点**，链表优势是内存不用连续，可以存很多，劣势就是占用内存太多；ZipList内存占用少，但能存的数据量有限(申请大块内存难顶)
+
+![picture 8](../images/fdc8480e95a9f719b1b4abc12c5187e63da57d048e09074e3cd0a06f81a8238e.png)  
+
+### SkipList
+
+> ZipList和QuickList只能顺序或逆序遍历，所以访问首尾还行，访问中间就很慢了；ziplist虽然连续内存，但entry大小不一致，所以无法随机访问；QuickList是双向链表所以只能一个接一个访问
+
+* 跳表本质上是一个双向链表，每个节点包含用于排序的`score`(可以理解为索引)和实际保存的字符串数据`ele`
+* 节点按照score值升序排序
+* **每个节点可以包含多层指针**，**层数在1-32之间**
+  * 存在1到n个`forward`指针组成的`level[]`数组中
+  * 每个节点还有1个backward指针
+* 不同层指针的**跨度不同，层级越高，跨度越大**，从而提升查询效率
+  * 查询的时候**先使用高层指针**走更远的距离，然后**判断score属性来决定是应该继续往前走，还是回去换成低层指针**，先粗后细嘛
+* **CRUD效率和红黑树基本一致，实现却更简单**
+
+![picture 9](../images/bbb6abce1328d654c839ea19217bd25fd4bcfb3d440a711366bd9006d7d91cde.png)  
+
+![picture 11](../images/dc9b39fb80babe26016b2355b1de9cafaed23e1f78c6d290192857e988ce8748.png)  
+
+![picture 12](../images/3ae89d2c74bd3f8955b5d434ae5c9fc6edaaa30e6c831d313acd07ec6a39c57b.png)  
+
+
+**查询过程**：先根据level[]中最高级别的forward指针(即跨度最大的指针)找到下一个节点，然后对比节点中的score和我要找的节点的score，如果要找的score更大，则往后找，如果跟小，则进入level[]中下一级别的forward指针
+
+### RedisObject
+
+![picture 13](../images/dc8a57f5d5ee43595569a37d3bc89bbe5c8d6036389bddefe708dc872b08dfa1.png)  
+
+![picture 14](../images/8f48326b53406d849f3fd2ba04d7f797cf7625bce772fa3931f412c291d5dc9e.png){width=70%}
+![picture 15](../images/ec67b853b60458a297227cfb93da76806d73c641f830c08c2f27694c2749fdc6.png){width=70%}
+
+### String
+
+* 基本编码是 ==**RAW编码**== 动态字符串，基于SDS实现，存储上限为512mb，不建议存太大
+* 如果len(SDS) < **44B**, 则采用 ==**EMBSTR编码**== 动态字符串，此时Object head和SDS数据**会占据连续内存空间**；
+  * 申请内存时只需要调用一次内存分配函数，更高效
+  * 之所以44B，是因为此时整个RedisObject是64B，redis内存分配是采用`jmalloc`会以2^n次方进行内存分配，所以这样不会产生内存碎片
+  * 所以推荐你用string时不要超过44B
+* 如果存的字符串时**整数值**，则采用 ==**INT编码**==，直接就爱那个数据存在RedisObject的ptr指针的位置（刚好8B，你一个Long也就8B，足矣），无需额外的SDS；
+  * redis真是内存机制节省大师...
+
+![picture 16](../images/b2360f712e484b0d300399cf38650195f1904196ff6d6c8c7d15a7c515dc8694.png)  
+
 
 ### Redis数据结构及使用场景
 
@@ -141,9 +218,8 @@ Redis是一个键值型的数据库，我们可以根据键实现快速的增删
 
 ![picture 4](../images/b8d6ec9aa02b299d1cb9740d1c661e91488b27ba826975f10ef661b1a231f8fe.png)  
 
-### 实现方式
 
-暂略
+
 
 ### Zset的底层实现
 

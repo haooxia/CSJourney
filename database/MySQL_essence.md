@@ -62,6 +62,7 @@
 TODO: https://xiaolincoding.com/interview/mysql.html#sql%E5%9F%BA%E7%A1%80
 * 读写分离
 * 一条update语句是如何执行的（各种log看看，xiaolin
+* sql优化（join
 
 ## 一、基础
 
@@ -551,7 +552,7 @@ MySQL InnoDB按**锁粒度**可分为：
 
 * **Record Lock 记录锁/行锁**：直接锁定某行记录。当我们使用唯一性的索引(包括唯一索引和聚簇索引)进行等值查询且精准匹配到一条记录时，此时就会直接将这条记录锁定。
   * 例如`select * from t where id =6 for update;`就会将id=6的记录锁定
-  * ![picture 14](../images/1d7575ff2db171736e8c7ca2af1f09efaa9fc972980f84d3eac47408883374c8.png)  
+  * ![picture 14](../images/1d7575ff2db171736e8c7ca2af1f09efaa9fc972980f84d3eac47408883374c8.png)
   * 行锁也分为共享锁S和排他锁X
   * **常见CRUD上的行锁**： ![picture 18](../images/dda2a9806ba116ea07626841aff4bbf8e5cb8025e231d3d952c191b23de45127.png)
   * > 默认select不加锁，是快照读
