@@ -37,19 +37,16 @@
     - [HashMap ☆](#hashmap-)
       - [HashMap的底层实现](#hashmap的底层实现)
       - [HashMap的put流程](#hashmap的put流程)
+        - [详解扩容机制 / 以及rehash过程](#详解扩容机制--以及rehash过程)
         - [详解HashMap中的hashCode() + equals()](#详解hashmap中的hashcode--equals)
-        - [如果只重写了equals() 没重写hashCode()，put的时候会怎么样？](#如果只重写了equals-没重写hashcodeput的时候会怎么样)
-        - [HashMap的hash()是如何设计的 / 扰动函数](#hashmap的hash是如何设计的--扰动函数)
-      - [get()流程](#get流程)
-      - [如何解决Hash冲突？HashMap中是如何解决的？](#如何解决hash冲突hashmap中是如何解决的)
-      - [HashMap线程不安全](#hashmap线程不安全)
+      - [get()流程 / 查找流程](#get流程--查找流程)
+      - [一般如何解决Hash冲突？HashMap中是如何解决的？](#一般如何解决hash冲突hashmap中是如何解决的)
+      - [HashMap多线程下有啥问题](#hashmap多线程下有啥问题)
       - [遍历HashMap](#遍历hashmap)
-    - [Properties](#properties)
     - [TreeMap](#treemap)
     - [LinkedHashMap](#linkedhashmap)
     - [HashMap vs. Hashtable](#hashmap-vs-hashtable)
     - [HashMap vs. HashSet](#hashmap-vs-hashset)
-    - [为什么HashMap线程不安全](#为什么hashmap线程不安全)
     - [ConcurrentHashMap是如何实现的 ☆](#concurrenthashmap是如何实现的-)
       - [jdk1.7 数组 + 链表](#jdk17-数组--链表)
       - [jdk1.8 数组 + 链表/红黑树](#jdk18-数组--链表红黑树)
@@ -386,7 +383,7 @@ private static class Node<E> {
 > HashSet是不会自动排序的
 
 * 都线程不安全
-* 主要区别于底层数据结构：HashSet底层是哈希表+单链表/红黑树(基于HashMap实现)；LinkedHashSet底层是**双向链表+哈希表**，元素的插入取出符合FIFO；TreeSet底层是**红黑树**，元素有序（可自然排序or定制排序
+* 主要区别于底层数据结构：HashSet底层是数组+单链表/红黑树(基于HashMap实现)；LinkedHashSet底层是**双向链表+哈希表**，元素的插入取出符合FIFO；TreeSet底层是**红黑树**，元素有序（可自然排序or定制排序
 * HashSet用于无需保证元素插入和取出顺序的场景，LinkedHashSet用于需要保证FIFO的场景，TreeSet用于支持元素自定义排序的场景
   * TreeSet的add时间复杂度是`O(logn)`, HashSet的add是`O(1)`
 
@@ -459,19 +456,19 @@ HashSet的底层是HashMap，参考即可
   * 平衡二叉树AVL(左右子树高差不超过1，追求**绝对平衡**): 旋转操作频繁：在添加元素时需要进行**左旋、右旋**操作维持根节点左右两端的平衡，复杂度和开销很高。
   * 红黑树：**不追求绝对的平衡**，相比于AVL减少了很多性能开销
 
-**Q: 为什么1.7的头插在1.8要改为尾插，尾插不是要遍历到末尾吗，效率不是更低吗？** / **HashMap多线程下有什么问题？**
+**Q: 为什么1.7的头插在1.8要改为尾插？** / **HashMap多线程下有什么问题？**
   * 此即**HashMap多线程操作导致死循环问题**：1.7在多线程扩容时可能死循环，是因为当哈希表进行扩容时，多个线程同时对链表进行操作，**头插法**可能导致**链表中的节点指向错误的位置**，从而形成一个**环形链表**，进而使得查询元素的操作陷入死循环无法结束; 尾插即可解决该问题。（有点抽象，但细节至此，够用了）
-  * 效率是低点，但没啥，一方面>=8就树化了，O(logn)也没啥；redis的Dict无树化，也单线程，所以头插是没问题的
+  * 至于尾插是否比头插效率低？其实头插和尾插都需要遍历链表然后判等，所以感觉是一样的
 
 #### HashMap的put流程
 
-> HashMap的put/扩容机制和HashSet完全一致
-
 ![picture 7](../images/ff2a59570488e94fa9175ce524dc73385e8f570a58d8c1a61ae6084a58cf3e18.png){width=70%}
+
+**计算hashCode -> 判断table数组是否为空 -> 计算数组索引 -> 判断该位置是否为空 -> 判断是否相等 -> 遍历链表/红黑树 -> 更新/插入 -> 是否需要树化 -> 是否需要扩容**
 
 调用`put()`添加键值对时，会按照以下流程执行(jdk1.8)：
 
-1. 根据key计算hashCode：`(h = key.hashCode()) ^ (h >>> 16)`
+1. 根据key计算hashCode：`(h = key.hashCode()) ^ (h >>> 16)` (^异或)
 2. 如果table为空，数组首次扩容：`resize()` (初始大小为 **==16==** 的`Node<K,V>[] table`数组，加载因子为0.75)
 3. 根据hashCode计算在数组中的索引：`hash & (n-1)`
 4. 检查索引处bucket是否存放键值对数据(是否为空)，**如果为空**则插入一个新的Entry对象来存储键值对
@@ -481,63 +478,12 @@ HashSet的底层是HashMap，参考即可
    2. 如果是红黑树结构，**在红黑树中使用hashCode和equals()** 方法进行查找，直到找到相同key或到达末尾，如找到相同key，更新value，没找到就插入
 7. 对于链表结构，元素put后需要**检查链表长度是否超过阈值**，ji如果 ==**链表长度>=8且HashMap的数组长度>=64**==，**树化**
 8. 最后，**检查负载因子是否超过阈值(0.75)**，如果**键值对entry的数量 / ==数组bucket长度== > 0.75**，扩容
-9. **扩容**：搞一个**2倍**长的新数组，将旧数组中所有键值对重新计算hashCode并按put到新数组对应位置，最后**更新HashMap的数组引用**
+9.  **扩容**：搞一个**2倍**长的新数组，将旧数组中所有键值对~~重新计算hashCode并按~~put到新数组对应位置，最后**更新HashMap的数组引用**
+    1. 由于2倍扩容，无需重新计算hashcode
 
 ---
 
-Q: 详解**扩容机制** / 以及**rehash过程**
-A: 如果entry元素个数超过了bucket长度的75%，则触发扩容：
-
-1. 搞一个2倍长度的bucket数组
-2. 将旧哈希表中的数据逐个put新哈希表中
-
-由于我们按照2次幂扩容，库容后元素要么在原位置，要么在原位置再移动2次幂的位置
-
-![picture 12](../images/3a30ab901622e6569637ff111328b24b2ab35a4d5d0d8986ba42848df6ad3fc2.png)  
-
-* 因此，在扩充HashMap时，无需重新计算hash，只需看看原来的hash值新增的那个bit是1还是0，0则索引不变，1则新索引=旧索引+旧数组容量；
-* 省去了计算hashCode的时间，而且新增的1bit是0还是1可以认为是随机的(因为原本的hashcode每一位都是随机的)，因此resize时，将之前冲突的点均匀地分散到了新的bucket中。
-
-![picture 13](../images/ff1eb04ffe4cc94bafa17ff25aefe2dc42396304b5c100a0a649f3160ca96869.png){width=70%}
-
-Q: HashMap为什么按2倍扩容
-
-HashMap的容量设置为2的幂次方，是为了快速定位元素所在的数组下标
-hash % length == hash & (length - 1)的前提是length是2的n次方，使用&可以加速运算。
-
----
-
-> 一方面HashMap通过hashcode确定bucket存储位置，另一方面HashMap在equals()之前利用hashcode来提高查找效率（虽然hashcode相同不能直接推出两个key相同，但hashcode不同两个key一定不同）
----
-
-* **扩容机制**：$负载因子 = \dfrac{entry数}{bucket数} > 0.75$
-  * entry数是所有链表的所有结点之和（没有说只算数组的首元素）
-* **树化机制**：`if (len(this linked list) = TREEIFY_THRESHOLD(8) && len(table) >= MIN_TREEIFY_CAPACITY(64)`才会将该链表(this linked list)树化为红黑树；如果链表长度=8但table长度不够64，会先插入到链表，然后如果size超过临界值，resize()将数组扩容两倍
-  * 16->32->64 -> 树化为红黑树 (condition: 链表长度==8)
-  * 反树化的条件？是否有个数的限制
-
-##### 详解HashMap中的hashCode() + equals()
-
-详解一下判等机制：`if (table[idx].hash==hash && (p.key==key || key.equals(k)))`
-
-* 哈希值比较：首先table[idx]是哈希表的一个桶(bucket), 比较`table[idx].hash==hash`是指比较当前元素的hash值与我们正在插入的桶的hash值，是一个快速的初步检查，如不同，立即可以知道这不是我们要找的元素
-  * **先比较哈希值可以快速排除大多数不匹配的情况，很高效**
-* key相等性检查：如果hashcode相同，我们还需要进一步检查key是否真的相等，因为不同的key可能会有相同的hashcode（哈希冲突）
-  * `p.key==key`: 如果两个引用指向同一对象，那指定相等了，也是加快速度
-  * `key.equals(k)`: 如果引用不等，使用equlas()比较key的内容
-    * 如果key相同，则更新其value
-
-> java规范要求如果两个对象equals方法时相同，那么他们的hashCode也必须相同。反之如果他们的hashCode相同，equals未必相同，但不同对象应该尽量生成不同的哈希值，来减少冲突
-
-##### 如果只重写了equals() 没重写hashCode()，put的时候会怎么样？
-
-导致equals()相同的两个对象hashCode不同，这两个对象本应该放入一个bucket，被放到了两个bucket，get的时候就找不到了
-
-##### HashMap的hash()是如何设计的 / 扰动函数
-
-为了降低哈希冲突的概率，HashMap 的哈希函数是先拿到 key 的 hashcode，是一个 32 位的 int 类型的数值，然后**让hashcode的高16位和低16位进行异或操作**
-为何？
-我们知道hashcode得到32位，但HashMap的长度n一般较小，我们通过 `hash & (n - 1)` aka `hash % n`来获得索引位置，与&操作就只能捕获到32位hashcode的低位的特征，故而将hashcode右移16位，然后亦或高低位，这就**同时考虑到了低位和高维的特征**，特征越多，哈希碰撞的概率就越低。
+**Q: HashMap的hash()是如何设计的 / 扰动函数**
 
 ```java
 static final int hash(Object key) {
@@ -547,9 +493,62 @@ static final int hash(Object key) {
 }
 ```
 
-#### get()流程
+* 先拿到key的hashcode(32位int)，然后**让hashcode的高16位和低16位进行异或操作**
+* 原因：虽然hashcode是32位，但HashMap的长度n一般较小，我们通过`hash % n`来获得索引位置，**与&操作就只能捕获到32位hashcode的低位的特征**，故而将hashcode右移16位，然后亦或高低位，这就**同时考虑到了低位和高维的特征**，**特征越多，哈希碰撞的概率就越低**
 
-#### 如何解决Hash冲突？HashMap中是如何解决的？
+**Q: 详解一下树化和反树化**
+
+* **树化机制**：`if (len(this linked list) = TREEIFY_THRESHOLD(8) && len(table) >= MIN_TREEIFY_CAPACITY(64)`才会将该链表(this linked list)树化为红黑树；
+* 如果链表长度=8但table长度不够64，会先插入到链表，然后直到达到0.75扩容条件，resize()将数组扩容两倍
+  * 反树化的条件：红黑树节点<=6时
+
+
+**Q: HashMap为什么按2倍扩容**
+A: HashMap的容量设置为2的幂次方，是为了快速定位元素所在的数组下标
+如果len是2的n次幂，则可利用&加速运算：
+`hash % len == hash & (len - 1)`
+
+##### 详解扩容机制 / 以及rehash过程
+A: 如果 **所有entry元素个数 / bucket数组长度 > 0.75**，则触发扩容：
+
+1. 搞一个2倍长度的bucket数组
+2. 将旧哈希表中的数据逐个put新哈希表中
+
+**由于我们按照2次幂扩容，库容后元素要么在原位置，要么在原位置再移动2次幂的位置**
+
+![picture 12](../images/3a30ab901622e6569637ff111328b24b2ab35a4d5d0d8986ba42848df6ad3fc2.png)  
+
+* 因此，在扩充HashMap时，**无需重新计算hash**，只需看看原来的hash值新增的那个bit是1还是0，0则索引不变，1则新索引=旧索引+旧数组容量；
+* 省去了计算hashCode的时间，而且新增的1bit是0还是1可以认为是随机的(因为原本的hashcode每一位都是随机的)，因此resize时，将之前冲突的点均匀地分散到了新的bucket中。
+
+![picture 13](../images/ff1eb04ffe4cc94bafa17ff25aefe2dc42396304b5c100a0a649f3160ca96869.png){width=70%}
+
+##### 详解HashMap中的hashCode() + equals()
+
+**Q: 为何不能只用equals判等？**
+A: 只用equals()判等是没问题的，但低效。
+
+* 一方面HashMap通过hashcode确定bucket存储位置，另一方面HashMap在equals()之前利用hashcode来提高查找效率 **（虽然hashcode相同不能直接推出两个key相同，但hashcode不同两个key一定不同**
+  * 即先比较hashcode可以快速排除大多数不匹配的情况，很搞笑
+* java规范要求：
+  * 如果两个对象的equals()相同，则其hashCode()必须相同；
+  * 如果hachCode()相同，equals()可以不同，因为可能碰撞
+
+**Q: 只重写equals()没重写hashCode()，put的时候会怎么样？**
+
+A: HashMap会使用Key的hashCode和equals去进行判等，我们get或put都会自动用到，如果你只重写了equals没重写hashcode，**导致equals()相同的两个对象hashCode不同**，**这两个对象本应该放入一个bucket，被放到了两个bucket**，get的时候就找不到了
+
+
+#### get()流程 / 查找流程
+
+easy
+
+1. 计算hashcode
+2. 获取数组下标
+3. 判断该节点是否和key匹配，比较hashcode和equals()，是则返回
+4. 去查找红黑树/链表，比较hashcode和equals()
+
+#### 一般如何解决Hash冲突？HashMap中是如何解决的？
 
 解决Hash冲突的算法：
 
@@ -562,45 +561,18 @@ static final int hash(Object key) {
 * **再散列法/再哈希法** (rehashing): 用多个哈希函数。当发生冲突时，依次尝试不同的哈希函数来计算新的地址，直到找到一个空槽位。可以减少聚集现象，但计算复杂
 * **拉链法**：每个数组元素bucket上都有一个链表结构,bucket中存头指针，元素存入链表；HashMap
 
-#### HashMap线程不安全
+#### HashMap多线程下有啥问题
 
-* jdk1.7 HashMap在数组扩容时，存在Entry链死循环和数据丢失的问题
-* jdk1.8 HashMap优化了1.7中数组扩容的方案，解决了Entry链死循环和数据丢失问题。但是多线程背景下，put方法存在数据覆盖的问题。
+* jdk1.7HashMap采用头插法插入元素，在多线程的环境下，扩容的时候可能导致出现**环形链表**，出现死循环
+  * jdk1.8HashMap改为了尾插，解决了死循环问题
+* 多线程下put可能**丢失元素**，如果俩线程一块计算得到同一个索引位置可以放入元素，那么先放入的数据会被后放入的数据覆盖，导致元素丢失(jdk1.8依然存在)
 
-如果要保证线程安全，可以通过这些方法来保证：
+**Q: 那HashMap如何保证线程安全？**
 
-* 多线程环境可以使用Collections.synchronizedMap同步加锁的方式，还可以使用HashTable，但是同步的方式显然性能不达标，而ConurrentHashMap更适合高并发场景使用。
+* 可以使用Collections.synchronizedMap同步加锁的方式，还可以使用HashTable，但是同步的方式显然性能不达标，而ConurrentHashMap更适合高并发场景使用
 * ConcurrentHashmap在JDK1.7和1.8的版本改动比较大，1.7使用Segment+HashEntry分段锁的方式实现，1.8则抛弃了Segment，改为使用CAS+synchronized+Node实现，同样也加入了红黑树，避免链表过长导致性能的问题。
 
 #### 遍历HashMap
-
-* Node实现了`Map.Entry<K,V>`接口（实现了`getKey(), getValue()`）;
-* 底层会自动创建一个存储了Entry对象的entrySet集合`Set<Map.Entry<K,V>>`，这个Set就支持使用iterator遍历了
-* `Map.Entry`中存储的key和value实际是Node中key和value的**引用**，因为Node实现了Map.Entry接口，所以可以将Node对象赋给该接口（多态）
-* 为了方便操作，除了`Set<Map.Entry<K,V>> entrySet()`外还有`Set<K> keySet()`和`Collection<V> values()`
-
-![picture 0](../images/b06d6f848e2baacd03f04480bedc4a14067edbb2c2d817e74827d2f089c3dafe.png)  
-
----
-
-* 不同视角: 灵活；
-  * entrySet()返回一个包含所有Map.Entry<K,V>对象的**Set** (`Set<Map.Entry<K,V>> entrySet()`)，可以通过.entrySet().iterator()来遍历Map；即it.getKey(), it.getValue();
-  * keySet()返回一个包含所有key的**Set** (`Set<K> keySet()`)，可以通过.keySet().iterator()来遍历获取key;
-  * values()返回一个包含所有value的**Collection** (`Collection<V> values()`)，可以通过.values().iterator()来遍历value;
-    * 由于允许重复，所以不使用Set
-* 我们知道Set和Collection接口都实现了Iterable，所以都支持.iterator()，而Map接口并未实现Iterable.
-
----
-
-method
-
-* size()
-* isEmpty()
-* put(k,v)
-* remove(k)
-* get(k): return Object value
-* clear()
-* containsKey(k)
 
 遍历（6种）
 
@@ -610,51 +582,10 @@ method
 * 基于enhanced-for或者iterator(basic-for) 各有三种
 * 基于**entrySet最高效**，因为使用keySet会多一次哈希查找操作
 
-```java
-HashMap<String, String> map = new HashMap<>();
-    map.put("key1", "value1");
-    map.put("key2", "value2");
-
-    // 第一组(最简单): 基于keySet: .get()
-    // (1) enhanced for
-    for (String key : map.keySet()) {
-        System.out.println("key: " + key + " value: " + map.get(key));
-    }
-    // (2) original for (based on iterator)
-    Iterator<String> keyIt = map.keySet().iterator();
-    while (keyIt.hasNext()) {
-        String key =  keyIt.next();
-        String value = map.get(key);
-    }
-
-    // 第二组(最高效)：基于entrySet: getKey(), getValue()
-    // (1) enhanced for (TODO 推荐)
-    for (Map.Entry<String, String> entry : map.entrySet()) {
-        System.out.println("key: " + entry.getKey() + " value: " + entry.getValue());
-    }
-    // (2) original for (based on iterator)
-    Iterator<Map.Entry<String, String>> it = map.entrySet().iterator();
-    while (it.hasNext()) {
-        Map.Entry<String, String> entry =  it.next();
-        System.out.println("key: " + entry.getKey() + " value: " + entry.getValue());
-    }
-
-    // 第三组: 基于values
-    // (1) enhanced for
-    for (String v : map.values()) {
-        System.out.println("value: " + v);
-    }
-    // (2) original for (based on iterator)
-    Iterator<String> valueIt = map.values().iterator();
-    while (valueIt.hasNext()) {
-        String value =  valueIt.next();
-    }
-```
-
-### Properties
+<!-- ### Properties
 
 * Properties继承自HashTable
-* 常用于从**配置文件.properties**加载数据到Properties类对象，进行读取和修改。
+* 常用于从**配置文件.properties**加载数据到Properties类对象，进行读取和修改。 -->
 
 ### TreeMap
 
@@ -668,25 +599,16 @@ HashMap<String, String> map = new HashMap<>();
 
 ### HashMap vs. Hashtable
 
-* Hashtable基本被淘汰，不要用
-* 前者非线程安全，后者安全（但需要线程安全一般使用ConcurrentHashMap
+* 前者非**线程安全**，后者安全
+* 底层**数据结构**: HashMap通过数组+链表/红黑树；Hashtable 数组+链表
+* **哈希函数不同**：HashMap对哈希值进行了高位和低位的混合扰动处理以减少冲突，而Hashtable直接使用键的hashCode()值
+* HashMap默认初始化大小为**16**，然后每次扩充为**2倍**；Hashtable默认初始化大小为**11**，然后每次扩充为**2n+1**；
+* 如果指定初始化大小k，HashMap会将其扩充为2的幂次方大小（向上取整，即HashMap的大小始终是2的幂次方；Hashtable会直接使用k
 * 前者可以使用null作为key和value，后者不可
-* HashMap默认初始化大小为16，然后每次扩充为2倍；Hashtable默认初始化大小为11，然后每次扩充为2n+1；
-* 如果指定初始化大小k，HashMap会将其扩充为2的幂次方大小（向上取整，即HashMap的大小始终是2的幂次方(why)；Hashtable会直接使用k
-* 解决哈希冲突不同：jdk8之后HashMap：链表长度大于阈值(default=8)时，将链表转化为红黑树（将链表转换成红黑树前会判断，如果当前数组的长度小于 64，那么会选择先进行数组扩容，而不是转换为红黑树）；Hashtable没这个机制
-* 哈希函数不同：HashMap对哈希值进行了高位和低位的混合扰动处理以减少冲突，而Hashtable直接使用键的hashCode()值
-
-> * Hashtable底层是`Hashtable$Entry[11]`, HashMap底层是`HashMap$Node[16]`, 加载因子都是0.75，达到后进行扩容。
->   * Hashtable扩容：2倍+1：11->23；而HashMap是2倍；
->   * HashMap比Hashtable新，之所有不用Entry改为Node，是为了支持新的数据结构红黑树，
 
 ### HashMap vs. HashSet
 
 ![picture 3](../images/43fd1797d3e44128e71d720e685815aab8eb75a8ce38ee204a129c2705045c75.png)
-
-### 为什么HashMap线程不安全
-
-数据覆盖问题：多线程同时执行put操作，如果计算出来的索引位置是相同的，那就会造成前一个key被后一个key覆盖，从而导致元素的丢失k
 
 ### ConcurrentHashMap是如何实现的 ☆
 
