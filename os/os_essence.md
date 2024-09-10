@@ -560,6 +560,15 @@ sendfile系统调用可以替代read()和write()这两个系统调用，可以�
 
 > Reactor是非阻塞同步网络模式，Proactor是异步网络模式。
 
+---
+
+java中对应关系：
+
+* BIO(Blocking IO)对应着上文阻塞IO，`java.io`中有`InputStream, OutputStream, Socket`等基于BIO
+* NIO(Non-blocking IO)对应于非阻塞IO和IO多路复用，通过`Selector`类实现多路复用，可以同时处理多个连接
+  * Selector在linux中底层是epoll，windows中是select
+* AIO(Asynchronous IO)对应于异步IO
+
 #### 阻塞IO vs. 非阻塞IO
 
 ==**阻塞I/O**==：比如线程在read时阻塞，等待**内核准备好数据** && **把数据从内核缓冲区拷贝到用户缓冲区** (俩过程)，read才成功返回。

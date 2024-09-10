@@ -336,6 +336,37 @@ HTTP缓存有两种实现方式：**强制缓存**和**协商缓存**。
   * jwt是**自包含**的，jwt本身包含了所有必要的信息，所以便于分布式扩展
   * jwt采用秘钥进行签名，确保令牌的完整性和真实性，比cookie和session更安全
 
+---
+
+**Q: cookie, session长什么样呢？**
+cookie以键值对形式存在客户端：
+```http
+Set-Cookie: sessionId=abc123; userId=45; theme=dark;
+```
+session以json格式存在服务端，然后客户端只会存一个sessionID：
+
+```json
+// 服务端
+{
+  "sessionId": "abc123",
+  "userId": 45,
+  "loggedIn": true,
+  "preferences": {
+    "theme": "dark",
+    "language": "en"
+  }
+}
+```
+
+```http
+// 客户端
+Set-Cookie: sessionId=abc123;
+```
+
+**Q: 为什么cookie好篡改，session不好篡改呢？**
+A: cookie存在客户端，我通过f12都可以改掉存储的kv数据，比如你可以修改用户名；而session存在服务端，你只知道一个唯一的sessionid，你是无法访问修改服务端的session数据的
+
+
 #### 详解JWT
 
 JWT = 头部Header + 载荷Payload + 签名Signature

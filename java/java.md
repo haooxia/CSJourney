@@ -210,6 +210,8 @@ Java基本数据类型的包装类型很多都采用了缓存机制来提升性�
 > * 补充：多处访问同一个Integer缓存对象实例时，不会出现问题，因为：
 >   * Integer对象是不可变的（类的设计便是如此，搞了个private的value，但没暴露修改方法）
 
+> Integer与==：如果都是包装类型创建的Integer && 数值位于缓存区间之内，则二者地址相同，则返回true，否则返回false(不位于缓存区间 || new出来的Integer)
+
 #### 详解Integer缓存机制
 创建Integer时，调用valueOf():
 `IntegerCache.low = -128; IntegerCache.high = 127`
@@ -549,7 +551,7 @@ Exception vs. Error
 * Error: 程序无法处理的错误，不建议使用catch捕获。比如`OOM`, `StackOverflowError`,Error是严重错误，**程序直接崩溃**。
 * Exception: 程序本身可以处理的异常，可以通过catch捕获。分为编译时异常 / checked exception 和 运行时异常 / runtime exception
   * **编译时异常必须处理**，使用try-catch捕获或在方法签名中声明抛出throws，如果没处理无法通过编译 -> `unhandled exception`
-  * **运行时异常**编译器检查不出来，一般是编程时的逻辑错误，如数组越界、空指针；运行时异常可以不用显示处理，尽量避免即可。
+  * **运行时异常**编译器检查不出来，一般是编程时的逻辑错误，如数组越界、空指针；运行时异常可以不用显式处理，尽量避免即可。
 
 > 捕获了异常之后程序就不会自动挂掉，你还可以接着用。这样子我们的项目就不会因为一个小错误挂掉了
 

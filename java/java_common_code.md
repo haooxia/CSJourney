@@ -285,7 +285,7 @@ public class LazyMan {
 ```java
 
 // note: 懒汉式单例模式(多线程有效)
-// note: 双重检测锁模式的懒汉式单例 / Double-Checked Blocking (DCL懒汉式单例)
+// note: 双重检测锁模式的懒汉式单例 / Double-Checked Locking (DCL懒汉式单例)
 public class LazyMan2 {
     // 将构造器私有化 防止直接new
     private LazyMan2(){};
@@ -296,7 +296,9 @@ public class LazyMan2 {
         // 在第一次检查是否为null时不加锁，只有在需要创建实例时才加锁，减少开销
         if (lazyMan == null) {
             synchronized (LazyMan2.class) {
-                if (lazyMan == null) { // 两个if我还没搞懂
+                if (lazyMan == null) { 
+                    // 两个if我还没搞懂；简单来说一些线程同时通过了第一个if，然后一个A拿到锁，其他卡在这儿，
+                    // 回头A new完之后释放锁，如果没有if的话，其他线程也跑进去new，那还得了
                     lazyMan = new LazyMan2();
                 }
             }
@@ -306,15 +308,15 @@ public class LazyMan2 {
 }
 ```
 
-为什么要用volatile修饰变量？
+Q: 为什么要用volatile修饰变量？
 
-`lazyMan = new LazyMan2();`这一行代码其实底层有三步：
-
-1. 为lazyMan分配内存空间
-2. 调用构造方法初始化对象lazyMan
-3. 将lazyMan指向分配的内存空间
-
-故而可能发生指令重排，如果排序为132就废废了
+1. **保证可见性**。当一个线程在getInstance中new了一个LazyMan2的实例后，其他线程在访问lazyMan变量时会立马看到这个更新，而非是一个未初始化的值。
+2. 禁止指令重排。
+   1. `lazyMan = new LazyMan2();`这一行代码其实底层有三步：
+      1. 为lazyMan分配内存空间
+      2. 调用构造方法初始化对象lazyMan
+      3. 将lazyMan指向分配的内存空间
+   2. 故而可能发生指令重排，如果排序为132就废废了，132的话先分配了内存，其他线程检测到不为null直接返回了，殊不知此时2没执行（还没构造对象嘞...
 
 ## 排序算法
 
