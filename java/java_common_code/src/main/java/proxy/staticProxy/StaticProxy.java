@@ -1,4 +1,4 @@
-package proxy;
+package proxy.staticProxy;
 
 interface Marry {
     void marry();

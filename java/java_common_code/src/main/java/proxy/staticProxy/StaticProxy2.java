@@ -1,4 +1,4 @@
-package proxy;
+package proxy.staticProxy;
 
 interface IUserDao {
     public void save();
@@ -23,7 +23,7 @@ class UserDaoProxy implements IUserDao {
     public void save() {
         System.out.println("开启事务"); // 扩展功能
         target.save();
-        System.out.println("关闭事务");
+        System.out.println("提交事务");
     }
 }
 
