@@ -113,7 +113,7 @@ public class ListNode {
   * 不是`Arrays.sum(nums);`
   * 也不是`nums.stream().sum()`
 * `Arrays.fill(nums, number);`: 将nums数组中所有元素填充为number
-* `int index = Arrays.binarySearch(nums, val);`: 二分查找之前需要是**有序数组**
+* `int index = Arrays.binarySearch(nums, val);`: **二分查找**之前需要是**有序数组**
 * `Arrays.sort(nums)`: 顺序排序
 * `Arrays.sort(nums, (a, b) -> b - a)`: 逆序排序
 * `Arrays.copyOf(nums, newLen)`: ==☆== 深拷贝，可以指定了复制长度newLen
@@ -122,25 +122,33 @@ public class ListNode {
 
 
 ```java
-int[] arr = {1,3,4,2,9,7};
+// **Integer[]排序**
+Integer[] arr = {1,3,4,2,9,7};
 // 顺序排序
 Arrays.sort(arr);
-
 // 逆序排序（方法一）
-Arrays.sort(arr, Comparable.reverseOrder()); // 仅适用于引用数据类型，忘了吧；别忘，大根堆的创建类似 把Comparable改为Collections
-
-// 逆序排序（方法二：匿名内部类并实现compare方法）
-Arrays.sort(arr, new Comparator<Integer>() {
-    @Override
-    public int compare(Integer a, Integer b) {
-      return b - a;
-    }
-});
-
-// 逆序排序（lambda表达式简化
-Arrays.sort(arr, (Integer a, Integer b) -> {return b - a;});
-// 进一步简化
+Arrays.sort(arr, Comparator.reverseOrder());
+// 逆序排序（方法二：简写）
 Arrays.sort(arr, (a, b) -> b - a);
+// 逆序排序（匿名内部类并实现compare方法）
+// Arrays.sort(arr, new Comparator<Integer>() {
+//     @Override
+//     public int compare(Integer a, Integer b) {
+//       return b - a;
+//     }
+// });
+
+
+// **int[]排序**
+int[] arr = {1,3,4,2,9,7};
+Arrays.sort(arr);
+// 逆序一： sort + 手动reverse
+// 逆序二
+IntStream.of(arr)
+          .boxed() // int转Integer
+          .sorted((a, b) -> b - a) // 逆序
+          .mapToInt(Integer::intValue) // 转回int[]
+          .toArray();
 ```
 
 ---
@@ -151,7 +159,8 @@ int[] nums = {3, -1, 4, -1, 5, -9, 2, -6, 5, 3, -5};
         nums = IntStream.of(nums)
                 .boxed()
                 .sorted((o1, o2) -> Math.abs(o2) - Math.abs(o1))
-                .mapToInt(Integer::intValue).toArray()
+                .mapToInt(Integer::intValue)
+                .toArray()
 ```
 
 ```java

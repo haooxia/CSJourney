@@ -319,6 +319,76 @@ BeanFactory是Spring的“心脏”，而ApplicantContext是Spring的完整“�
 
 [继续整理](https://fighter3.blog.csdn.net/article/details/123498761?spm=1001.2014.3001.5506)
 
+### Bean定义和依赖定义的方法
+
+* **配置文件方式**：使用XML文件来定义Spring应用中的bean及其依赖关系。开发者需要在XML文件中显式声明每个bean的类、属性和依赖
+  * xml分为bean相关标签(id, class...)和依赖注入(**通过property注入该bean所依赖的bean**(也可以通过`constructor-arg`))相关标签（有多种依赖注入的方式...
+  * 清晰明确：所有bean的配置集中在一个或多个XML文件中，便于查看和管理
+  * 类型不安全（无编译时类型检查）
+* **注解方式**：在Java类上使用特定的注解来定义bean。Spring会自动扫描这些类并注册为bean，无需在XML中显式声明
+  * 使用`@Component`, `@Service`..定义bean，使用`@Autowired`注入依赖
+  * 简洁，类型安全（提供编译时类型检查）
+
+### 依赖注入的方法
+
+1. **属性注入**：简洁明了,但可能会违反类的封装性。
+
+```java
+@Component
+public class TestBeanProperty {
+    @Autowired
+    private AnotherBean anotherBeanProperty;
+}
+```
+
+2. **构造器注入**：通过构造方法注入Bean的依赖。这种方式可以确保Bean在实例化时就注入所有必需的依赖。
+   1. 强制依赖使用构造器注入，忘不了
+
+```java
+@Component
+public class TestBeanConstructor {
+    private AnotherBean anotherBeanConstructor;
+
+    @Autowired
+    public TestBeanConstructor(AnotherBean anotherBeanConstructor) {
+        this.anotherBeanConstructor = anotherBeanConstructor;
+    }
+}
+```
+
+3. **setter注入**：通过Setter方法完成调用类所需依赖的注入；这种方式更灵活,因为它允许在实例化后注入依赖。
+   1. 可选依赖使用setter注入，更灵活
+
+```java
+@Component
+public class TestBeanSet {
+    private AnotherBean anotherBeanSet;
+
+    @Autowired
+    public void setAnotherBeanSet(AnotherBean anotherBeanSet) {
+        this.anotherBeanSet = anotherBeanSet;
+    }
+}
+```
+
+### Bean作用域
+
+* singleton(**单例**) default: 在Spring容器仅存在一个Bean实例，Bean以单实例的方式存在
+  * 单例可以节省内存 提高效率
+* prototype(原型): 每次从容器中调用Bean时，都会返回一个新的实例。（**多例**，适用于状态非常瞬时的bean
+* request: 每次HTTP请求都会产生一个新的Bean，该Bean仅在当前HTTP Request内有效
+* session: 同一个HTTP Session共享一个Bean，不同的HTTP Session使用不同的Bean
+
+### 单例Bean的线程安全问题
+
+* singleton下Spring容器中只会存在一个Bean实例，并且该实例会**被多个线程共享**，如果bean是无状态的，则线程安全。
+  * **无状态**：指**不包含可变的成员变量**或**只进行查询操作而不修改状态**。可以被安全地共享，因为它们不维护任何特定于用户的状态（比如mvc中的controller, service都是无状态的
+
+* 而**有状态Bean**具有可变的成员变量，能够保存数据。当多个线程同时访问并修改这些变量时，就会出现资源竞争和线程安全问题。故而非线程安全的
+  * **使用锁机制**：可以通过synchronized或ReentrantLock等方式来控制对共享资源的访问
+  * **改变Bean的作用域**：将Bean作用域改为原型prototype，这样每次请求都会创建一个新的Bean实例，从而避免共享状态的问题
+
+
 ## SpringMVC
 
 ### SpringMVC的核心组件
