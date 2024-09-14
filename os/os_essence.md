@@ -32,7 +32,7 @@
   - [五、IO系统](#五io系统)
   - [六、网络IO](#六网络io)
     - [零拷贝](#零拷贝)
-    - [Linux 5种IO模型](#linux-5种io模型)
+    - [Linux 5种IO模型 ☆](#linux-5种io模型-)
       - [阻塞IO vs. 非阻塞IO](#阻塞io-vs-非阻塞io)
     - [服务器处理并发请求有哪些方式](#服务器处理并发请求有哪些方式)
     - [I/O多路复用](#io多路复用)
@@ -541,7 +541,7 @@ sendfile系统调用可以替代read()和write()这两个系统调用，可以�
 总体来看，零拷贝技术可以把文件传输的**性能提高至少一倍以上**。
 很多开源项目如Kafka, RocketMQ都采用了零拷贝技术来提升IO效率。
 
-### Linux 5种IO模型
+### Linux 5种IO模型 ☆
 
 神作《Unix网络编程》将IO模型其分为如下五类：
 
@@ -562,7 +562,7 @@ sendfile系统调用可以替代read()和write()这两个系统调用，可以�
 
 ---
 
-java中对应关系：
+**java中对应关系：**
 
 * BIO(Blocking IO)对应着上文阻塞IO，`java.io`中有`InputStream, OutputStream, Socket`等基于BIO
 * NIO(Non-blocking IO)对应于非阻塞IO和IO多路复用，通过`Selector`类实现多路复用，可以同时处理多个连接

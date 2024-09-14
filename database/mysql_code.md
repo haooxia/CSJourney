@@ -21,8 +21,6 @@
       - [子查询/嵌套查询](#子查询嵌套查询)
     - [事务](#事务)
     - [索引](#索引)
-  - [进阶](#进阶)
-    - [存储引擎](#存储引擎)
   - [一些指令](#一些指令)
 
 
@@ -458,50 +456,6 @@ create fulltext index index_name on table_name(column_name)
 -- 创建前缀索引 (提取前n个字符构建索引)
 create index index_name on table_name (column_name(n))
 ```
-
-## 进阶
-
-### 存储引擎
-
-![picture 1](../images/7c922e1806f8c01041f1ac185a89437eeca49df4307ec87aaca92abc06c2c5e6.png)  
-
-* 存储引擎：存储数据、建立索引、更新查询数据等技术的实现方式；
-* 存储引擎基于表，而非库，所以又名为**表类型**。
-* mysql5.5之后默认存储引擎InnoDB，早起是MyISAM；MEMORY存储引擎存在内存中。
-* 查询存储引擎`show engines;`
-
-InnoDB：
-**support transactions, row-level locking, and foriegn keys**
-
-![picture 3](../images/f589de149a1ecfa4d2f1ad6407cba3933e7b6f75866932369dd50ed88777d1da.png)  
-
-![picture 2](../images/ec7aff723755704ce2c89589cfd16523d72df398f163d4de1708d7b990807b88.png)  
-
-MyISAM：
-
-特点：
-
-* 不支持事务，不支持外键
-* 支持表锁，不支持行锁
-* 访问速度快
-
-文件：
-
-* xxx.sdi：存储表结构信息
-* xxx.MYD: 存储数据
-* xxx.MYI: 存储索引
-
-Memory:
-
-* 内存存放 快
-* hash索引（默认）
-* 文件：xxx.sdi：存储表结构信息
-
-![picture 4](../images/dce6b078797cdf1eed55ea3608bbff912c6cc5d044bf566fd8b09256d9e30cc3.png)  
-
-如何选择存储引擎？
-![picture 5](../images/7889dd100a0a0c1d1b9b6d45323894e9968139f29a19f399547802c65fc1c420.png)  
-MyISAM现在被MongoDB替代，Memory被Redis替代
 
 ## 一些指令
 

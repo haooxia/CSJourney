@@ -13,7 +13,7 @@
       - [abstract final static](#abstract-final-static)
       - [final vs. finally vs. finalize()](#final-vs-finally-vs-finalize)
     - [数据类型](#数据类型)
-      - [基本类型 vs. 包装类型](#基本类型-vs-包装类型)
+      - [基本类型 vs. 包装类型 ☆](#基本类型-vs-包装类型-)
       - [自动装箱拆箱 autoboxing \& unboxing](#自动装箱拆箱-autoboxing--unboxing)
       - [包装类型的缓存机制 Wrapper Cache](#包装类型的缓存机制-wrapper-cache)
       - [详解Integer缓存机制](#详解integer缓存机制)
@@ -24,21 +24,21 @@
       - [静态方法 vs. 实例/一般方法](#静态方法-vs-实例一般方法)
       - [重载Overloading vs. 重写Overriding](#重载overloading-vs-重写overriding)
     - [OOP](#oop)
-      - [面向对象 vs. 面向过程](#面向对象-vs-面向过程)
+      - [面向对象 vs. 面向过程 ☆](#面向对象-vs-面向过程-)
       - [面向对象六大原则 （有亿点抽象](#面向对象六大原则-有亿点抽象)
       - [对象引用 vs. 对象实例](#对象引用-vs-对象实例)
       - [constructor](#constructor)
       - [面向对象的三大特性](#面向对象的三大特性)
       - [编译时多态 vs. 运行时多态](#编译时多态-vs-运行时多态)
       - [接口 vs. 抽象类](#接口-vs-抽象类)
-      - [引用拷贝 vs. 浅拷贝 vs. 深拷贝](#引用拷贝-vs-浅拷贝-vs-深拷贝)
+      - [引用拷贝 vs. 浅拷贝 vs. 深拷贝 ☆](#引用拷贝-vs-浅拷贝-vs-深拷贝-)
       - [加载顺序](#加载顺序)
     - [Object](#object)
-      - [== vs. equals()](#-vs-equals)
+      - [== vs. equals() ☆](#-vs-equals-)
       - [hashCode()](#hashcode)
       - [toString()](#tostring)
     - [String](#string)
-      - [String vs. StringBuffer vs. StringBuilder](#string-vs-stringbuffer-vs-stringbuilder)
+      - [String vs. StringBuffer vs. StringBuilder ☆](#string-vs-stringbuffer-vs-stringbuilder-)
       - [为何String不可变](#为何string不可变)
       - [字符串拼接 + vs. StringBuilder](#字符串拼接--vs-stringbuilder)
       - [运行时常量池 字符串常量池 StringTable](#运行时常量池-字符串常量池-stringtable)
@@ -173,7 +173,7 @@ java**首先编译过程**：.java->.class字节码（将人类可读的源码�
 
 这8中类型对应列8中**包装类型**Warpper: Byte, Short, Integer, Long, Float, Double, Boolean, Character
 
-#### 基本类型 vs. 包装类型
+#### 基本类型 vs. 包装类型 ☆
 
 * 适用场景：基本类型类型适合简单的数值计算，包装类型适合需要对象的场景，如集合、序列化等。
   * 集合, 泛型中只能塞包装类型，基本类型不可。
@@ -181,6 +181,7 @@ java**首先编译过程**：.java->.class字节码（将人类可读的源码�
   * 注意基本类型未必都存在stack中
 * 占用空间：基本类型更小，对象类型有个对象头Object Header（存储对象的元数据信息: 标记字段mark word：hashcode, 锁状态标志, GC标记等；类型指针(用于确定对象类型)） (the size of object header is about 8-12B)
 * **比较方式**：**基本类型使用`==`比较value，包装类型`==`比较的是object address**，故而包装类之间的值比较使用`equals()` (同于String，包装类型和String都重写了equals())
+  * 需要注意一手Integer在缓存范围[-128, 127]内使用==是相等的，内存地址一样
 
 #### 自动装箱拆箱 autoboxing & unboxing
 
@@ -279,7 +280,7 @@ public static Integer valueOf(int i) {
 
 ### OOP
 
-#### 面向对象 vs. 面向过程
+#### 面向对象 vs. 面向过程 ☆
 
 * ⾯向过程将系统视为⼀系列的过程或函数，强调算法和流程。更适合简单的、线性的任务。模块间耦合严重，但效率高
 * ⾯向对象会先抽象出具有状态、行为的对象，然后⽤对象执行方法的⽅式解决问题，强调封装、继承和多态，更容易扩展和维护。修改⼀个对象不会影响到其他对象，适合处理复杂的系统。
@@ -353,7 +354,7 @@ public static Integer valueOf(int i) {
 * 都不能被实例化，只能被继承/实现
 * 实现接口的类 和 继承抽象类的子类 都必须提供其中中定义的所有抽象方法的实现
 
-#### 引用拷贝 vs. 浅拷贝 vs. 深拷贝
+#### 引用拷贝 vs. 浅拷贝 vs. 深拷贝 ☆
 
 浅拷贝和深拷贝的主要区别：如何处理对象内部的引用成员
 
@@ -381,14 +382,12 @@ public static Integer valueOf(int i) {
 6. 子类构造方法
    1. 构造是从内erwai的
 
-
-
 ### Object
 
 Object类的方法：getClass(), hashCode(), equals(), clone(), toString(), finalize()...
 其中很多是native method, eg hashCode(), 使用c/cpp实现的方法，可以理解为native method的方法体在JVM中
 
-#### == vs. equals()
+#### == vs. equals() ☆
 
 * ==是运算符，equals()是方法
 * 对于基本类型，==比较的是value
@@ -429,7 +428,7 @@ hashCode()用于比较两个对象是否相等，比如往HashMap添加对象，
 
 ### String
 
-#### String vs. StringBuffer vs. StringBuilder
+#### String vs. StringBuffer vs. StringBuilder ☆
 
 * String不可变，两个SB可变
 * **String线程安全(因为不可变)**，StringBuffer对方法加了synchronized，线程安全；StringBuilder线程不安全；
