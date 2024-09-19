@@ -8,7 +8,7 @@
   * [Socket](https://github.com/haooxia/CSJourney/blob/main/network/%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1.md)
 * [计算机组成原理](https://github.com/haooxia/CSJourney/blob/main/organization/organization.md)
 * [Linux](https://github.com/haooxia/CSJourney/blob/main/linux/linux.md)
-* [MySQL](https://github.com/haooxia/CSJourney/blob/main/database/MySQL.md)
+* [MySQL](https://github.com/haooxia/CSJourney/blob/main/database/MySQL_essence.md)
 * [Redis](https://github.com/haooxia/CSJourney/blob/main/database/redis.md)
 * [Java](https://github.com/haooxia/CSJourney/blob/main/java/java.md)
   * [Collection](https://github.com/haooxia/CSJourney/blob/main/java/Collection.md)
