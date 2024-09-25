@@ -247,6 +247,12 @@ public Result queryShopById(@PathVariable("id") Long id) {
 }
 ```
 
+**Q: 使用redis缓存了哪些数据？**
+A: 商铺信息：名称、图像URL、地址、平均价格、营业时间等信息
+
+Q: 缓存之后QPS从多少增加到多少？
+A: TODO
+
 ### 标准操作
 
 查询数据库前先查redis缓存，如缓存命中，则直接返回，否则，再查询mysql数据库，顺便**将数据存入redis**。

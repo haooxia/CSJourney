@@ -4,29 +4,18 @@
   - [基础 \& 场景](#基础--场景)
     - [什么是Redis](#什么是redis)
     - [Redis使用场景](#redis使用场景)
+      - [String使用场景](#string使用场景)
+      - [List使用场景](#list使用场景)
+      - [Set使用场景](#set使用场景)
+      - [ZSet使用场景](#zset使用场景)
+      - [Hash使用场景](#hash使用场景)
+      - [BitMap使用场景](#bitmap使用场景)
     - [为何要用Redis作为MySQL的缓存](#为何要用redis作为mysql的缓存)
     - [单节点Redis和MySQL的QPS](#单节点redis和mysql的qps)
     - [大Key问题](#大key问题)
       - [大key会造成什么问题？](#大key会造成什么问题)
       - [如何解决大key问题？](#如何解决大key问题)
     - [热Key问题](#热key问题)
-  - [Redis底层数据结构](#redis底层数据结构)
-    - [简单动态字符串SDS](#简单动态字符串sds)
-    - [整数集合IntSet](#整数集合intset)
-    - [Dict](#dict)
-      - [Dict扩容与缩容 (include rehash)](#dict扩容与缩容-include-rehash)
-    - [ZipList](#ziplist)
-    - [QuickList](#quicklist)
-    - [SkipList](#skiplist)
-    - [RedisObject](#redisobject)
-  - [Redis数据结构](#redis数据结构)
-    - [String](#string)
-    - [List](#list)
-    - [Set](#set)
-    - [ZSet](#zset)
-    - [Hash](#hash)
-    - [Redis数据结构及使用场景](#redis数据结构及使用场景)
-      - [使用zset实现排行榜](#使用zset实现排行榜)
   - [Redis线程模型/网络模型](#redis线程模型网络模型)
     - [Redis是单线程还是多线程](#redis是单线程还是多线程)
     - [redis哪些地方使用了多线程](#redis哪些地方使用了多线程)
@@ -63,6 +52,21 @@
     - [切片/分片集群](#切片分片集群)
       - [主从集群 vs. 切片集群](#主从集群-vs-切片集群)
       - [切片集群原理](#切片集群原理)
+  - [Redis底层数据结构](#redis底层数据结构)
+    - [简单动态字符串SDS](#简单动态字符串sds)
+    - [整数集合IntSet](#整数集合intset)
+    - [Dict](#dict)
+      - [Dict扩容与缩容 (include rehash)](#dict扩容与缩容-include-rehash)
+    - [ZipList](#ziplist)
+    - [QuickList](#quicklist)
+    - [SkipList](#skiplist)
+    - [RedisObject](#redisobject)
+  - [Redis数据结构](#redis数据结构)
+    - [String](#string)
+    - [List](#list)
+    - [Set](#set)
+    - [ZSet](#zset)
+    - [Hash](#hash)
 
 Redis核心：
 
@@ -84,14 +88,69 @@ Redis: Remote Dictionary Service
 
 ### Redis使用场景
 
-1. **缓存**：由于所有数据都存在内存中，读写速度远超基于磁盘存储的数据库(mysql)，所以使用redis作为缓存可以极大地提高应用的响应速度和**并发量**（减少mysql数据库负载
-2. **分布式锁**：Redis可以实现分布式锁，确保多个进程或服务之间的数据库操作的原子性与一致性
-   1. 基于set的争抢锁机制，`SET resource lock NX EX 10`: **nx保证互斥，即key不存在时才可以设置**，ex设置ttl。
-3. **计数器**：由于redis的原子操作和高性能，所以非常适合用于实现计数器，如**网络访问量统计、点赞数统计**
-4. **排行榜**：使用ZSet实现排行榜（见后文）
-5. **消息队列**：redis的发布订阅功能使其可以成为一个**轻量级**的消息队列，依赖发布/订阅模式(Pub/Sub)
-   1. 缺陷：不支持消息持久化，消息发布后若无订阅者在线则会被丢弃；不保证消息的顺序和可靠性传输
-   2. 另外List也可以实现简单的消息队列，LPUSH将消息塞到队列，消费者使用**BLPOP阻塞式**地获取第一个元素，如果list为空，会阻塞等待或超时（FIFO
+[reference](https://mp.weixin.qq.com/s/srkd73bS2n3mjIADLVg72A)
+
+redis数据结构：
+
+* 传统：String, List, Set, ZSet, Hash
+* 新版：Bitmap, Hyperloglog, GEO, Stream
+  * 位图BitMap（2.2 版新增）：二值状态统计的场景，比如签到、判断用户登陆状态、连续签到用户总数等
+  * HyperLogLog（2.8 版新增）：海量数据基数统计的场景，比如百万级网页 UV 计数等；
+  * 地理空间GEO（3.2 版新增）：存储地理位置信息的场景，比如滴滴叫车；
+  * 消息队列Stream（5.0 版新增）：消息队列，相比于基于 List 类型实现的消息队列，有这两个特有的特性：自动生成全局唯一消息ID，支持以消费组形式消费数据。
+
+#### String使用场景
+
+1. **缓存**：由于所有数据都存在内存中，读写速度远超基于磁盘存储的数据库(mysql)，所以使用redis作为缓存可以极大地提高应用的响应速度和**并发量**（减少mysql数据库负载）(String类型)
+   1. eg 商铺信息：名称、图像URL、地址、平均价格、营业时间等信息
+2. **计数器**：利用`incr`和`decr`命令，适用于统计如网页访问量、商品库存数量、点赞数统计等 （String类型）
+   1. eg 对于文章浏览量统计：每篇博客文章有唯一ID，每次被访问时，文章ID对应的浏览次数在redis中递增即可，然后定期将浏览次数同步到数据库
+   2. redis的**原子**操作确保了**高并发**场景下计数的准确性
+3. **分布式锁**：通过`setnx (set if not exists)`命令，可以确保在分布式系统中的互斥访问
+   1. 或者`SET resource lock NX EX 10`: **nx保证互斥，即key不存在时才可以设置**，ex设置ttl。
+4. **共享session**：一个大型电商平台使用多个服务器来处理用户请求以提高可用性。当用户登录后，其会话信息（session）需要在所有服务器间共享，以确保无论用户请求到达哪个服务器，都能识别其登录状态。（不同服务器的session本身是不会共享的）
+5. **限流器(rateLimiter)**：使用`expire`命令，结合`incr`，可实现API的限流功能，防止系统被过度访问。（详见后文）
+   1. 请求计数：每次API请求时，使用INCR命令对特定的key(关于API的唯一标识)进行递增操作。
+   2. 设置过期时间：使用EXPIRE命令为计数key设置一个过期时间，过期时间取决于限流的时间窗口（例如1秒）。
+   3. 检查请求频率：如果请求计数超过设定的阈值（例如每秒100次），则拒绝新的请求或进行排队。
+
+#### List使用场景
+
+1. **消息队列**：List类型常用于实现消息队列，用于异步处理任务，如邮件发送队列、任务调度等。LPUSH将消息塞到队列，消费者使用**BLPOP阻塞式**地获取第一个元素，如果list为空，会阻塞等待或超时
+
+> 另外redis的发布订阅功能使其可以成为一个**轻量级**的消息队列，依赖发布/订阅模式(Pub/Sub)
+> 缺陷：不支持消息持久化，消息发布后若无订阅者在线则会被丢弃；不保证消息的顺序和可靠性传输
+
+#### Set使用场景
+
+1. **标签系统**：在一个内容平台，用户可以给文章打上不同的标签，系统需要根据标签过滤和推荐文章；通过`sadd`添加标签，通过`smembers`获取标签key下的所有成员/文章列表；通过`smembers`获取文章key的所有标签
+2. **社交网络好友关系**：
+   1. **唯一性**：添加好友时看看好友列表是否已经有了 `sismember`
+   2. **好友推荐**：利用集合运算，如差集，推荐可能认识的好友。如果`sinter A B`用户AB有共同好友，然后`sdiff A B`可以找到A的朋友中B没有的朋友，可以推荐给B作为可能认识的好友
+
+#### ZSet使用场景
+
+1. **排行榜系统**
+   * 添加member和score：`zadd tmp 100 a1`, `zadd tmp 200 a2`, `zadd tmp 50 a3` 
+   * 为a3 member的score新增点赞：`zincrby tmp 1 a3`
+   * 获取点赞最多的三个member：`zrevrange keyname 0 2 withscores`
+   * 获取点赞在100-200之间的member：`zrangebyscore keyname 100 200 withscores`
+
+#### Hash使用场景
+
+1. **用户信息存储**：在社交网络应用中，每个用户都有一系列属性，如用户名、年龄、兴趣爱好等。使用Hash类型可以方便地存储和查询单个用户的详细信息。
+2. **购物车管理**：Hash类型可以用于实现购物车功能，其中每个用户的购物车是一个Hash，**商品ID**作为字段，**数量**作为值。
+
+#### BitMap使用场景
+
+BitMap基于String，使用bit位存储信息(0或1)，即适用于**二值状态统计**的场景；很省内存
+
+1. **状态监控**：用于监控大量状态，例如用户在线状态、设备状态等。在一个大型在线游戏平台中(eg 王者荣耀)，需要实时监控大量玩家是否在线。使用Bitmap可以高效地记录每个玩家的在线状态。
+   1. 使用一个`playerStatus`作为key，用户ID作为offset，在线是就把这个key的这个offset处的bit位设置为1 `setbit playerStatus id 1`，离线就0；
+   2. 通过`getbit playerStatus id`查看这个用户是否在线
+   3. 通过`bitcount playerStatus`查看有多少用户在线
+
+hyperloglog, geo暂略
 
 ### 为何要用Redis作为MySQL的缓存
 
@@ -146,237 +205,6 @@ A: 不固定，根据业务场景合理确定阈值，一般来说：
 
 [link](https://xiaolincoding.com/interview/redis.html#%E4%BB%80%E4%B9%88%E6%98%AF%E7%83%ADkey)
 
-## Redis底层数据结构
-
-### 简单动态字符串SDS
-
-* 众所周知：**Redis中保存的Key是字符串，value往往是字符串或者字符串的集合**
-* redis没用C语言自带的字符串/字符数组，因为它有很多问题：
-  * **获取字符串长度的需要通过运算**；size()-1或遍历
-  * **非二进制安全**；你不能存`\0`
-  * 不可修改
-
-![picture 12](../images/6bd00c2e6ba2a80e60ac84d3a71f7cfabf32b3f9e662fa51dc1735b3214ec7ab.png)
-![picture 13](../images/c49edbbb094148d6a7c1c9dfa1c62f9366e20b161896fbb6c1b9e5696f8fe056.png)
-
-> "申请内存"这个动作很消耗资源，故而预分配内存
-
-### 整数集合IntSet
-
-IntSet是Redis中set集合的一种实现方式，基于**C语言整数数组**来实现，并且具备长度可变、有序等特征。
-
-Intset可以看做是特殊的整数数组，具备一些特点：
-
-* Redis会确保Intset中的元素唯一、有序
-  * 唯一性：就是查找一下看看有没有，有则不添加
-  * 有序性：也是二分找到待插入位置
-* 具备**编码升级**机制，节省内存空间
-* 底层采用**二分查找**方式来查询
-
-![picture 14](../images/8e64ee67435a6c172d96edb8689e2b4f56543f60945484a95fa86940e421480f.png)  
-
-IntSet编码会自动升级（如果你开始用的int16，当你插入了一个16表示不了的数字，就会触发升级）：
-
-* 升级编码为int32，并按新的编码方式及元素个数扩容数组
-* **倒序**依次将数组中的元素拷贝到扩容后的正确位置
-* 将待添加的元素放入数组末尾
-
-### Dict
-
-Redis是一个键值型的数据库，我们可以根据键实现快速的增删改查。而键与值的映射关系正是通过Dict来实现的。
-
-底层就是**拉链法**（看起来和老版HashMap基本差不多）**数组+单链表**
-![picture 17](../images/8a9ec1cc5b9db82743d3b88913768457b755d4b3230ad309532fef78f04c315b.png)  
- 
-> **size的值永远是2的n次方**，如此才能保证size-1的**低二进制位刚好全是1**，如此`hash % size == hash & (size - 1) == hash & sizemask`
-
-哈希冲突时是头插到链表，因为比较方便，尾插你还得遍历过去，麻烦
-
-**Q: 你头插的话不用比较是否和后面的元素相同吗？为啥HashMap需要捏？**
-A: 也需要遍历判断是否有相同key，如有直接更新，如无，头插。所以这个头插必要性感觉也就那样
-
-#### Dict扩容与缩容 (include rehash)
-
-* Dict是**数组+单链表**，当集合中元素较多时，必然导致哈希冲突增多，**链表过长**，则查询效率会大大降低。
-  * redis的Dict解决方案是扩容，HashMap 1.8解决方案是先扩容 + 再Treeify(len>=64 & 某单链表>=8)
-* Dict在**每次新增键值对**时都会检查负载因子（LoadFactor = **used/size**） ，满足以下两种情况时会触发**哈希表扩容**（**每次翻倍**）：
-  * 哈希表的LoadFactor >= 1，并且服务器没有执行BGSAVE或者BGREWRITEAOF等**后台进程** (说明cpu比较闲)；
-  * 哈希表的LoadFactor > 5（忍不了了）
-* 每次删除键值对时会检查负载因子，当`LoadFactor < 0.1`时会进行**哈希表收缩**
-* 扩容与收缩时都会创建一个新的哈希表`ht[1]`，即有新的size，那你想要迁移到新哈希表，原来的元素位置肯定得重新计算了（注意迁移过程中旧哈希表`ht[0]`也是可以用的奥），此即**rehash过程**；而且我们不能一次性rehash，不然数据量很大的时候，主进程阻塞严重，此即**渐进式rehash**：
-  * 计算新size，并申请内存，创建dictht，并赋值给`dict.ht[1]`
-  * 设置`rehashidx=0`，标示开始rehash；(-1表示无需)
-  * ~~**开始rehash，一次性将`dickt.ht[0]`中的每一个数据都rehash到`dict.ht[1]`**~~
-  * 每次执行增删改查时，都检查一下`rehashidx`是否`>-1`，如果是，就把该`rehashidx`的entry进行rehash到`ht[1]`，并`rehashidx++`，即**每次CRUD就rehash一个元素**，挺妙的
-    * **中间如果有人过来查询，修改或删除，需要同时到新旧两个dictht中查找，先找`ht[0]`旧的**
-    * **新增的话就直接插入到新dictht就完事儿 `ie, ht[1]`**
-    * 这样**可以确保旧的`ht[0]`元素只减不增**
-  * 将最后的`ht[1]`赋值给`ht[0]`，并将`ht[1]`初始化为空哈希表，释放原来的旧的`ht[0]`的内存
-
-### ZipList
-
-> 由于Dict单链表使用了很多指针，内存空间分配是不连续的，容易产生内存碎片，而且指针也挺浪费内存的(一个指针8B)，浪费内存
-
-* 为了节省内存，设计了ZipList，是一种**特殊的“双向(端)链表”**，**底层不是双端链表，但具备其特性**，即任意一端的push/pop（O(1)）
-* **并非真的链表，没有通过指针进行连接，而是记录上一节点和本节点长度来寻址，占用连续内存，内存占用低**
-* 不支持随机访问，**只能正向或反向遍历**（因为里面entry元素的长度不一致）；所以列表数据不建议太多，不然遍历很慢
-* ZipList可能发生**连锁更新问题**：在一种特殊情况下产生的**连续多次空间扩展操作**，称之为连锁更新(casade update)，增删都可能导致连锁更新的发生；多米诺骨牌效应；不过概率很低啦，可以忽略；
-  * 具体来说是因为entry记录了前一节点的大小
-  * **listpack**是一种解决方案(Redis5.0)
-
-![picture 6](../images/4950eef528bbe880ca735d140469f32fa4379b049ba9c0fdbc59a4954226947c.png){width=80%}
-![picture 7](../images/2b73fc5b67f4df0262a0319c85a78283aeef5bb11cbdfc54ac01fc6cd87873a0.png){width=80%}
-
-* ZipListEntry中encoding编码可分为字符串和整数两种，字符串需要记录具体长度，整数记录类型即可(因为整数就2B,4B...几种类型)
-* 一句话：ZipList中有各种各样的用于字符串或者整数的编码，最终目的都是为了极致地节省内存；
-
-### QuickList
-
-> ZipList虽然节省内存，但申请的内存必须连续，如果想要申请大块连续内存，申请效率很低，故而**ZipList长度不建议太大**；
-
-可我就是要存大量数据，怎么办？一个ZipList放着难受，那**搞多个ZipList呗(数据分片思想)**，但多个ZipList比较分散，如何**查找和管理**呢？redis 3.2引入QuickList来管理；
-
-* **QuickList是一个双向链表(支持正向和反向遍历)，每一个节点都是一个ZipList；**
-* QuickList还要**限制ZipList的大小**，限制entry个数，或者ZipList最大内存（可以在redis中配置），默认是内存不超过8kb
-* QuickList还可以**对ZipList节点进行压缩**，压缩就是给entry内的数据搞个什么压缩算法压缩压缩。。。(笑)
-* QuickList **==兼具链表和ZipList的优点==**，链表优势是内存不用连续，可以存很多，劣势就是占用内存太多；ZipList内存占用少，但能存的数据量有限(申请大块内存难顶)
-
-![picture 8](../images/fdc8480e95a9f719b1b4abc12c5187e63da57d048e09074e3cd0a06f81a8238e.png)  
-
-### SkipList
-
-> ZipList和QuickList只能顺序或逆序遍历，所以访问首尾还行，访问中间就很慢了；ziplist虽然连续内存，但entry大小不一致，所以无法随机访问；QuickList是双向链表所以只能一个接一个访问
-
-* 跳表本质上是一个双向链表，每个节点包含用于排序的`score`(可以理解为索引)和实际保存的字符串数据`ele`
-* **节点按照score值升序排序**
-* **每个节点可以包含多层指针**，**层数在1-32之间**
-  * 存在1到n个`forward`指针组成的`level[]`数组中
-  * 每个节点还有1个backward指针
-* 不同层指针的**跨度不同，层级越高，跨度越大**，从而提升查询效率
-  * 查询的时候**先使用高层指针**走更远的距离，然后**判断score属性来决定是应该继续往前走，还是回去换成低层指针**，先粗后细嘛
-* **CRUD效率和红黑树基本一致，实现却更简单**
-
-![picture 9](../images/bbb6abce1328d654c839ea19217bd25fd4bcfb3d440a711366bd9006d7d91cde.png)  
-
-![picture 11](../images/dc9b39fb80babe26016b2355b1de9cafaed23e1f78c6d290192857e988ce8748.png)  
-
-![picture 12](../images/3ae89d2c74bd3f8955b5d434ae5c9fc6edaaa30e6c831d313acd07ec6a39c57b.png)  
-
-
-**查询过程**：先根据level[]中最高级别的forward指针(即跨度最大的指针)找到下一个节点，然后对比节点中的score和我要找的节点的score，如果要找的score更大，则往后找，如果跟小，则进入level[]中下一级别的forward指针
-
-### RedisObject
-
-![picture 13](../images/dc8a57f5d5ee43595569a37d3bc89bbe5c8d6036389bddefe708dc872b08dfa1.png)  
-
-![picture 14](../images/8f48326b53406d849f3fd2ba04d7f797cf7625bce772fa3931f412c291d5dc9e.png){width=70%}
-![picture 15](../images/ec67b853b60458a297227cfb93da76806d73c641f830c08c2f27694c2749fdc6.png){width=70%}
-
-## Redis数据结构
-
-### String
-
-* 基本编码是 ==**RAW编码**== 动态字符串，基于SDS实现，存储上限为512mb，不建议存太大
-* 如果len(SDS) < **44B**, 则采用 ==**EMBSTR编码**== 动态字符串，此时Object head和SDS数据**会占据连续内存空间**；
-  * 申请内存时只需要调用一次内存分配函数，更高效
-  * 之所以44B，是因为此时整个RedisObject是64B，redis内存分配是采用`jmalloc`会以2^n次方进行内存分配，所以这样不会产生内存碎片
-  * 所以推荐你用string时不要超过44B
-* 如果存的字符串时**整数值**，则采用 ==**INT编码**==，直接就爱那个数据存在RedisObject的ptr指针的位置（刚好8B，你一个Long也就8B，足矣），无需额外的SDS；
-  * redis真是内存机制节省大师...
-
-![picture 16](../images/b2360f712e484b0d300399cf38650195f1904196ff6d6c8c7d15a7c515dc8694.png)  
-
-### List
-
-> api: `lpush key v1 v2 ...`, lpop, rpush, rpop
-> 所以List类似一个双端链表嘛
-
-* redis3.2之前用的是LinkedList和ZipList结合的方式实现List
-  * 当元素数量<512 && 元素大小<64B时：采用ZipList编码
-  * 超过则采用LinkedList编码
-* 新版统一采用QuickList(QuickList兼具LinkedList和ZipList的优点)
-
-![picture 20](../images/1d3dd9c36c36cbd2ec980815fab362abd43179cfb33218e103f81d50b58347f0.png)  
-
-### Set
-
-> 保证元素唯一；不保证有序性；可以求交并差集；**查询效率要求很高**
-> sadd, sismember, sinter
-
-所以我们需要一个可以高效查询的结构：Dict(类似于java的HashMap)
-
-* 当存储数据是**整数 && 元素数量不超过阈值**(默认**512**)，Set会采用**IntSet编码**，以节省内存
-  * 如果当前是intset，每次插入新元素时会检测这俩条件，若不满足则转为HT
-* 否则，采用**HT编码(Dict)**，其中key存储元素，value统一为null
-
-![picture 22](../images/2498e0ceb71235033ed17fd55ab25390403b01e29856f30895ce536f01472afa.png)  
-
-### ZSet
-
-> member唯一；可以根据score值排序；可以根据member查score;(所以需要满足要求：**键值存储、键唯一、可排序**)
-> `zadd z1 10 m1 20 m2 30 m3`
-
-
-* 当元素个数 < **128** && 每个元素都 < **64B**, 直接使用ziplist
-  * 就无需zset这个结构体，直接用**ziplist**
-  * ZipList极省内存，连续空间，不建议放过多元素
-* 否则，使用**SkipList + Dict**
-* **编码转换**：如果当前是ziplist，每次添加元素时会判断是否超过阈值，是则转换为SkipList + Dict
-
-> * zset**兼顾了内存和性能**，数据量小时，以节省内存为目标，以时间换空间，使用ziplist；数据量大时，要兼顾性能，以空间换时间，采用skiplist + Dict
-> * Redis7.0中，ziplist已经废弃，交由listpack数据结构来实现了。
-
-**ZipList:**
-
-**Q: zipList怎么做到键值存储、键唯一、可排序的？**
-![picture 25](../images/adbb9f5bb83489d3ca3a0af4488eb3d1beeaa806ca1b52aec5f6e23427824629.png)  
-
-**SkipList + Dict:**
-
-* SkipList满足键值存储和可排序，但键**不保证唯一**，而且SkipList是按照score/value来查询的，想要根据member/key查询score，就得从头到尾遍历...
-* Dict(HT): 可以键值存储，也可以根据key找value，可以保证唯一(同一个key覆盖即可)，但**不可排序**
-* 故而zset结构中维护了一个Dict(键值存储+键唯一)和一个skiplist(排序)
-
-![picture 23](../images/cd36e390487002fdf0590a5db72704d96ee66e224c7be8213a9823c7b5af3ef0.png)  
-
-### Hash
-
-> 和zset很像：键值存储 + 键唯一 + 根据键获取值，**无需排序**
-> 不同点：zset的value必须是数字形式的score，因为需要排序嘛；Hash不限定
-
-故而无需跳表排序：
-
-* 当元素个数 < **512** && 每个元素都 < **64B**, 直接使用ziplist
-  * ZipList比Dict省内存，相邻两个entry存key和value
-  * zset是128，因为要排序，所以慢点，少放点
-* 否则，使用Dict(HT)
-* 如果当前是ziplist，每次添加元素时会判断是否超过阈值，是则转换为Dict
-
-![picture 26](../images/e6776ba8b3ca551c6bccb4ac08d6cee354d3aa88a01363cbcb7325d157ee229a.png)  
-
-
-### Redis数据结构及使用场景
-
-* 常见的有五种数据类型
-  * String：缓存对象、常规计数、分布式锁、共享session信息等
-  * List：消息队列（但是有两个问题：1. 生产者需要自行实现全局唯一 ID；2. 不能以消费组形式消费数据）等。
-  * Hash：缓存对象、购物车等
-  * Set：聚合计算（并集、交集、差集）场景，比如点赞、共同关注、抽奖活动等
-  * Zset：排序场景，比如排行榜、电话和姓名排序等。
-* 新版本新增四种
-  * 位图BitMap（2.2 版新增）：二值状态统计的场景，比如签到、判断用户登陆状态、连续签到用户总数等
-  * HyperLogLog（2.8 版新增）：海量数据基数统计的场景，比如百万级网页 UV 计数等；
-  * 地理空间GEO（3.2 版新增）：存储地理位置信息的场景，比如滴滴叫车；
-  * 消息队列Stream（5.0 版新增）：消息队列，相比于基于 List 类型实现的消息队列，有这两个特有的特性：自动生成全局唯一消息ID，支持以消费组形式消费数据。
-
-![picture 4](../images/b8d6ec9aa02b299d1cb9740d1c661e91488b27ba826975f10ef661b1a231f8fe.png)
-
-#### 使用zset实现排行榜
-
-* 添加member和score：`zadd tmp 100 a1`, `zadd tmp 200 a2`, `zadd tmp 50 a3` 
-* 为a3 member的score新增点赞：`zincrby tmp 1 a3`
-* 获取点赞最多的三个member：`zrevrange keyname 0 2 withscores`
-* 获取点赞在100-200之间的member：`zrangebyscore keyname 100 200 withscores`
 
 ## Redis线程模型/网络模型
 
@@ -474,8 +302,13 @@ redis使用**epoll()**实现IO多路复用，多个客户端连接服务端时�
 
 [reference](https://javaguide.cn/cs-basics/data-structure/bloom-filter.html)
 
-布隆过滤器(Bloom Filter)**用于快速判断一个元素是否在集合中**；
-是Bloom老哥1970年提出的一个**数据结构**，由**二进制位数组 + 一系列哈希函数**组成；
+布隆过滤器(Bloom Filter)**用于快速判断一个元素是否在集合中**；它会回答 **“绝对不在”或“可能在”**。
+> i.e., 可能出现误报 / false positives (假阳性)，但不可能出现漏报 / false negatives (假阴性)
+
+是Bloom老哥1970年提出的一个**概率性数据结构**，由**二进制位数组 + 一系列哈希函数**组成；（因为会说可能在，故而是概率性的
+
+> 这是一种trade off: HashMap不会出现误报和漏报，是确定性的，但很占用内存。Bloom filter做了牺牲，是概率性的，但很省内存；
+> 了解：这主要是因为hashmap有冲突处理机制（拉链&树化），然后元素也都被存下来，你可以去查看对比，而布隆过滤器并没有，会直接覆盖，并没有存元素
 
 特点：**相比于我们用的HashMap，空间占用小很多，效率高很多**：100w个元素只需要100w bit ≈ 122KB空间!
 缺陷：具有**一定的错误识别率**，难以删除，集合中元素越多，哈希冲突的概率越高，误报的可能性越大
@@ -511,7 +344,9 @@ redis使用**epoll()**实现IO多路复用，多个客户端连接服务端时�
   * 防止缓存穿透
   * 判断一个数字是否存在于包含大量数字的数字集中（数字集很大，上亿）
   * 垃圾邮件过滤（判断一个邮件地址是否在垃圾邮件列表中）
-  * 黑名单功能（判断一个IP地址或手机号码是否在黑名单中）
+  * 黑名单功能（判断一个IP地址，URL，手机号码是否在黑名单中）
+    * chrome会用其识别恶意地址URL
+  * 防止用户输入**弱密码**：比如[github](https://github.com/k8gege/PasswordDic/blob/master/top1000.txt)上有人总结弱密码字典：top100, top1000...拿来用就好了
 * **去重**
   * 对巨量的订单号/手机号/QQ号去重
 
@@ -785,3 +620,211 @@ Redis Cluster使用哈希槽（Hash Slot）来处理数据与节点之间的映�
 ![picture 32](../images/c88dc58783511830acb3fbd217dcf51a63d781a0bc69e8974f90e1443a1839fa.png){width=60%}
 
 > Q: mysql有主从和切片集群吗？有何不同
+
+## Redis底层数据结构
+
+### 简单动态字符串SDS
+
+* 众所周知：**Redis中保存的Key是字符串，value往往是字符串或者字符串的集合**
+* redis没用C语言自带的字符串/字符数组，因为它有很多问题：
+  * **获取字符串长度的需要通过运算**；size()-1或遍历
+  * **非二进制安全**；你不能存`\0`
+  * 不可修改
+
+![picture 12](../images/6bd00c2e6ba2a80e60ac84d3a71f7cfabf32b3f9e662fa51dc1735b3214ec7ab.png)
+![picture 13](../images/c49edbbb094148d6a7c1c9dfa1c62f9366e20b161896fbb6c1b9e5696f8fe056.png)
+
+> "申请内存"这个动作很消耗资源，故而预分配内存
+
+### 整数集合IntSet
+
+IntSet是Redis中set集合的一种实现方式，基于**C语言整数数组**来实现，并且具备长度可变、有序等特征。
+
+Intset可以看做是特殊的整数数组，具备一些特点：
+
+* Redis会确保Intset中的元素唯一、有序
+  * 唯一性：就是查找一下看看有没有，有则不添加
+  * 有序性：也是二分找到待插入位置
+* 具备**编码升级**机制，节省内存空间
+* 底层采用**二分查找**方式来查询
+
+![picture 14](../images/8e64ee67435a6c172d96edb8689e2b4f56543f60945484a95fa86940e421480f.png)  
+
+IntSet编码会自动升级（如果你开始用的int16，当你插入了一个16表示不了的数字，就会触发升级）：
+
+* 升级编码为int32，并按新的编码方式及元素个数扩容数组
+* **倒序**依次将数组中的元素拷贝到扩容后的正确位置
+* 将待添加的元素放入数组末尾
+
+### Dict
+
+Redis是一个键值型的数据库，我们可以根据键实现快速的增删改查。而键与值的映射关系正是通过Dict来实现的。
+
+底层就是**拉链法**（看起来和老版HashMap基本差不多）**数组+单链表**
+![picture 17](../images/8a9ec1cc5b9db82743d3b88913768457b755d4b3230ad309532fef78f04c315b.png)  
+ 
+> **size的值永远是2的n次方**，如此才能保证size-1的**低二进制位刚好全是1**，如此`hash % size == hash & (size - 1) == hash & sizemask`
+
+哈希冲突时是头插到链表，因为比较方便，尾插你还得遍历过去，麻烦
+
+**Q: 你头插的话不用比较是否和后面的元素相同吗？为啥HashMap需要捏？**
+A: 也需要遍历判断是否有相同key，如有直接更新，如无，头插。所以这个头插必要性感觉也就那样
+
+#### Dict扩容与缩容 (include rehash)
+
+* Dict是**数组+单链表**，当集合中元素较多时，必然导致哈希冲突增多，**链表过长**，则查询效率会大大降低。
+  * redis的Dict解决方案是扩容，HashMap 1.8解决方案是先扩容 + 再Treeify(len>=64 & 某单链表>=8)
+* Dict在**每次新增键值对**时都会检查负载因子（LoadFactor = **used/size**） ，满足以下两种情况时会触发**哈希表扩容**（**每次翻倍**）：
+  * 哈希表的LoadFactor >= 1，并且服务器没有执行BGSAVE或者BGREWRITEAOF等**后台进程** (说明cpu比较闲)；
+  * 哈希表的LoadFactor > 5（忍不了了）
+* 每次删除键值对时会检查负载因子，当`LoadFactor < 0.1`时会进行**哈希表收缩**
+* 扩容与收缩时都会创建一个新的哈希表`ht[1]`，即有新的size，那你想要迁移到新哈希表，原来的元素位置肯定得重新计算了（注意迁移过程中旧哈希表`ht[0]`也是可以用的奥），此即**rehash过程**；而且我们不能一次性rehash，不然数据量很大的时候，主进程阻塞严重，此即**渐进式rehash**：
+  * 计算新size，并申请内存，创建dictht，并赋值给`dict.ht[1]`
+  * 设置`rehashidx=0`，标示开始rehash；(-1表示无需)
+  * ~~**开始rehash，一次性将`dickt.ht[0]`中的每一个数据都rehash到`dict.ht[1]`**~~
+  * 每次执行增删改查时，都检查一下`rehashidx`是否`>-1`，如果是，就把该`rehashidx`的entry进行rehash到`ht[1]`，并`rehashidx++`，即**每次CRUD就rehash一个元素**，挺妙的
+    * **中间如果有人过来查询，修改或删除，需要同时到新旧两个dictht中查找，先找`ht[0]`旧的**
+    * **新增的话就直接插入到新dictht就完事儿 `ie, ht[1]`**
+    * 这样**可以确保旧的`ht[0]`元素只减不增**
+  * 将最后的`ht[1]`赋值给`ht[0]`，并将`ht[1]`初始化为空哈希表，释放原来的旧的`ht[0]`的内存
+
+### ZipList
+
+> 由于Dict单链表使用了很多指针，内存空间分配是不连续的，容易产生内存碎片，而且指针也挺浪费内存的(一个指针8B)，浪费内存
+
+* 为了节省内存，设计了ZipList，是一种**特殊的“双向(端)链表”**，**底层不是双端链表，但具备其特性**，即任意一端的push/pop（O(1)）
+* **并非真的链表，没有通过指针进行连接，而是记录上一节点和本节点长度来寻址，占用连续内存，内存占用低**
+* 不支持随机访问，**只能正向或反向遍历**（因为里面entry元素的长度不一致）；所以列表数据不建议太多，不然遍历很慢
+* ZipList可能发生**连锁更新问题**：在一种特殊情况下产生的**连续多次空间扩展操作**，称之为连锁更新(casade update)，增删都可能导致连锁更新的发生；多米诺骨牌效应；不过概率很低啦，可以忽略；
+  * 具体来说是因为entry记录了前一节点的大小
+  * **listpack**是一种解决方案(Redis5.0)
+
+![picture 6](../images/4950eef528bbe880ca735d140469f32fa4379b049ba9c0fdbc59a4954226947c.png){width=80%}
+![picture 7](../images/2b73fc5b67f4df0262a0319c85a78283aeef5bb11cbdfc54ac01fc6cd87873a0.png){width=80%}
+
+* ZipListEntry中encoding编码可分为字符串和整数两种，字符串需要记录具体长度，整数记录类型即可(因为整数就2B,4B...几种类型)
+* 一句话：ZipList中有各种各样的用于字符串或者整数的编码，最终目的都是为了极致地节省内存；
+
+### QuickList
+
+> ZipList虽然节省内存，但申请的内存必须连续，如果想要申请大块连续内存，申请效率很低，故而**ZipList长度不建议太大**；
+
+可我就是要存大量数据，怎么办？一个ZipList放着难受，那**搞多个ZipList呗(数据分片思想)**，但多个ZipList比较分散，如何**查找和管理**呢？redis 3.2引入QuickList来管理；
+
+* **QuickList是一个双向链表(支持正向和反向遍历)，每一个节点都是一个ZipList；**
+* QuickList还要**限制ZipList的大小**，限制entry个数，或者ZipList最大内存（可以在redis中配置），默认是内存不超过8kb
+* QuickList还可以**对ZipList节点进行压缩**，压缩就是给entry内的数据搞个什么压缩算法压缩压缩。。。(笑)
+* QuickList **==兼具链表和ZipList的优点==**，链表优势是内存不用连续，可以存很多，劣势就是占用内存太多；ZipList内存占用少，但能存的数据量有限(申请大块内存难顶)
+
+![picture 8](../images/fdc8480e95a9f719b1b4abc12c5187e63da57d048e09074e3cd0a06f81a8238e.png)  
+
+### SkipList
+
+> ZipList和QuickList只能顺序或逆序遍历，所以访问首尾还行，访问中间就很慢了；ziplist虽然连续内存，但entry大小不一致，所以无法随机访问；QuickList是双向链表所以只能一个接一个访问
+
+* 跳表本质上是一个双向链表，每个节点包含用于排序的`score`(可以理解为索引)和实际保存的字符串数据`ele`
+* **节点按照score值升序排序**
+* **每个节点可以包含多层指针**，**层数在1-32之间**
+  * 存在1到n个`forward`指针组成的`level[]`数组中
+  * 每个节点还有1个backward指针
+* 不同层指针的**跨度不同，层级越高，跨度越大**，从而提升查询效率
+  * 查询的时候**先使用高层指针**走更远的距离，然后**判断score属性来决定是应该继续往前走，还是回去换成低层指针**，先粗后细嘛
+* **CRUD效率和红黑树基本一致，实现却更简单**
+
+![picture 9](../images/bbb6abce1328d654c839ea19217bd25fd4bcfb3d440a711366bd9006d7d91cde.png)  
+
+![picture 11](../images/dc9b39fb80babe26016b2355b1de9cafaed23e1f78c6d290192857e988ce8748.png)  
+
+![picture 12](../images/3ae89d2c74bd3f8955b5d434ae5c9fc6edaaa30e6c831d313acd07ec6a39c57b.png)  
+
+
+**查询过程**：先根据level[]中最高级别的forward指针(即跨度最大的指针)找到下一个节点，然后对比节点中的score和我要找的节点的score，如果要找的score更大，则往后找，如果跟小，则进入level[]中下一级别的forward指针
+
+### RedisObject
+
+![picture 13](../images/dc8a57f5d5ee43595569a37d3bc89bbe5c8d6036389bddefe708dc872b08dfa1.png)  
+
+![picture 14](../images/8f48326b53406d849f3fd2ba04d7f797cf7625bce772fa3931f412c291d5dc9e.png){width=70%}
+![picture 15](../images/ec67b853b60458a297227cfb93da76806d73c641f830c08c2f27694c2749fdc6.png){width=70%}
+
+## Redis数据结构
+
+### String
+
+* 基本编码是 ==**RAW编码**== 动态字符串，基于SDS实现，存储上限为512mb，不建议存太大
+* 如果len(SDS) < **44B**, 则采用 ==**EMBSTR编码**== 动态字符串，此时Object head和SDS数据**会占据连续内存空间**；
+  * 申请内存时只需要调用一次内存分配函数，更高效
+  * 之所以44B，是因为此时整个RedisObject是64B，redis内存分配是采用`jmalloc`会以2^n次方进行内存分配，所以这样不会产生内存碎片
+  * 所以推荐你用string时不要超过44B
+* 如果存的字符串时**整数值**，则采用 ==**INT编码**==，直接就爱那个数据存在RedisObject的ptr指针的位置（刚好8B，你一个Long也就8B，足矣），无需额外的SDS；
+  * redis真是内存机制节省大师...
+
+![picture 16](../images/b2360f712e484b0d300399cf38650195f1904196ff6d6c8c7d15a7c515dc8694.png)  
+
+### List
+
+> api: `lpush key v1 v2 ...`, lpop, rpush, rpop
+> 所以List类似一个双端链表嘛
+
+* redis3.2之前用的是LinkedList和ZipList结合的方式实现List
+  * 当元素数量<512 && 元素大小<64B时：采用ZipList编码
+  * 超过则采用LinkedList编码
+* 新版统一采用QuickList(QuickList兼具LinkedList和ZipList的优点)
+
+![picture 20](../images/1d3dd9c36c36cbd2ec980815fab362abd43179cfb33218e103f81d50b58347f0.png)  
+
+### Set
+
+> 保证元素唯一；不保证有序性；可以求交并差集；**查询效率要求很高**
+> sadd, sismember, sinter
+
+所以我们需要一个可以高效查询的结构：Dict(类似于java的HashMap)
+
+* 当存储数据是**整数 && 元素数量不超过阈值**(默认**512**)，Set会采用**IntSet编码**，以节省内存
+  * 如果当前是intset，每次插入新元素时会检测这俩条件，若不满足则转为HT
+* 否则，采用**HT编码(Dict)**，其中key存储元素，value统一为null
+
+![picture 22](../images/2498e0ceb71235033ed17fd55ab25390403b01e29856f30895ce536f01472afa.png)  
+
+### ZSet
+
+> member唯一；可以根据score值排序；可以根据member查score;(所以需要满足要求：**键值存储、键唯一、可排序**)
+> `zadd z1 10 m1 20 m2 30 m3`
+
+
+* 当元素个数 < **128** && 每个元素都 < **64B**, 直接使用ziplist
+  * 就无需zset这个结构体，直接用**ziplist**
+  * ZipList极省内存，连续空间，不建议放过多元素
+* 否则，使用**SkipList + Dict**
+* **编码转换**：如果当前是ziplist，每次添加元素时会判断是否超过阈值，是则转换为SkipList + Dict
+
+> * zset**兼顾了内存和性能**，数据量小时，以节省内存为目标，以时间换空间，使用ziplist；数据量大时，要兼顾性能，以空间换时间，采用skiplist + Dict
+> * Redis7.0中，ziplist已经废弃，交由listpack数据结构来实现了。
+
+**ZipList:**
+
+**Q: zipList怎么做到键值存储、键唯一、可排序的？**
+![picture 25](../images/adbb9f5bb83489d3ca3a0af4488eb3d1beeaa806ca1b52aec5f6e23427824629.png)  
+
+**SkipList + Dict:**
+
+* SkipList满足键值存储和可排序，但键**不保证唯一**，而且SkipList是按照score/value来查询的，想要根据member/key查询score，就得从头到尾遍历...
+* Dict(HT): 可以键值存储，也可以根据key找value，可以保证唯一(同一个key覆盖即可)，但**不可排序**
+* 故而zset结构中维护了一个Dict(键值存储+键唯一)和一个skiplist(排序)
+
+![picture 23](../images/cd36e390487002fdf0590a5db72704d96ee66e224c7be8213a9823c7b5af3ef0.png)  
+
+### Hash
+
+> 和zset很像：键值存储 + 键唯一 + 根据键获取值，**无需排序**
+> 不同点：zset的value必须是数字形式的score，因为需要排序嘛；Hash不限定
+
+故而无需跳表排序：
+
+* 当元素个数 < **512** && 每个元素都 < **64B**, 直接使用ziplist
+  * ZipList比Dict省内存，相邻两个entry存key和value
+  * zset是128，因为要排序，所以慢点，少放点
+* 否则，使用Dict(HT)
+* 如果当前是ziplist，每次添加元素时会判断是否超过阈值，是则转换为Dict
+
+![picture 26](../images/e6776ba8b3ca551c6bccb4ac08d6cee354d3aa88a01363cbcb7325d157ee229a.png)  

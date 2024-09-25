@@ -7,9 +7,9 @@
 todo:
 spring是如何解决循环依赖的，三级缓存（xiaolin
 
-## 基础
+<!-- ## 基础 -->
 
-### Spring定义 特性 模块
+<!-- ### Spring定义 特性 模块
 
 **Spring主要模块：**
 
@@ -19,21 +19,21 @@ spring是如何解决循环依赖的，三级缓存（xiaolin
 * Spring MVC: 针对Web应用中MVC思想的实现
 * Spring DAO: 提供对JDBC抽象层，简化了JDBC编码
 * Spring AOP: 即面向切面编程，它提供了与AOP联盟兼容的编程实现
-* Spring ORM：它支持用于流行的ORM框架的整合，比如：Spring+Hibernate、Spring+iBatis、Spring+JDO的整合等
+* Spring ORM：它支持用于流行的ORM框架的整合，比如：Spring+Hibernate、Spring+iBatis、Spring+JDO的整合等 -->
 
-### Spring Annotation
+<!-- ### Spring Annotation
 
-please see: "java\SpringAnnotation.xmind"
+please see: "java\SpringAnnotation.xmind" -->
 
 ## Spring
 
 ### Spring介绍
 
-Spring 是一个**轻量级、非入侵式**的**控制反转 (IoC) 和面向切面 (AOP)** 的**框架**
+Spring 是一个**轻量级、非侵入式**的**控制反转 (IoC) 和面向切面 (AOP)** 的**框架**
 
 **Spring核心特性/优势：**
 
-* **IoC容器**：Spring通过控制反转，**维护所有对象的创建和依赖关系**。开发者只需要定义好Bean及其依赖关系，**Spring容器负责创建和管理这些对象**。
+* **IoC容器**：Spring通过控制反转，**维护所有对象的创建和依赖关系**。开发者只需要定义好Bean及其依赖关系，**Spring容器负责创建和组装这些对象**。
   * 依赖关系是指某对象A(eg bus)依赖对象B(eg wheels)
 * **AOP**：面向切面编程，允许开发者定义**横切关注点**，例如事务管理、安全控制等，**独立于业务逻辑的代码**。通过AOP，可以将这些关注点模块化，提高代码的可维护性和**可重用性**。
 * **事务管理**：Spring提供了**一致的事务管理接口**，支持声明式和编程式事务。开发者可以轻松地进行事务管理，而无需关心具体的事务API。
@@ -43,13 +43,10 @@ Spring 是一个**轻量级、非入侵式**的**控制反转 (IoC) 和面向切
 ### 介绍一下IoC
 
 * **IoC(Inversion of Control)控制反转**：是一种创建和获取对象的思想，**依赖注入DI(Dependency Injection)是实现这种技术的一种方式**。传统开发，我们需要通过**new关键字**来创建对象。使用IoC思想开发方式的话，我们不通过new关键字创建对象，而是**通过IoC容器来帮我们实例化对象**。
-  * > 以前是我们想要什么就自己创建什么，现在是我们需要什么容器就帮我们送来什么。
   * IOC解决了繁琐的对象生命周期的操作，**解耦**了对象之间的耦合度，也解耦了代码
   * 所谓反转，其实就是反转的**控制权**，使用对象时，由主动new产生对象转换为由"外部"(Spring提供的IoC容器)提供对象
 
 ---
-
-作图理解：
 
 原本是我们自个儿new，现在有专门的IoC容器`ApplicationContext`来**控制**对象，控制是指：
 
@@ -308,16 +305,28 @@ BeanFactory是Spring的“心脏”，而ApplicantContext是Spring的完整“�
 * Spring Bean这个java对象的生命周期可以分为四个阶段：**实例化instantiation, 属性赋值Populate, 初始化Initialization, 销毁Destruction**
 * BeanFactory管理的Bean是在使用到时才**实例化**，ApplicationContext管理的Bean在容器初始化时就完成Bean**实例化**
 
-![picture 0](../images/804816ce1b1ac6a6c3585f8736a19a219b5613c0fe023e5e8fb1c1b2ab68c570.png)  
+![picture 4](../images/e40886d5f8f24f03dfcdb632fa90e81b249d1a8f27e01c67093f70ca6e38d505.png)  
+
 
 详解Bean生命周期：
 
-1. 实例化: 1.实例化一个Bean对象
-2. 属性赋值: 2.为Bean设置相关属性和依赖
-3. 初始化：3-4在初始化之前，5-6是真正的初始化，7在初始化之后执行
-4. 销毁: 第8步其实也可以算到销毁阶段，但不是真正意义上的销毁，而是先在使用前注册了销毁的相关调用接口，为了后面第9、10步真正销毁Bean时再执行相应的方法
-
-[继续整理](https://fighter3.blog.csdn.net/article/details/123498761?spm=1001.2014.3001.5506)
+1. **创建Bean的实例**: 通过**反射机制**创建一个Bean实例
+   1. 具体来说：Spring容器先读取xml配置文件/注解中bean的定义，然后利用反射根据全类名获得Class对象，然后利用反射调用其构造函数来创建对象。
+2. **Bean属性赋值/填充**: 将当前类依赖的Bean属性，进行注入和装配（指的是什么？是指这个类的成员变量吗
+3. **Bean初始化**
+   1. 如果Bean实现了`BeanNameAware`接口，调用`setBeanName()`方法，传入Bean的名字
+   2. 如果Bean实现了`BeanClassLoaderAware`接口，调用`setBeanClassLoader()`方法，传入ClassLoader对象的实例
+   3. 如果Bean实现了`BeanFactoryAware`接口，调用`setBeanFactory()`方法，传入BeanFactory对象的实例
+   4. 类似地，如果实现了其他`*.Aware`接口，就调用相应的方法
+   5. 如果有和加载这个Bean的Spring容器相关的`BeanPostProcessor`对象，执行`postProcessBeforeInitialization()`方法
+   6. 如果Bean实现了`InitializingBean`接口，执行`afterPropertiesSet()`方法
+   7. 如果Bean在配置文件中的定义包含`init-method`属性，执行指定的方法
+   8. 如果有和加载这个Bean的Spring容器相关的`BeanPostProcessor`对象，执行`postProcessAfterInitialization()`方法
+4. **销毁Bean**：销毁**并非要立马把Bean给销毁掉**，而是把Bean的销毁方法先记录下来，将来需要销毁Bean或者销毁容器的时候，就调用这些方法去释放Bean所持有的资源。
+   1. 如果Bean实现了`DisposableBean`接口，执行destroy()方法
+      1. > disposable: 一次性的，用后即丢的
+   2. 如果Bean在配置文件中的定义包含`destroy-method`属性，执行指定的Bean销毁方法。
+      <!-- 1. 或者，也可以直接通过@PreDestroy注解标记Bean销毁之前执行的方法。 -->
 
 ### Bean定义和依赖定义的方法
 
@@ -329,9 +338,9 @@ BeanFactory是Spring的“心脏”，而ApplicantContext是Spring的完整“�
   * 使用`@Component`, `@Service`..定义bean，使用`@Autowired`注入依赖
   * 简洁，类型安全（提供编译时类型检查）
 
-### 依赖注入的方法
+### 依赖注入/Bean注入的方法
 
-1. **属性注入**：简洁明了,但可能会违反类的封装性。
+1. **属性注入**：简洁明了,但可能会违反类的封装性。通过@Autowired或@Resource
 
 ```java
 @Component
