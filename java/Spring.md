@@ -1,35 +1,51 @@
 # Spring
 
-> main reference: [二哥java](https://javabetter.cn/sidebar/sanfene/spring.html)
+- [Spring](#spring)
+  - [Spring](#spring-1)
+    - [Spring vs. SpringMVC vs. SpringBoot](#spring-vs-springmvc-vs-springboot)
+    - [Spring介绍](#spring介绍)
+    - [SpringBoot相比于Spring的改进](#springboot相比于spring的改进)
+    - [介绍一下IoC](#介绍一下ioc)
+      - [IoC实现机制](#ioc实现机制)
+    - [介绍一下AOP](#介绍一下aop)
+      - [AOP实现机制](#aop实现机制)
+      - [介绍一下动态代理](#介绍一下动态代理)
+        - [静态代理 vs. 动态代理](#静态代理-vs-动态代理)
+    - [Spring框架中反射的应用](#spring框架中反射的应用)
+    - [Spring框架用到了哪些设计模式](#spring框架用到了哪些设计模式)
+    - [Spring常用注解](#spring常用注解)
+    - [Spring事务](#spring事务)
+      - [Spring事务及分类](#spring事务及分类)
+      - [Spring事务隔离级别](#spring事务隔离级别)
+      - [Spring事务传播行为 propagation](#spring事务传播行为-propagation)
+      - [声明式事务失效情况](#声明式事务失效情况)
+  - [Bean](#bean)
+    - [BeanFactory vs. ApplicationContext](#beanfactory-vs-applicationcontext)
+    - [Bean的生命周期](#bean的生命周期)
+    - [Bean定义和依赖定义的方法](#bean定义和依赖定义的方法)
+    - [依赖注入/Bean注入的方法](#依赖注入bean注入的方法)
+    - [Bean作用域](#bean作用域)
+    - [单例Bean的线程安全问题](#单例bean的线程安全问题)
+  - [SpringMVC](#springmvc)
+    - [介绍MVC分层](#介绍mvc分层)
+    - [SpringMVC的核心组件](#springmvc的核心组件)
+    - [SpringMVC工作原理 / 流程 ☆](#springmvc工作原理--流程-)
 
-[toc]
 
 todo:
 spring是如何解决循环依赖的，三级缓存（xiaolin
 
-<!-- ## 基础 -->
-
-<!-- ### Spring定义 特性 模块
-
-**Spring主要模块：**
-
-* Spring Core: 框架最基础的部分，提供IoC和DI特性
-* Spring Context: 上下文容器，是BeanFactory功能加强的一个子接口
-* Spring Web: 提供Web应用开发的支持
-* Spring MVC: 针对Web应用中MVC思想的实现
-* Spring DAO: 提供对JDBC抽象层，简化了JDBC编码
-* Spring AOP: 即面向切面编程，它提供了与AOP联盟兼容的编程实现
-* Spring ORM：它支持用于流行的ORM框架的整合，比如：Spring+Hibernate、Spring+iBatis、Spring+JDO的整合等 -->
-
-<!-- ### Spring Annotation
-
-please see: "java\SpringAnnotation.xmind" -->
-
 ## Spring
+
+### Spring vs. SpringMVC vs. SpringBoot
+
+1. Spring是一个java企业级应用程序开发**框架**，为了简化java应用程序的开发，提供很多核心功能：eg 控制反转、面向切面编程、事务管理等。
+2. SpringMVC是构建在Spring框架之上的一个**模块**，**专门用于开发Web应用程序**。它采用了模型-视图-控制器（MVC）设计模式，通过DispatcherServlet处理请求，将请求映射到相应的控制器，并返回视图。
+3. SpringBoot：进一步简化spring开发流程；约定大于配置、各种启动项starter、内置服务器；
 
 ### Spring介绍
 
-Spring 是一个**轻量级、非侵入式**的**控制反转 (IoC) 和面向切面 (AOP)** 的**框架**
+> Spring 是一个**轻量级、非侵入式**的**控制反转 (IoC) 和面向切面 (AOP)** 的**框架**
 
 **Spring核心特性/优势：**
 
@@ -37,34 +53,43 @@ Spring 是一个**轻量级、非侵入式**的**控制反转 (IoC) 和面向切
   * 依赖关系是指某对象A(eg bus)依赖对象B(eg wheels)
 * **AOP**：面向切面编程，允许开发者定义**横切关注点**，例如事务管理、安全控制等，**独立于业务逻辑的代码**。通过AOP，可以将这些关注点模块化，提高代码的可维护性和**可重用性**。
 * **事务管理**：Spring提供了**一致的事务管理接口**，支持声明式和编程式事务。开发者可以轻松地进行事务管理，而无需关心具体的事务API。
-* **MVC框架**：Spring MVC是一个基于Servlet API构建的Web框架，采用了模型-视图-控制器（MVC）架构。它支持灵活的URL到页面控制器的映射，以及多种视图技术。
-  * servlet是一个java类，用于处理web请求并生成响应，通常运行在Web服务器（如Tomcat、Jetty）上；核心api: `HttpServlet, HttpServletRequest...`
+
+### SpringBoot相比于Spring的改进
+
+* SpringBoot提供了**自动化配置**，大大简化了项目的配置过程。通过**约定优于配置**的原则，很多常用的配置可以自动完成，开发者可以**专注于业务逻辑**的实现
+  * 约定大于配置
+    * eg 如果你使用MySQL数据库，只需在`application.properties`中提供数据库连接URL、用户名和密码，SpringBoot会自动配置数据源
+    * eg 命名规则：项目配置文件一般是`application.yml`
+* SpringBoot提供了**快速的项目启动器**，可以引入不同的Starter;starter会**自动处理依赖，自动配置，加速开发**
+  * `spring-boot-starter-web`: 用于构建web程序，默认使用tomcat作为嵌入式容器
+  * `spring-boot-starter-test`: 包含用于测试的依赖项，如 JUnit
+  * `spring-boot-starter-data-redis`: 用于与Redis数据库交互
+  * `spring-boot-starter-amqp`: 集成RabbitMQ消息中间件
+* SpringBoot默认集成了多种**内嵌服务器**（如Tomcat、Jetty、Undertow），**无需额外的部署**步骤，方便快捷
+  * 有了内嵌tomcat之后，直接将项目打包为`jar`文件，然后就可以直接启动应用；没有的话你需要打包为`war`文件，然后再单独部署到外部tomcat服务器（**spring就得这么干...**）
 
 ### 介绍一下IoC
 
-* **IoC(Inversion of Control)控制反转**：是一种创建和获取对象的思想，**依赖注入DI(Dependency Injection)是实现这种技术的一种方式**。传统开发，我们需要通过**new关键字**来创建对象。使用IoC思想开发方式的话，我们不通过new关键字创建对象，而是**通过IoC容器来帮我们实例化对象**。
-  * IOC解决了繁琐的对象生命周期的操作，**解耦**了对象之间的耦合度，也解耦了代码
-  * 所谓反转，其实就是反转的**控制权**，使用对象时，由主动new产生对象转换为由"外部"(Spring提供的IoC容器)提供对象
+* **IoC(Inversion of Control)控制反转**：是一种**创建和获取对象的思想**，**依赖注入DI(Dependency Injection)是实现这种技术的一种方式**。
+* 传统开发中，我们需要通过**new**来直接创建对象（即对象的创建和管理由开发者控制）。而在IoC思想下，**Spring容器`ApplicationContext`** 负责对象的实例化、配置和管理。
+  * 所谓反转，即反转了**控制权**，使用对象时，由主动new产生对象转换为由"外部"(IoC容器)提供对象
 
----
-
-原本是我们自个儿new，现在有专门的IoC容器`ApplicationContext`来**控制**对象，控制是指：
-
-* **创建对象**：原来是new一个，现在是由Spring容器创建
+<!-- * **创建对象**：原来是new一个，现在是由Spring容器创建
 * **初始化对象**：原来是对象自己通过构造器或者setter方法给依赖的对象赋值，现在是由**Spring容器自动注入**
   * 如何自动注入来初始化呢？基于`@Autowired`, `@Resource`, 或者基于XML配置，或者基于构造函数（啊？
-* **销毁对象**：原来是直接给对象赋值null或做一些销毁操作，现在是Spring容器**管理生命周期负责销毁对象**。
+* **销毁对象**：原来是直接给对象赋值null或做一些销毁操作，现在是Spring容器**管理生命周期负责销毁对象**。 -->
 
 ![picture 3](../images/f3f0a36302d30f5560121ceecc5fb247e9c5f7e8ae780adefdce0109a4c64fa8.png)  
 
 #### IoC实现机制
 
-* **反射**：Spring IOC容器利用反射机制动态地加载类、创建对象实例及调用对象方法，**反射允许在运行时检查类、方法、属性等信息，以及可以运行时创建对象和调用方法**，使得对象实例化更为灵活。
-* **依赖注入**：IOC的核心概念是依赖注入，即容器负责管理应用程序组件之间的依赖关系。Spring通过**构造函数注入、属性注入或方法注入**，将组件之间的依赖关系描述在配置文件中或使用注解。
-* **设计模式 - 工厂模式**：IOC容器通常采用工厂模式来管理对象的创建和生命周期。**容器作为工厂**负责**实例化Bean并管理它们的生命周期**。
+* **反射**：Spring IOC容器利用java反射机制在**运行时创建对象并调用其方法**，使得spring可以根据配置文件或**注解**动态地管理bean；
+* **依赖注入**：IOC的核心概念是依赖注入，它允许**将对象所依赖的其他对象**(ie 依赖)通过构造函数注入、setter注入或方法注入传递给该对象，**而非在对象内部创建这些依赖**。
+  * > 组件之间的依赖关系描述在配置文件中或使用注解。
+* **工厂模式**：IOC容器通常采用工厂模式来管理对象的创建和生命周期。**容器作为工厂**负责**实例化Bean并管理它们的生命周期**。
 * **容器实现**：IOC容器是实现IOC的核心，通常使用`BeanFactory`或`ApplicationContext`来管理Bean。
   * `BeanFactory`是IOC容器的**基本形式**，提供基本的IOC功能；
-  * `ApplicationContext`是BeanFactory的**扩展**，提供更多企业级功能。
+  * `ApplicationContext`是BeanFactory的**扩展**，提供更多功能，eg 事件传播
 
 ### 介绍一下AOP
 
@@ -180,7 +205,7 @@ Java动态代理主要分为两种类型：
 * 工厂设计模式: Spring使用工厂模式通过BeanFactory、ApplicationContext创建bean对象
 * 代理设计模式 : Spring AOP功能的实现。（jdk动态代理，cglib动态代理
 * 单例设计模式 : Spring 中的Bean默认都是单例的
-* 模板方法、挂插着、适配器、包装器暂略
+* 模板方法、观察者、适配器、包装器暂略
 
 ### Spring常用注解
 
@@ -400,31 +425,43 @@ public class TestBeanSet {
 
 ## SpringMVC
 
+### 介绍MVC分层
+
+MVC是模型(model)－视图(view)－控制器(controller)的缩写，一种**软件设计典范**
+
+* 视图(view)：为用户提供使用界面，与用户直接进行交互。
+* 控制器(controller)：用于将用户请求转发给相应的Model进行处理，并根据Model的计算结果向用户提供相应响应。它**使视图与模型分离**
+* 模型(model)：模型分为两类，一类称为**数据承载Bean**，一类称为**业务处理Bean**。前者是指实体类（eg User类），专门为用户承载业务数据的；后者是指**Service或DAO对象**，专门用于处理用户提交请求的
+
+![picture 5](../images/6ddc4c428983476839994e8141ddb6db70682db5e460dcf52164a408383fe2d0.png)  
+
+
 ### SpringMVC的核心组件
 
 * `DispatcherServlet`：前端控制器，核心的中央处理器，负责接收请求、分发，并给予客户端响应；是整个流程控制的**核心**，控制与调度
 * `HandlerMapping`：处理器映射器，根据请求URL去匹配查找能处理的**Handler**，并会**将请求涉及到的拦截器和Handler一起封装**成一个`HandlerExecutionChain`处理器执行链对象
   * `Handler`: 处理器，完成具体的业务逻辑
-  * `HandlerInterceptor`: 处理器拦截器，是个接口，可以拦截一些请求；你可以额外添加拦截器
+  * `HandlerInterceptor`: ==**处理器拦截器**==，是个接口，可以拦截一些请求；你可以额外添加拦截器
     * 定义拦截器时，需要在配置类中实现`addInterceptors`方法注册拦截器，并设定拦截的路径范围
     * 可以创建多个拦截器，然后按照注册顺序进行执行
     * HandlerInterception中有三个方法
       * `preHandle`: 在请求处理程序执行之前调用。用于**执行权限验证**、日志记录等操作。如果该方法返回**false，则请求将被中断，后续的拦截器和处理程序将不会被执行**(很妙)
       * `postHandle`: 在**请求处理程序执行之后、视图渲染之前**调用。可以对请求的结果进行修改或添加额外的模型数据。
       * `afterCompletion`: 在整个请求完成之后调用，包括视图渲染完毕。可用于进行**资源清理**等操作。
-* `HandlerAdapter`：处理器适配器，**Handler执行业务方法之前，需要进行一系列的操作**，包括表单数据的验证、数据类型的转换、将表单数据封装到JavaBean等，这些操作都是由交给他，开发者只需将注意力集中业务逻辑的处理上，DispatcherServlet通过HandlerAdapter执行不同的Handler
-<!-- * `ModelAndView`: 装载了模型数据和视图信息，作为Handler的处理结果，返回给DispatcherServlet -->
+* `HandlerAdapter`：==**处理器适配器**==，根据处理器的接口类型，选择相应的HandlerAdapter来**调用controller处理器**；由于controller可能有不同接口类型(`eg, Controller接口, HttpRequestHandler接口等`)
 * `ViewResolver`：视图解析器，根据Handler返回的逻辑视图，解析并渲染真正的视图，并传递给DispatcherServlet响应客户端
 
 ![picture 2](../images/7c7b615ad6412412e4ef5c8d68ac0163a54f11a304b01a3da882d75a4bf3262d.png)  
 
 
-### SpringMVC工作原理 / 流程
+### SpringMVC工作原理 / 流程 ☆
 
 ![picture 1](../images/4dc74e7703cf69f845e608769181ee77faaf9e2672a6fbab7a13d1d56b50aca1.png)
 
-1. **用户请求**：用户/客户端/浏览器发送请求，DispatcherServlet拦截请求
-2. **请求拦截**：DispatcherServlet接收到请求后，并不直接处理，而是将请求信息传递给HandlerMapping。HandlerMapping根据请求的URL来查找能处理该请求的Handler（我们常说的Controller），并会**将请求涉及到的Interceptor和Handler一起封装**为一个处理器执行链对象`HandlerExecutionChain`
+> 客户端url请求 -> DispatcherServlet -> HandlerMapping (handlerExecutionChain handler + interceptor) -> HanderAdapter -> Handler -> ModelAndView -> ViewResolver -> 客户端
+
+1. **用户请求**：用户/客户端发送请求，DispatcherServlet拦截请求
+2. **请求拦截**：DispatcherServlet接收到请求后，将请求信息传递给HandlerMapping，HandlerMapping根据请求URL来查找能处理该请求的Handler（ie Controller），并会**将请求涉及到的Interceptor和Handler一起封装**为一个处理器执行链对象`HandlerExecutionChain`
 3. **处理器适配**：DispatcherServlet调用HandlerAdapter适配器执行具体的Handler
    1. HandlerAdapter通过适配器模式，使得不同类型的处理器可以被统一调用
 4. **业务逻辑处理**：Handler完成对用户请求的处理后，会返回一个ModelAndView对象给DispatcherServlet

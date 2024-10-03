@@ -143,12 +143,15 @@ redis数据结构：
 
 #### BitMap使用场景
 
-BitMap基于String，使用bit位存储信息(0或1)，即适用于**二值状态统计**的场景；很省内存
+**BitMap是一个String对象(使用SDS结构保存位数组)**，使用bit位存储信息(0或1)，即适用于**二值状态统计**的场景；很省内存
 
 1. **状态监控**：用于监控大量状态，例如用户在线状态、设备状态等。在一个大型在线游戏平台中(eg 王者荣耀)，需要实时监控大量玩家是否在线。使用Bitmap可以高效地记录每个玩家的在线状态。
    1. 使用一个`playerStatus`作为key，用户ID作为offset，在线是就把这个key的这个offset处的bit位设置为1 `setbit playerStatus id 1`，离线就0；
    2. 通过`getbit playerStatus id`查看这个用户是否在线
    3. 通过`bitcount playerStatus`查看有多少用户在线
+2. ==**实现布隆过滤器**==：`setbit key offset val`设置指定位位1，`getbit`检查对应位是否都为1即可
+   1. 当然你也可以用java的位数组`java.util.BitSet`，但**不能跨多个实例共享数据，性能也不如redis**
+   2. 但可不能用`int[]`奥(~~深信服~~)，1bit直接干到32bit
 
 hyperloglog, geo暂略
 

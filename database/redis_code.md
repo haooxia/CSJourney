@@ -150,7 +150,7 @@ sismember key member: is member in set
 # 交并差
 sinter key1 [key2]
 sunion
-sdif
+sdiff k1 k2 # 在k1中不在k2中的
 ```
 
 ### SortedSet / ZSet
