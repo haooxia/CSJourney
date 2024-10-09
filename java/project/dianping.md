@@ -35,10 +35,16 @@
         - [redission是如何实现可重入的](#redission是如何实现可重入的)
         - [redission是如何实现可重试的](#redission是如何实现可重试的)
         - [redission是如何解决锁超时的问题的](#redission是如何解决锁超时的问题的)
-      - [异步优化](#异步优化)
+    - [异步秒杀优化](#异步秒杀优化)
+      - [利用延时消息机制取消超时未支付订单](#利用延时消息机制取消超时未支付订单)
+      - [限流器算法](#限流器算法)
+      - [基于ZSet实现滑动窗口限流器](#基于zset实现滑动窗口限流器)
   - [推荐系统](#推荐系统)
     - [电商项目常见推荐系统](#电商项目常见推荐系统)
     - [我们的流程](#我们的流程)
+      - [简单学下ES](#简单学下es)
+
+> 建议结合`redis.md`, 本文档很多知识并未更新...
 
 ## STAR
 
@@ -275,10 +281,7 @@ A: 不能，因为有一些功能不需要校验，比如浏览店铺，登录�
 
 ## 2.缓存数据
 
-
-推荐观看[总结](https://www.bilibili.com/video/BV1cr4y1671t?t=1.5&p=47)
-
-使用redis作为mysql的缓存有很多好处，详见 [redis.md](https://github.com/haooxia/CSJourney/blob/main/database/redis.md)
+使用redis作为mysql的缓存的好处(高性能、提高qps、保护mysql后端)
 
 summary: 
 
@@ -298,11 +301,33 @@ public Result queryShopById(@PathVariable("id") Long id) {
 }
 ```
 
+**Q: 怎么个缓存流程？存到一个String中？**
+
+1. 一个`Shop`类型的java对象，利用`Hutool`工具包下的`JSONUtil`将Shop对象转换为**Json字符串**
+2. 利用Redis客户端(jedis)将json字符串存储到redis的String类型的key中(**每个店铺存到一个String中，id作为名称**)
+3. 取出时同样借助redis客户端，然后借助hutool进行反序列化
+
 **Q: 使用redis缓存了哪些数据？**
-A: 商铺信息：名称、图像URL、地址、平均价格、营业时间等信息
+A: **商铺信息：名称、(店铺描述)、图像URL、地址**、平均价格、营业时间等信息
+
+```json
+{
+    "area": "深圳",
+    "openHours": "10:00-22:00",
+    "sold": 4215,
+    "images": "https://qcloud.dpfile.com/pc/jiclIsCKmOI2arxKN1UF0Hx3PucIJH8qQ0Sz-Z811zcN56-_QiKuOvyi0100xsRtFoXqG3iT2T27qat3WhLVEuLvk00mSS1IdNpm8K8sG4JN9RIm2mTkCbltc2o2vFCF2ubeXzk490sGrXt_KYDCngOyCwZK-s3fqawNlswzk.jpg,https://qcloud.dpfile.com/pc/IOF6VX3qaBgFXFVgp75w-KKmwZjF8cGXDU8g9bQC6YGCpAmG00QbfT4vCCBj7njuzFvxlbkwx5uwqY2qcJixFEOaSS1IdNpm8K8sG4JN9RIm2mTkCbltc2o2vmIU_8ZGOT1OJpJmLxG6urQ.jpg",
+    "address": "金华路德赢里文华苑29号",
+    "comments": 3035,
+    "avgPrice": 80,
+    "score": 37,
+    "name": "牛牛健身房",
+    "typeId": 1,
+    "id": 1
+}
+```
 
 Q: 缓存之后QPS从多少增加到多少？
-A: TODO
+A: Sorry, i dont know...
 
 ### 标准操作
 
@@ -327,13 +352,13 @@ A: TODO
 
 缓存更新策略分为：==内存淘汰、超时剔除和主动更新==（一致性逐渐增高，维护成本也逐渐增高）
 
-![picture 17](../../images/718baab9075abfab80e190254a9634363e75fe0aa881a90e4a512faf5d015a61.png){width=80%}
-> **本项目中高一致性需求：店铺详情信息，以及优惠券信息**
+<!-- ![picture 17](../../images/718baab9075abfab80e190254a9634363e75fe0aa881a90e4a512faf5d015a61.png){width=80%} -->
+<!-- > **本项目中高一致性需求：店铺详情信息，以及优惠券信息** -->
 
 
-主动更新又分为：==Cache-Aside模式，Read/Write Through模式, Write Behind Caching模式==
+<!-- 主动更新又分为：==Cache-Aside模式，Read/Write Through模式, Write Behind Caching模式== -->
 
----
+<!-- --- -->
 
 **Q: 为什么是删除缓存而非更新缓存？**
 A: 如果每次修改数据库都更新缓存，这样会有很多次无效写入redis操作，就，你每次都更新，可也没人来访问，何必呢？不如直接删掉，下次别人访问了再加载一次即可（懒惰、延迟加载
@@ -348,9 +373,9 @@ A: 不能，反过来发生数据不一致的概率高得多，原因左图（�
 > * 右侧正常情况是：线程2: 更新数据库->删缓存；-> 线程1: 查缓存未命中 -> 写入缓存
 > * 右侧的发生概率是极低的，但也可能发生，所以我们设置超时时间使用**超时剔除作为兜底**（即使我写缓存写错了，超时了自动会删掉
 
-Q: 为什么要采用Cache Aside？write/read through 及 write back区别？
+<!-- Q: 为什么要采用Cache Aside？write/read through 及 write back区别？
 
-Q: Cache Aside名称的由来?
+Q: Cache Aside名称的由来? -->
 
 ---
 
@@ -543,22 +568,15 @@ A: 自己更新那不就跟互斥锁解法类似了，自己需要等更新好�
 
 当用户发起请求，此时会请求nginx，nginx会访问到tomcat，而tomcat中的程序，会进行串行操作
 
-**其中核心业务是：扣减库存+创建订单**
+**其中核心业务是：`seckillVoucher(voucherId)`: 扣减库存 + 创建订单**
 
-为了避免**超卖**，我们需要判断库存是否充足（所以要查库存
-为了限制一个用户对一种优惠券只能下一单，加入**校验一人一单**（就是要看看数据库有没有该订单，所以要查订单，查订单之前要利用获取分布式锁
-> 这些都是购买资格的判断
+1. 库存不能超卖（查数据库-判断库存是否充足(>1)）
+2. 一个用户对一个优惠券只能下一单（看一下数据库有没有该订单(即当前用户有没有这个券id相关的订单)，利用分布式锁解决其中的并发安全问题）
+3. 如果还有库存，且该用户也没买过该优惠券，才继续：扣减库存 + 创建订单（业务结束释放redission锁）
 
-1. 判断购买资格
-   1. 根据id查询优惠卷
-   2. 判断秒杀库存是否足够
-   3. 查询订单
-   4. 校验是否是一人一单
-2. 真正的下单过程
-   1. 扣减库存
-   2. 创建订单
+> 可见12都是判断是否具有购买资格，3才是真正下单，所以
 
-在这六步操作中，又有很多操作是要去操作数据库的，而且还是一个线程串行执行， 这样就会导致我们的程序执行的很慢，所以我们需要**异步程序执行**，那么如何加速呢？
+很多操作是要去操作数据库的，而且还是一个线程串行执行， 这样就会导致我们的程序执行的很慢，所以我们需要**异步程序执行**，那么如何加速呢？
 
 #### 基本的优惠券下单
 
@@ -768,16 +786,149 @@ leaseTime=-1默认时，默认值是30s，即30s会后自动释放；默认-1才
 
 watchDog看门狗机制：获取锁成功之后，开启一个定时任务，这个任务每隔一段时间(`releaseTime/3=10s`)就会去重置锁的超时时间，ttl满血复活
 
-#### 异步优化
+### 异步秒杀优化
 
-[link](https://www.bilibili.com/video/BV1cr4y1671t?t=8.6&p=69)
+首先，众所周知，串行很慢（同步式）
+![picture 37](../../images/c8cac6f0995ccff017b5b62ea1160645fcfaeba6abdbe664b46569ef573ef966.png)  
 
+故而异步完成，资格校验逻辑交给redis实现(lua保证原子性)，然后把**消息(用户ID，优惠券id，订单id)** 发给mq即可，此时下单就结束了，mq异步处理即可。
+![picture 39](../../images/b0e2db2e0d27ba2605f2075ec97e0cea449fec571b61aa553d55c3d4488b4f9a.png)  
+![picture 40](../../images/576871819c1be942edab1fc5b12adcf583eb71e97b8b6fa9fd70be7d0f57bfe1.png)  
+> 我们将同步的写数据库操作，改为异步操作，一方面缩短秒杀业务的流程，从而大大**提高业务的并发**，另一方面**减轻了数据库压力**
+
+1. 将优惠券库存存到redis中(string)
+2. （生产者）基于lua脚本，判断库存是否充足、一人一单，进行秒杀资格校验（用不上俺的redission了，~~白雪~~
+3. （生产者）如果抢购成功，则将优惠券id，用户id封装后存入rabbitmq消息队列/`BlockingQueue` [link](https://github.com/haopengmai/dianping/blob/e79be6b67ac5e0e6e3f0818cb6f9a9292cbedd11/src/main/java/com/hmdp/service/impl/VoucherOrderServiceImpl.java#L66-L97)
+   1. `mqSender.sendSeckillMessage(JSON.toJSONString(voucherOrder))`
+   2. [MQSender](https://github.com/haopengmai/dianping/blob/e79be6b67ac5e0e6e3f0818cb6f9a9292cbedd11/src/main/java/com/hmdp/rebbitmq/MQSender.java#L14-L26)
+4. （消费者）mq消费者不断从queue中获取消息，实现异步下单（扣减stock库存(乐观锁)，保存订单）
+   1. [MQReceiver](https://github.com/haopengmai/dianping/blob/e79be6b67ac5e0e6e3f0818cb6f9a9292cbedd11/src/main/java/com/hmdp/rebbitmq/MQReceiver.java#L20-L61)(line41-47是没必要的，前面已经校验过了)
+
+```lua
+-- 1.参数列表
+-- 1.1优惠卷id
+local voucherId = ARGV[1]
+-- 1.2用户id
+local userId = ARGV[2]
+
+-- 2.数据key
+-- 2.1库存key
+local stockKey = 'seckill:stock:' .. voucherId
+-- 2.2订单key
+local orderKey = 'seckill:order:' .. voucherId
+
+-- 3.脚本业务
+-- 3.1判断库存是否充足
+if(tonumber(redis.call('get',stockKey)) <= 0)then
+    -- 3.2 库存不足 返回1
+    return 1
+end
+--3.2判断用户是否下单 (我们是把userid存到一个set中的)
+if(redis.call('sismember',orderKey,userId) == 1) then
+    -- 3.3存在,说明是重复下单
+    return 2
+end
+-- 3.4扣库存（后续下单过程会去扣减mysql的库存）
+-- 请注意这里已经在redis中扣库存了，即已经把商品的库存分配给了这个用户
+-- 其他人是买的时候库存少了一个，如果用户超时未支付的话，那总体就少抢一个
+redis.call('incrby',stockKey,-1)
+-- 3.5下单并保存用户（存到set中）
+redis.call('sadd',orderKey,userId)
+return 0
+```
+
+
+**Q: 基于阻塞队列BlockingQueue异步秒杀有啥问题？**
+A: **内存限制问题**：这玩意儿使用jvm内容，高并发时候可能有巨多消息塞进来，直接**塞爆内存**，所以我们设置了个长度，但如果存满了呢？就塞不进去消息了，**消息丢失**；mq是jvm以外的东西，跟你jvm内存没鸟关系
+第二，**数据安全问题**：如果服务突然宕机，内存的信息无了，消息丢了；jvm没有持久化机制；mq可以确保数据安全、可以持久化、消息确认，确保消息至少被消费一次
+
+
+**Q: Redis有哪些mq的实现方式？**
+
+1. 基于List模拟mq: `lpush+rpop/brpop` or `rpush+lpop/blpop` 
+   1. brpop会blocking，rpop没消息时直接返回null
+   2. 优点：内存没啥限制 + 数据可以持久化
+   3. 缺点：无法避免消息丢失；只支持单消费者
+2. 基于发布订阅模型PubSub（不完善：消费者可以订阅1或多个channel，生产者向对应channel发消息，所有订阅者都能收到
+   1. 优点：支持多生产多消费
+   2. 缺点：不支持持久化...(这玩意儿**不是个数据类型**，他就不能持久化...)；发送后如果没人收直接丢失
+3. 比较完善的消息队列Stream（redis5.0
+   1. Stream是一种数据类型，所以可以持久化
+   2. 消息可以被多个消费者读取；消息可回溯，读完不会删掉
+
+#### 利用延时消息机制取消超时未支付订单
+
+之所以要取消超时订单：我这边给你发消息时已经在redis中扣了库存，别人买的时候库存就少一个。
+
+![picture 0](../../images/e3b969917cc572571b1ebd20e6a16e0852b4948e47e0bea727eb1616ac82b590.png)
+
+用户**下单**完成后，发送一个异步消息给消息队列，让消息队列去处理库存，同时还要发一个延时消息(15min)，到期后判断用户**支付**状态，如果是已完成，那啥事儿没有，如果是未支付，则应该恢复库存
+
+#### 限流器算法
+
+> sentinel默认限流模式是滑动时间窗口，sentinel限流后可以快速失败和排队等待，其中排队等待基于漏桶算法，而热点参数限流基于令牌桶算法
+
+1. 固定窗口算法
+   1. 原理：在一个固定的时间窗口内（如1秒），维护一个计数器记录请求次数。当请求次数达到设定的阈值时，后续请求将被拒绝，直到时间窗口重置
+   2. 优点：实现简单，适用于基本的限流需求
+   3. 缺点：在时间窗口边界可能问题，即1秒的后半秒+2秒的前半秒之和超过了阈值，本应该限流，但固定窗口无法限流
+2. 滑动窗口算法
+   1. 原理：将时间窗口(eg 1s)划分为多个小时间段，**每个子窗口独立计数**。随着时间的推移，窗口会滑动，移除过期的请求记录。
+   2. 优点：相较于固定窗口算法，能更平滑地处理请求，减少突刺现象
+   3. 缺点：实现复杂度增加，仍然可能在边界条件下出现问题
+   4. **注意**：滑动窗口又分为**固定大小的滑动窗口**（即上述将一个窗口分为n个小窗口，然后在每个小窗口内搞一个单独的计数器计数），又分为**动态滑动窗口**（无需小窗口，根据时间戳动态管理）
+3. 漏桶算法
+   1. 原理: 维护**一个请求队列/桶**，请求以不确定速率流入，但以固定速率流出。若队列已满，新请求将被丢弃。
+   2. 优点：能够**平滑处理请求**流量，确保系统稳定性。
+   <!-- 3. 缺点：无法处理突发流量，所有请求都需排队 -->
+4. 令牌桶算法
+   1. 原理：维护**一个存放令牌的桶(一个计数器而已)**，**以固定速率向桶中添加令牌**。每次请求需要消耗一个令牌，如果桶中没有足够的令牌，请求将被拒绝或阻塞。
+
+#### 基于ZSet实现滑动窗口限流器
+
+> 每秒请求数：一般情况下，对于大多数电商平台，建议每秒限制在100到1000个请求之间。这一范围可以根据实际情况进行调整。例如：
+> * 对于高性能系统，可以设置为每秒1000个请求。
+> * 对于普通系统，则可以设置为每秒300到500个请求。
+
+假设每个用户的请求都要记录时间戳，并基于时间戳统计请求次数。
+> **但记录每个请求的时间戳有缺陷**...第一比较慢，第二耗内存；不如`expire + incr`这种**固定窗口算法**来的爽快可能，虽然也可以利用redis实现固定大小的滑动窗口（但我暂时就这样了，zset秀一点...
+
+Redis实现滑动窗口限流步骤：
+
+1. 每次请求时记录请求的时间戳，插入到Redis中一个全局的ZSET中，**所有用户的请求时间戳都记录在同一个集合中**, (score和member都是时间戳)
+   1. `ZADD voucher:{voucherId}:requests currentTime currentTime`
+2. 删除超过时间窗口外的请求，即删除比当前时间戳早的记录（如1秒以前的请求） (`根据score的range删除: ZRemRangeByScore`)
+   1. `ZREMRANGEBYSCORE voucher:{voucherId}:requests 0 (currentTime - 1000)`
+3. 统计1秒内的总请求数 (`前面删完了，此处即统计zset中元素个数: zcard`)
+   1. `ZCARD voucher:{voucherId}:requests`
+4. 如果超过阈值，则限流，没有的话，走下面的秒杀逻辑
+
+```java
+public Result seckillVoucher(Long voucherId) {
+        String key = "voucher:" + voucherId + ":requests";
+        long currentTime = Instant.now().toEpochMilli(); // 获取当前时间戳（毫秒）
+        // 1. 记录当前请求的时间戳到Redis（所有用户共享同一个集合）
+        jedis.zadd(key, currentTime, String.valueOf(currentTime));
+        // 2. 删除时间窗口之外的请求（即1秒前的请求）
+        jedis.zremrangeByScore(key, 0, currentTime - TIME_WINDOW);
+        // 3. 获取1秒内的总请求数量
+        long requestCount = jedis.zcard(key);
+        // 4. 判断是否超过限流数量
+        if (requestCount > REQUEST_LIMIT) {
+            // 超过限流，返回限流提示
+            return Result.fail("请求过于频繁，请稍后再试！");
+        }
+        // 5. 请求未超限，执行秒杀逻辑
+        // TODO: 秒杀逻辑
+        return Result.success("秒杀成功！");
+    }
+```
 
 ## 推荐系统
 
 ### 电商项目常见推荐系统
 
-电商项目中的推荐系统是提升**用户体验**和**销售转化率**的重要工具，主要通过**分析用户行为数据**来推荐相关商品。
+> 电商项目中的推荐系统是提升**用户体验**和**销售转化率**的重要工具，主要通过**分析用户行为数据**来推荐相关商品。
 
 * **基于内容的推荐算法** (**==我们主要是这个==**)
   * 核心思想：**推荐与用户过去喜欢的物品相似的新物品**
@@ -813,22 +964,16 @@ watchDog看门狗机制：获取锁成功之后，开启一个定时任务，这
 
 1. **数据准备阶段**
    1. 收集100个店铺的**名称、描述、前10条点赞最多的用户评价**，代表这个店铺的特征
-      1. 这三者我叫做“店铺内容文本”好了
+      1. > 这三者我叫做“店铺内容文本”好了
 2. **特征提取阶段**
    1. 文本预处理：
       1. 使用`jieba`库进行**分词**
       2. **去除停用词**(eg 标点符号、“的”、“了”、“和”等)；使用**百度停用词库**即可：[link](https://github.com/goto456/stopwords/blob/master/baidu_stopwords.txt)
    2. 使用word2vec模型对店铺内容文本提取特征向量
-      1. 你可以直接把店铺内容中三者直接concat，然后一下子计算出一个特征向量（我用这个了，简单点），你也可以分别算三个向量，然后使用三个weight加权
+      1. > 你可以直接把店铺内容中三者直接concat，然后一下子计算出一个特征向量（我用这个了，简单点），你也可以分别算三个向量，然后使用三个weight加权
       2. 你可以直接用一个预训练好的中文word2vec模型([link](https://github.com/shibing624/text2vec/releases/download/1.1.4/light_Tencent_AILab_ChineseEmbedding.bin))。你也可以拿你的店铺内容文本去finetune一下，但没啥必要
-      3. Q: 我为什么不用Bert pretrained model?
-         1. word2vec是浅层神经网络模型(2层)，bert是深层(bert-base是12层)，语义信息更丰富，更牛逼；但前者大概比后者**快10-100倍**，故而。
-   3. 将每个店铺的特征向量存到mysql数据库中
-      1. 首先特征向量是float数组(eg shape=[N,1]的ndarray)
-      2. 存到mysql中：借助`java.nio.ByteBuffer.floatArrayToByteArray `将float数组转为二进制字节数组，然后使用`blob`(binary large object)格式存到mysql，读取的时候同样使用`byteArrayToFloatArray `转回float数组
-         1. 搞一个`store_features`表格，一列存`store_id(INT)`，另一列即`feature_vector (BLOB)`
-         2. float是4B（序列化后大概还是4B），所以`100*100*4B=40M`，小意思了（如果N=100）
-      3. 加载到redis中：如果使用一个string key存储，直接存二进制，内存占用跟上面差不多，会有大key问题(string>10KB即为大key)，故而你要么试试每个店铺一个string，要么用hash（TODO
+   3. 将每个店铺的特征向量存到mysql数据库中，而后缓存至redis
+      1. 特征向量是float数组(`shape=[200,1] (ndarray)`)
 3. **实时推荐阶段**
    1. 当用户点击“猜你喜欢”按钮时，根据用户历史的“购买过的商品名+商品描述+用户点赞过的评论”进行推荐，即同样适用word2vec计算特征向量
    2. 计算用户特征向量和所有店铺特征向量之间的余弦相似度：$cos(A,B) = \dfrac{A\times B}{||A|| \times ||B||}$
@@ -838,11 +983,31 @@ watchDog看门狗机制：获取锁成功之后，开启一个定时任务，这
 > word2vec or other model: [link](https://github.com/shibing624/text2vec)
 > 基于腾讯AI Lab开源的800万中文词向量数据预训练得到的word2vec预训练模型，拿来直接用
 
-改进空间：
+**Q: 为什么不用Bert pretrained model?**
+A: word2vec是浅层神经网络模型(2层)，bert是深层(bert-base是12层)，语义信息更丰富，更牛逼；但前者大概比后者**快10-100倍**，故而
+
+**Q: 100个[200,1]的float数组怎么存到mysql中的?**
+```sql
+CREATE TABLE shop_features (
+    shop_id INT PRIMARY KEY,
+    feature_vector varchar # 存为varchar即可
+);
+```
+A: 每个店铺对应200个浮点数，序列化为Json字符串存储（依然是hutool!）
+`String jsonString = JSONUtil.toJsonStr(floatArray);
+`
+
+**Q: 又是如何存到redis中的?**
+A: 存到一个`hash`中，每一个shop_id作为field，对应的value是特征向量转成的json字符串
+(如果全存到一个string中，大概会出现大key问题(>10KB))
+
+**改进空间：**
 
 * 计算用户特征向量时，可以增加对用户行为的分析：如浏览时间
-* 异步处理：可以考虑使用异步处理（如RabbitMQ）进行推荐计算，减轻请求处理的负担（当用户登陆之后直接异步算好
 * 批处理：如果多个用户同时请求推荐，可以考虑批处理，提高效率
+* 异步处理：可以考虑使用异步处理（如RabbitMQ）进行推荐计算，减轻请求处理的负担（当用户登陆之后直接异步算好
+* 可以借助elasticsearch
+  * 将特征向量存储到es中(dense vector形式)，然后采用es自带的cosine similarity检索相似的向量（es对向量存储和运算做了一些底层优化，更高效的存储啥的，至于细节还得看看，但感觉就那样，我先整个灵活自定义版本enough了）
 
 ---
 
@@ -855,3 +1020,11 @@ https://chatgpt.com/c/66fe7896-bdec-8007-9f0b-3c41c7f1514e
 核心代码参考:
 `java\project\recommend\recommend.ipynb`
 `java\project\recommend\recommend.java`
+
+#### 简单学下ES
+
+* ElasticSearch: 一款开源的分布式搜索与数据分析引擎
+* es采用**倒排索引**，mysql中每行记录在es中叫一个**文档**document，文档按照**语义**分成**词条**term (分词)，然后底层给词条建立索引（比如hash，那根据词条搜索起来不就快了吗
+* 用的IK分词器，不是jieba哦
+
+![picture 33](../../images/d8713a367db9b2728c2957840b4b53833db75b0e645fba024ff6ed463a2f8a37.png)  
