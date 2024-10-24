@@ -120,9 +120,7 @@ Shell Sort/增量递减排序算法: 进阶版插入排序
 
 **分治思想**
 
-1. 首先从序列中选取一个数作为基准数
-2. 将比这个数大的数全部放到它的右边，把小于或者等于它的数全部放到它的左边（一次快排 partition）
-3. 然后分别对基准的左右两边重复以上的操作，直到数组完全排序
+1. 每次用right作为pivot，遍历[l,r]，将<=pivot的swap到左侧维护的有序区间，最后将p_idx和swap到有序区间最后
 
 > 若选择最左元素作为基准，对几乎已经有序的序列，并不是最好的选择，它将会导致算法的最坏表现。可以考虑选择中间的数或通过Math.random()；（**我们采用最后元素**
 
@@ -138,16 +136,16 @@ public class QuickSort2 {
 
     public static int partition(int[] nums, int left, int right) {
         int pivot = nums[right];
-        int i = left - 1; // 记录<=pivot的最后一个位置
-        // int pointer = left; // 指向下一个待放入符合规则的位置（即在pointer之前的元素都是符合规则的（也可以这么写，后续的+1啥的简单点
+        // int i = left - 1; // 记录<=pivot的最后一个位置
+        int i = left; // 指向下一个待放入符合规则的位置（即在pointer之前的元素都是符合规则的（也可以这么写，后续的+1啥的简单点
         for (int j=left; j<right; ++j) {
             if (nums[j] <= pivot) {
-                ++i; // <=pivot的区域增长
                 swap(nums, i, j);
+                ++i;
             }
         }
-        swap(nums, i+1, right);
-        return i+1;
+        swap(nums, i, right);
+        return i;
     }
     public static void quickSort(int[] nums, int left, int right) {
         if (left < right) {

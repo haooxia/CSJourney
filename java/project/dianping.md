@@ -709,7 +709,12 @@ A: 在集群环境中，多个Tomcat实例各自运行在独立的JVM中。虽�
 
 ![picture 0](../../images/03837eb62554e5d9b0140cd897ab512d8ee45d60a426740fd69fa170a38f2844.png)  
 
-如何基于redis实现分布式锁
+**Q: 如何基于MySQL实现分布式锁？**
+1. 创建一个锁表`lock`，字段：`lock_name`（锁的名称，作为主键primary key，唯一约束；锁的名称用来表示**某一资源的名称**），字段`lock_by`记录服务器节点ID
+2. 如果两个节点都想要锁定同一资源`resource_1`，会分别尝试在表中插入一行记录，第一个节点`insert into lock (lock_name, lock_by) values ('resource_1', 'node_1')`成功；
+3. 第二个示例插入同样的记录，会出现**主键冲突**(`resourec_1`这个主键只能出现一次)，故而上锁失败
+
+**Q: 如何基于redis实现分布式锁？**
 * `set lock thread1 NX EX 10`: NX保证互斥，EX设置过期时间，这一条指令完成两个功能，**原子操作**
   * 即一个`set` = `setnx` + `expire`
 

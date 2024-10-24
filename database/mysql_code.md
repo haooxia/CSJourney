@@ -1,6 +1,7 @@
 # Database
 
 - [Database](#database)
+  - [core](#core)
   - [MySQL](#mysql)
     - [Begin](#begin)
     - [安装](#安装)
@@ -24,13 +25,34 @@
   - [一些指令](#一些指令)
 
 
+## core
+
+* limit 起始索引 查询记录数
+* distinct field_name: 字段去重
+* 判断是否为空: is null / is not null
+* 一般来说字符串必须加引号(eg where name = 'xiaoming')，但列名和别名无需加引号(eg name字段)，一般使用单引号
+* 等于使用=，不等用!=或<>, in ('a', 'b', 'c')
+* 匹配机制
+  * `_`匹配任意一个字符
+  * `%`匹配任意0个或多个字符
+  * `[]`匹配[]内的任意一个字符
+    * `SELECT * FROM 学生表 WHERE 姓名 LIKE '[张李刘]%'`//查询学生表中姓‘张’、姓‘李’和姓‘刘’的学生的情况。
+  * `[^]`不匹配[]内的任意一个字符
+    * `SELECT * FROM 学生表 WHERE 学号 LIKE '%[^235]'` //从学生表表中查询学号的最后一位不是2、3、5的学生信息。
+* 聚合函数(avg, count)结果作为筛选条件时，要用having，而非where
+* 子查询：
+  * 内部select语句无需加分号
+  * 内部select返回一个单行单列数据时，外部select一般用`=`，返回多个数据时，外部一般用`in`
+* 内连接
+  * 隐式内连接: `select * from table1, table2 where CONDITION`
+  * 显式内连接: `select * frmo table1 inner join table 2 on CONDITION`
+
+
+高级特性
+
+* where后使用or连接两个条件时，只有两个字段都是索引，or才能让索引生效，如果只有一个是索引，则二者都失效；故而可以使用两个select然后union结果，这样任意其一是索引均可生效
+
 ## MySQL
-
-![picture 1](../images/60ed56107759295fa2d2ccc198cc609f2a205459f89f7c0288a5dc570af1473e.png)  
-
-![picture 0](../images/666b21c4693b11f56e68ed0f112fe3ce7aafb9178142c2e6258ded70ef9e502e.png)
-
-![picture 3](../images/0c802f215506964e398299038b2438ea40a4cdc650304d0be3e488260a345ea9.png)  
 
 ### Begin
 

@@ -624,8 +624,15 @@ threadLocalValue.remove()
 
 #### ThreadLocal原理
 
+* ThreadLocal使得每个线程可以拥有自己的独立变量副本，避免了多个线程之间的共享状态，减少了数据竞争和数据同步的复杂性。
+* ThreadLocalMap
+
+TODO
+
 * **ThreadLocal对象本身并不存数据**，数据存在线程自个儿的成员变量ThreadLocalMap中
 * **每个Thread线程都有自己的`ThreadLocalMap`成员变量，用于存储该线程所持有的所有`ThreadLocal`变量的值**。是一个Map键值对结构，维护了一个Entry数组，每个Entry的key是`ThreadLocal`本身，value是value值。
+  * 使用弱引用作为key来存储ThreadLocal对象实例，
+    * 弱引用是不管内存够不够，下一次垃圾回收时一定会回收
 * 如果一个线程中声明了两个`ThreadLocal`对象的话，`Thread`内部使用这一个`ThreadLocalMap`存放多个`ThreadLocal`数据，key是不同的`ThreadLocal`，value是对应的Object（即通过ThreadLocal对象调用set()设置的值）
 
 ```java
