@@ -28,6 +28,8 @@
       - [导入导出](#导入导出)
 
 
+经典50道，知乎总结：[link](https://zhuanlan.zhihu.com/p/113173133)
+
 ## core
 
 * limit 起始索引 查询记录数
@@ -202,6 +204,9 @@ select d.name, e.name from tb_dept d left join tb_emp e on e.dept_id=d.id;
 ```
 
 #### 子查询/嵌套查询
+
+* 先写内层查询，再写外层
+* select的结果列全部来自同一张表（而select的条件列来自不同表里），考虑子查询；select的结果列来自多张表，考虑联结
 
 一个查询结果作为另一个查询的条件；
 ![picture 20](../images/730ac90a750c8ff401806f3679c98a20a331d874076f4e766d813700a1f2fa57.png)

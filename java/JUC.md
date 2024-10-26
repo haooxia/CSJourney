@@ -602,17 +602,20 @@ public interface ReadWriteLock {
 
 ### ThreadLocal
 
-Q: 为什么需要ThreadLocal？
-A: 为了实现线程封闭。对于共享变量 (eg static变量, 堆中的对象)，如果只有一个线程去使用，那没啥事儿，而如果多个线程同时访问和修改这些共享变量，那就得小心管理访问过程，避免出现数据不一致的问题。所以我们就得上锁等同步操作，还挺麻烦。
+**Q: 为什么需要ThreadLocal？**
 
-然而有时候，多个线程并不需要共享同一份数据，每个线程只需要访问自己的变量副本，我们并不希望受到其他线程的任何影响，也不想上锁，所以出现了ThreadLocal。简单好用，无需复杂的同步操作
+首先我们有一些变量是共享变量，比如堆内存中的对象是多线程共享的，比如方法区中的static变量，而你多个线程同时访问这种共享变量会出现线程不安全的问题，我们一般直接加个锁(`synchronized, Lock`)保证数据安全。
+但加锁影响性能开销，还复杂，可能出现死锁。
 
+所以有时候我们并不想要这种多个线程共享的变量，我们想要每个线程只访问自己的变量副本。这就可以考虑使用ThreadLocal机制创建**线程局部变量**，直接避免了共享变量，每个线程都有一个独立的副本，相互隔离。
 
-* ThreadLocal是Java中用于解决**线程安全**问题的一种机制，它允许创建线程局部变量，即**每个线程都有自己独立的变量副本**，从而**避免了线程间的资源共享和同步问题**
-* 作用
-  * **线程隔离**：每个线程都有独立的变量副本，不互相影响，多线程时不用担心数据同步问题
-  * **降低耦合度**：在同一个线程内的多个函数或组件之间，**使用ThreadLocal可以减少参数的传递**，降低代码之间的耦合度，使代码更加清晰和模块化
-  * **性能优势**：由于ThreadLocal避免了线程间的同步开销，所以在大量线程并发执行时，相比传统的锁机制，它可以提供更好的性能
+> 其实会有点像函数中的局部变量，ThreadLoca提供了一种线程内的局部变量，可以在多个方法之间共享数据，同时保持线程隔离。
+
+1. web应用中，可以使用ThreadLocal存储用户会话信息，这样每个线程在处理用户请求时都能方便拿到当前用户的会话信息。
+2. 作用
+   1. **线程隔离**：每个线程都有独立的变量副本，不互相影响，多线程时不用担心数据同步问题
+   2. **降低耦合度**：在同一个线程内的多个函数或组件之间，**使用ThreadLocal可以减少参数的传递**，降低代码之间的耦合度，使代码更加清晰和模块化
+   3. **性能优势**：由于ThreadLocal避免了线程间的同步开销，所以在大量线程并发执行时，相比传统的锁机制，它可以提供更好的性能
 
 ```java
 // 创建方法
@@ -624,23 +627,15 @@ threadLocalValue.remove()
 
 #### ThreadLocal原理
 
-* ThreadLocal使得每个线程可以拥有自己的独立变量副本，避免了多个线程之间的共享状态，减少了数据竞争和数据同步的复杂性。
-* ThreadLocalMap
-
-TODO
-
 * **ThreadLocal对象本身并不存数据**，数据存在线程自个儿的成员变量ThreadLocalMap中
-* **每个Thread线程都有自己的`ThreadLocalMap`成员变量，用于存储该线程所持有的所有`ThreadLocal`变量的值**。是一个Map键值对结构，维护了一个Entry数组，每个Entry的key是`ThreadLocal`本身，value是value值。
-  * 使用弱引用作为key来存储ThreadLocal对象实例，
+* **每个Thread线程都有自己的`ThreadLocalMap`成员变量，是一个Map结构（一个Entry数组），每个Entry的key是`ThreadLocal`本身，value是value值。
+* ThreadLocalMap中的key(即ThreadLocal对象实例)是用弱引用(WeakReference)来存储的
     * 弱引用是不管内存够不够，下一次垃圾回收时一定会回收
 * 如果一个线程中声明了两个`ThreadLocal`对象的话，`Thread`内部使用这一个`ThreadLocalMap`存放多个`ThreadLocal`数据，key是不同的`ThreadLocal`，value是对应的Object（即通过ThreadLocal对象调用set()设置的值）
 
-```java
-ThreadLocalMap(ThreadLocal<?> firstKey, Object firstValue) {}
-```
 
 ![picture 11](../images/f092819fbf9c4122c6a72f288277b60b2be81a1eacfcbebd1fd9ceb5fa249ec8.png)  
-> 每个线程都有一个Map成员，独立的空间，get()时就检查当前线程的ThreadLocalMap有没有值，有则返回，无则通过initialValue()创建并放入Map中(前提是重写了该方法)；set()就是将value给到当前线程的key(ThreadLocal)；remove()大概是直接删除对应Entry
+> 每个线程都有一个ThreadLocalMap成员，独立的空间，get()时就检查当前线程的ThreadLocalMap有没有值，有则返回，无则通过initialValue()创建并放入Map中(前提是重写了该方法)；set()就是将value给到当前线程的key(ThreadLocal)；remove()大概是直接删除对应Entry
 
 #### ThreadLocal内存泄漏
 
