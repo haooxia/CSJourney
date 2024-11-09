@@ -29,11 +29,96 @@
 
 
 经典50道，知乎总结：[link](https://zhuanlan.zhihu.com/p/113173133)
+好题：13,15,17,22
+
+
+```sql
+-- 创建学生表student
+create table student
+     (Sno  varchar(10) not null,
+      Sname varchar(10)        ,
+      Sage  date               ,
+      Ssex  varchar(10)        ,
+      primary key (Sno));
+insert into student values ('01', '赵雷', '1990-01-01', '男');
+insert into student values ('02', '钱电', '1990-12-21', '男');
+insert into student values ('03', '孙风', '1990-05-20', '男');
+insert into student values ('04', '李云', '1990-08-06', '男');
+insert into student values ('05', '周梅', '1991-12-01', '女');
+insert into student values ('06', '吴兰', '1992-03-01', '女');
+insert into student values ('07', '郑竹', '1989-07-01', '女');
+insert into student values ('08', '王菊', '1990-01-20', '女');
+
+
+-- 创建科目表course
+create table course
+(Cno varchar(10)  not null,
+ Cname varchar(10)     ,
+ Tno  varchar(10)      ,
+ primary key (Cno));
+insert into course values ('01', '语文', '02');
+insert into course values ('02', '数学', '01');
+insert into course values ('03', '英语', '03');
+
+
+-- 创建教师表teacher
+create table teacher
+(Tno varchar(10)   not null,
+ Tname varchar(10)  ,
+ primary key (Tno));
+insert into teacher values ('01', '张三');
+insert into teacher values ('02', '李四');
+insert into teacher values ('03', '王五');
+
+
+-- 创建成绩表 sc
+create table sc 
+(Sno varchar (10)    ,
+ Cno varchar (10)    ,
+ score decimal(18,1),
+ primary key (Sno, Cno));
+insert into sc values('01' , '01' , 80);
+insert into sc values('01' , '02' , 90);
+insert into sc values('01' , '03' , 99);
+insert into sc values('02' , '01' , 70);
+insert into sc values('02' , '02' , 60);
+insert into sc values('02' , '03' , 80);
+insert into sc values('03' , '01' , 80);
+insert into sc values('03' , '02' , 80);
+insert into sc values('03' , '03' , 80);
+insert into sc values('04' , '01' , 50);
+insert into sc values('04' , '02' , 30);
+insert into sc values('04' , '03' , 20);
+insert into sc values('05' , '01' , 76);
+insert into sc values('05' , '02' , 87);
+insert into sc values('06' , '01' , 31);
+insert into sc values('06' , '03' , 34);
+insert into sc values('07' , '02' , 89);
+insert into sc values('07' , '03' , 98);
+```
 
 ## core
 
-* limit 起始索引 查询记录数
-* distinct field_name: 字段去重
+* 执行顺序是: from -> where -> group by + having -> select -> order by -> limit
+  * 所以对于count(*)这种聚合函数，order by可以直接使用select后面的别名，但having不可，还得写出聚合函数（待验证）
+* **聚合函数**
+  * 使用group by分组之后，查询的字段只能是**聚合键**(分组字段)、聚合函数和常数(数字/字符/时间)
+  * 聚合函数(avg/sum/count/max)一般和group by搭配使用，**where后面不可使用聚合函数**（考虑放在having后面/变成子查询放在where后面）
+    * `select . from . where 分组前过滤条件 group by . having 分组后过滤条件`
+* **子查询**
+  * **当select的结果列(要查询的字段)全来自一张表（而select的条件列来自于不同表），考虑子查询；如果结果列来自多张表，考虑联结。**
+  * 子查询一般配合in/not in（可以考虑使用not in来使用**补集**(所有/全部/都)）
+  * > 内部select语句无需加分号
+  * > 内部select返回一个单行单列数据时，外部select可以用`=`或`in`，返回多个数据时，外部一般用`in`(不如统一用in得了)
+* **inner join/内连接**
+  * 结果列来自多张表，考虑使用联结
+  <!-- * 隐式内连接: `select * from table1, table2 where CONDITION` -->
+  * 显式内连接: `select * from table1 as a inner join table as b on a.id = b.id`
+* limit **偏移量** 查询记录数
+  * `limit 5`等价于`limit 0 5`: 表示返回前5条
+  * `limit 10 5`: 表示跳过前10条记录，返回从11开始的5条记录；常用于分页查询
+    * 等价于`limit 5 offset 10`
+* distinct field: 字段去重
 * 判断是否为空: is null / is not null
 * 一般来说字符串必须加引号(eg where name = 'xiaoming')，但列名和别名无需加引号(eg name字段)，一般使用单引号
 * 等于使用=，不等用!=或<>, in ('a', 'b', 'c')
@@ -44,13 +129,8 @@
     * `SELECT * FROM 学生表 WHERE 姓名 LIKE '[张李刘]%'`//查询学生表中姓‘张’、姓‘李’和姓‘刘’的学生的情况。
   * `[^]`不匹配[]内的任意一个字符
     * `SELECT * FROM 学生表 WHERE 学号 LIKE '%[^235]'` //从学生表表中查询学号的最后一位不是2、3、5的学生信息。
-* 聚合函数(avg, count)结果作为筛选条件时，要用having，而非where
-* 子查询：
-  * 内部select语句无需加分号
-  * 内部select返回一个单行单列数据时，外部select一般用`=`，返回多个数据时，外部一般用`in`
-* 内连接
-  * 隐式内连接: `select * from table1, table2 where CONDITION`
-  * 显式内连接: `select * frmo table1 inner join table 2 on CONDITION`
+
+![picture 25](../images/56df8c917998529d58f1005a59e5fde4fc47278289a5e5625dfdffd4d22ae427.png)  
 
 
 高级特性

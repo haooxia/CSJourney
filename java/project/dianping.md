@@ -86,12 +86,17 @@ Q: nginx反向代理的好处?
 
 ### 数据库表设计
 
+1. 为什么要用到user和user_info
+2. 优惠券（就是我们的商品）和优惠券订单表
+
+
 * tb_user: 用户表: id主键, phone, name
   * 存用户基本信息
 * tb_user_info: 用户详情表: user_id主键, city, fans, followee, gender, level...
   * 存用户详情信息
-* tb_shop: 店铺信息表: id主键, name, type_id(逻辑外键), images, address, score, avg_price
+* tb_shop: 运动场所信息表: id主键, name, type_id(逻辑外键), images, address, score, avg_price
   * 存店铺基本信息
+  * 根据场所名称建立**索引**
 * tb_shop_type: 店铺类型表: id主键, 类型name, sort
   * 店铺类型：健身中心、游泳馆、球类运动(乒乓、羽毛球、篮球、足球、高尔夫)、武术搏击、溜冰、马术、攀岩
 * tb_blog：用户探店日记: id主键, shop_id(逻辑外键), user_id(逻辑外键), titile标题, content内容, images
@@ -100,11 +105,22 @@ Q: nginx反向代理的好处?
 * tb_voucher_order：优惠券的订单表: id主键, user_id(逻辑外键), voucher_id(逻辑外键)
 * tb_follow：用户关注表: id, user_id, follow_user_id
 
+**Q: 数据库表是如何设计的?**
+
+0. 项目主要包括用户表、用户详情表、商铺/运动场所信息表、优惠券表、优惠券订单表、商铺特征向量表
+1. 比如user中：采用**varchar**(设置不同的最大长度)存储`email`, `password`, `nick_name`, `icon`，以节省空间。头像`icon`存储**url链接**，url来自阿里云OSS图床。
+2. 符合数据库设计的**三大范式**：第一：各个字段都是原子性的，比如shop表中的地址，我们是按照`省-市-区-具体地址`进行设计的，每个部分占用一个字段，确保每个字段都是最小的不可分割单元。第二：表的非主键字段完全依赖于主键（比如user表中，都依赖user_id）；第三：每个字段都只依赖于主键，没有冗余依赖。
+3. 我们将用户信息拆分为`user`基本信息和`user_info`扩展信息两个表分开存储，算是**垂直拆分**，避免一个表过于庞大，影响性能。
+4. **建立索引**提升查询速度：user表中的`phone/email`字段，运动场所名称，每个表的主键有索引
+5. 商铺特征向量表中: `shop_id int, feature_vector varchar`，每个店铺存储[200,1]的float数组
+
 ## 1.登录功能
 
 主要是基于session实现短信登录功能（利用阿里云发送验证码）
 然后使用Redis替代session，解决集群下session共享的问题（多台tomcat不共享session空间）
 然后还用双重拦截器进行token状态刷新和用户登录校验（并把用户信息存入ThreadLocal）
+
+**（未注册的手机号码验证后自动创建账户）：后端会检测登录的手机/邮箱是否注册过（查询数据库中有没有相应的手机/邮箱(这儿设置了个索引)），如果没注册过就注册(存到数据库: `email+random_nick_name`)。**
 
 ### 关于session
 

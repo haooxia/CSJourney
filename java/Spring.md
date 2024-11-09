@@ -2,10 +2,11 @@
 
 - [Spring](#spring)
   - [Spring](#spring-1)
-    - [Spring vs. SpringMVC vs. SpringBoot](#spring-vs-springmvc-vs-springboot)
     - [Spring介绍](#spring介绍)
+    - [Spring vs. SpringMVC vs. SpringBoot](#spring-vs-springmvc-vs-springboot)
     - [SpringBoot相比于Spring的改进](#springboot相比于spring的改进)
     - [介绍一下IoC](#介绍一下ioc)
+      - [IoC注入方式](#ioc注入方式)
       - [IoC实现机制](#ioc实现机制)
     - [介绍一下AOP](#介绍一下aop)
       - [AOP实现机制](#aop实现机制)
@@ -15,7 +16,8 @@
     - [Spring框架用到了哪些设计模式](#spring框架用到了哪些设计模式)
     - [Spring常用注解](#spring常用注解)
     - [Spring事务](#spring事务)
-      - [Spring事务及分类](#spring事务及分类)
+      - [介绍与原理](#介绍与原理)
+      - [Spring事务分类](#spring事务分类)
       - [Spring事务隔离级别](#spring事务隔离级别)
       - [Spring事务传播行为 propagation](#spring事务传播行为-propagation)
       - [声明式事务失效情况](#声明式事务失效情况)
@@ -37,12 +39,6 @@ spring是如何解决循环依赖的，三级缓存（xiaolin
 
 ## Spring
 
-### Spring vs. SpringMVC vs. SpringBoot
-
-1. Spring是一个java企业级应用程序开发**框架**，为了简化java应用程序的开发，提供很多核心功能：eg 控制反转、面向切面编程、事务管理等。
-2. SpringMVC是构建在Spring框架之上的一个**模块**，**专门用于开发Web应用程序**。它采用了模型-视图-控制器（MVC）设计模式，通过DispatcherServlet处理请求，将请求映射到相应的控制器，并返回视图。
-3. SpringBoot：进一步简化spring开发流程；约定大于配置、各种启动项starter、内置服务器；
-
 ### Spring介绍
 
 > Spring 是一个**轻量级、非侵入式**的**控制反转 (IoC) 和面向切面 (AOP)** 的**框架**
@@ -50,17 +46,23 @@ spring是如何解决循环依赖的，三级缓存（xiaolin
 **Spring核心特性/优势：**
 
 * **IoC容器**：Spring通过控制反转，**维护所有对象的创建和依赖关系**。开发者只需要定义好Bean及其依赖关系，**Spring容器负责创建和组装这些对象**。
-  * 依赖关系是指某对象A(eg bus)依赖对象B(eg wheels)
+  * 依赖关系是指某对象A(eg bus)依赖对象B(eg wheels)，可以通过`@Autowired`注入
 * **AOP**：面向切面编程，允许开发者定义**横切关注点**，例如事务管理、安全控制等，**独立于业务逻辑的代码**。通过AOP，可以将这些关注点模块化，提高代码的可维护性和**可重用性**。
 * **事务管理**：Spring提供了**一致的事务管理接口**，支持声明式和编程式事务。开发者可以轻松地进行事务管理，而无需关心具体的事务API。
+
+### Spring vs. SpringMVC vs. SpringBoot
+
+1. Spring是一个全面的**java应用程序开发框架**，为了简化java应用程序的开发，提供很多核心功能：eg 控制反转、面向切面编程、事务管理等。
+2. SpringMVC是构建在Spring框架中的一个**模块**，专门用于开发**Web应用程序**。它采用了模型-视图-控制器（MVC）设计模式，旨在分离应用程序的业务逻辑、用户界面和输入处理；通过DispatcherServlet处理请求，将请求映射到相应的控制器，并返回视图。
+3. SpringBoot：进一步简化spring开发流程；约定大于配置、各种启动项starter、内置服务器；
 
 ### SpringBoot相比于Spring的改进
 
 * SpringBoot提供了**自动化配置**，大大简化了项目的配置过程。通过**约定优于配置**的原则，很多常用的配置可以自动完成，开发者可以**专注于业务逻辑**的实现
   * 约定大于配置
-    * eg 如果你使用MySQL数据库，只需在`application.properties`中提供数据库连接URL、用户名和密码，SpringBoot会自动配置数据源
+    * eg 如果你使用MySQL数据库，只需在`application.properties`中提供数据库连接URL、用户名和密码，SpringBoot会自动配置数据源（Spring的话需要自定义一个配置类）
     * eg 命名规则：项目配置文件一般是`application.yml`
-* SpringBoot提供了**快速的项目启动器**，可以引入不同的Starter;starter会**自动处理依赖，自动配置，加速开发**
+* SpringBoot提供了**快速的项目启动器**，可以引入不同的**Starter(起步依赖)**; starter会**自动处理依赖，自动配置，加速开发**
   * `spring-boot-starter-web`: 用于构建web程序，默认使用tomcat作为嵌入式容器
   * `spring-boot-starter-test`: 包含用于测试的依赖项，如 JUnit
   * `spring-boot-starter-data-redis`: 用于与Redis数据库交互
@@ -81,15 +83,78 @@ spring是如何解决循环依赖的，三级缓存（xiaolin
 
 ![picture 3](../images/f3f0a36302d30f5560121ceecc5fb247e9c5f7e8ae780adefdce0109a4c64fa8.png)  
 
+#### IoC注入方式
+
+比如你准备在controller方法中注入一个service实例，然后调用该实例。
+
+1.可以通过**构造器注入**（推荐）：
+
+```java
+@Service
+public class GreetingService {
+    public String getGreeting() {
+        return "Hello, Spring IoC!";
+    }
+}
+
+@RestController
+public class HelloController {
+    private final GreetingService greetingService;
+    // 使用构造器注入 GreetingService
+    @Autowired
+    public HelloController(GreetingService greetingService) {
+        this.greetingService = greetingService;
+    }
+    @GetMapping("/hello")
+    public String sayHello() {
+        return greetingService.getGreeting();
+    }
+}
+```
+2.字段注入（适合简单场景，不推荐）
+```java
+@RestController
+public class HelloController {
+    @Autowired
+    private GreetingService greetingService;
+    @GetMapping("/hello")
+    public String sayHello() {
+        return greetingService.getGreeting();
+    }
+}
+```
+
+3.setter方法注入（适合需要设置多个依赖的情况）
+```java
+@RestController
+public class HelloController {
+    private GreetingService greetingService;
+    @Autowired
+    public void setGreetingService(GreetingService greetingService) {
+        this.greetingService = greetingService;
+    }
+    @GetMapping("/hello")
+    public String sayHello() {
+        return greetingService.getGreeting();
+    }
+}
+```
+
 #### IoC实现机制
 
-* **反射**：Spring IOC容器利用java反射机制在**运行时创建对象并调用其方法**，使得spring可以根据配置文件或**注解**动态地管理bean；
-* **依赖注入**：IOC的核心概念是依赖注入，它允许**将对象所依赖的其他对象**(ie 依赖)通过构造函数注入、setter注入或方法注入传递给该对象，**而非在对象内部创建这些依赖**。
-  * > 组件之间的依赖关系描述在配置文件中或使用注解。
+* **反射**：Spring IOC容器利用java反射机制在**运行时创建对象并设置属性**，使得spring可以根据配置文件或**注解**动态地管理bean；
+* **依赖注入**：IOC的核心概念是依赖注入，它允许**将对象所依赖的其他对象**通过构造函数注入、setter注入或方法注入传递给该对象，**而非在对象内部创建这些依赖**。
 * **工厂模式**：IOC容器通常采用工厂模式来管理对象的创建和生命周期。**容器作为工厂**负责**实例化Bean并管理它们的生命周期**。
 * **容器实现**：IOC容器是实现IOC的核心，通常使用`BeanFactory`或`ApplicationContext`来管理Bean。
-  * `BeanFactory`是IOC容器的**基本形式**，提供基本的IOC功能；
+  * `BeanFactory`是IOC容器的**基本形式**，提供基本的IOC功能，适合简单应用；
   * `ApplicationContext`是BeanFactory的**扩展**，提供更多功能，eg 事件传播
+
+自动注入过程：
+
+1. 容器自动注入（eg 你在controller中@Autowired一个Service），是通过ApplicationContext容器来实现的，Springboot启动时会自动创建并启动一个`AnnotationConfigApplicationContext `；
+2. Spring启动时，容器会自动扫描所有用`@Component, @Service, @Controller, @Repository`等注解标记的类，并将其注册为Bean
+3. 当你在类中使用@Autowired注入时，Spring容器会在应用启动时，自动识别并找到对应Bean(eg通过类型匹配)，并注入到@Autowired修饰的字段或构造方法中
+
 
 ### 介绍一下AOP
 
@@ -243,22 +308,21 @@ AOP中的`@Aspect`, `@PointCut`, `@Before`, `@After`, `@Around`略了
 
 ### Spring事务
 
-#### Spring事务及分类
+#### 介绍与原理
 
-**Spring事务的本质是基于数据库的事务机制实现的**，Spring**本身无法提供事务功能**，它只是提供一个统一的事务管理接口，具体的事务实现由各个数据库自己实现（包括提交和回滚）。
+**声明式事务**使用方法：配置**事务管理器**(配置DataSource和TransactionManager) + `@Transactional`注解（一般在service类中使用）
+
+Spring的事务其实是对底层数据库事务(eg MySQL)的封装与简化。Spring本身无法提供事务功能。
+
+**Spring声明式事务基于AOP实现**，当你使用@Transactional注解某方法时，Spring会在该方法执行前后进行**拦截**然后自动执行一些逻辑：在方法调用之前，Spring会启动一个事务(**底层就是通过事务管理器`TransactionManager`执行数据库的`begin`命令**)，如果方法执行成功，Spring提交事务(执行`commit`)，如果执行过程抛出了错误和异常（Error+运行时异常），Spring会回滚事务(执行`rollback`)。
 
 > 我们mysql事务一直都是在数据层上; 把事务开到业务层的好处：可以将业务层中的方法里所包含的多个数据层操作放到一个事务管理，使其同成功同失败（Spring自动协调
 
-Spring事务可分为：编程式事务管理和声明式事务管理
+#### Spring事务分类
 
-* 编程式事务可以使用TransactionTemplate和PlatformTransactionManager来实现，**需要显式执行事务**。允许我们**在代码中直接控制事务的边界**，**通过==编程方式==明确指定事务的开始、提交和回滚**
-* 声明式事务是基于AOP的，本质是通过AOP功能，对方法前后进行拦截，**将事务处理的功能编织到拦截的方法中**，也就是在目标方法开始之前启动一个事务，在目标方法执行完之后根据执行情况提交或者回滚事务(@Around)。通过`@Transactional`实现，简单好用推荐。
+* 声明式事务管理：使用Spring的AOP来声明事务，**将事务管理代码从业务代码中分离出来**。代码简洁，好维护。但不够灵活，只有方法级别的粒度。
   * 不足：最细**粒度**只能作用做到整个**方法级别**，因为springAop连接点是方法调用嘛；而编程式可以作用到**代码块级别**
-
-**Q: 区别？**
-
-* 编程式事务管理：需要在代码中显式调用事务管理的API来控制事务的边界，比较**灵活**，但是**代码侵入性较强，不够优雅**。
-* 声明式事务管理：这种方式使用Spring的AOP来声明事务，**将事务管理代码从业务代码中分离出来**。代码简洁，好维护。但不够灵活，只有方法级别的粒度。
+* 编程式事务管理：需要在代码中显式调用事务管理的API来控制事务的边界，**通过==编程方式==明确指定事务的开始、提交和回滚**，粒度更细，但是**代码侵入性较强，不够优雅**。
 
 声明式事务注解**默认属性**：
 ```java
@@ -284,7 +348,7 @@ Spring事务可分为：编程式事务管理和声明式事务管理
 
 #### Spring事务传播行为 propagation
 
-事务的传播机制定义了**在方法被另一个事务方法调用时，这个方法的事务行为应该如何**。
+事务的传播机制：**当一个事务方法调用另一个事务方法时，如何处理这两个事务之间的关系。**
 
 Spring 提供了一系列事务传播行为，这些传播行为定义了事务的边界和事务上下文如何在方法调用链中传播。
 
