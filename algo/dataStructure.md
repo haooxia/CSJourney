@@ -3,6 +3,7 @@
 please arrange this: [link](https://xiaolincoding.com/interview/data.html#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84)
 
 - [Data Structure](#data-structure)
+  - [ACM模板](#acm模板)
   - [排序算法](#排序算法)
     - [冒泡排序](#冒泡排序)
     - [选择排序](#选择排序)
@@ -13,6 +14,21 @@ please arrange this: [link](https://xiaolincoding.com/interview/data.html#%E6%95
       - [快排这么强，那冒泡排序还有必要吗？](#快排这么强那冒泡排序还有必要吗)
     - [外部排序](#外部排序)
     - [归并排序](#归并排序)
+
+## ACM模板
+
+```java
+public class Solution {
+    public int func(int x) {
+        return 0;
+    }
+    public static void main(String[] args) {
+        Solution solution = new Solution();
+        int res = solution.func(10);
+        System.out.println(res);
+    }
+}
+```
 
 ## 排序算法
 
@@ -135,17 +151,18 @@ public class QuickSort2 {
     }
 
     public static int partition(int[] nums, int left, int right) {
+        // note 以right作为pivot:小的交换到左边 大的自动就到右边了
         int pivot = nums[right];
-        // int i = left - 1; // 记录<=pivot的最后一个位置
-        int i = left; // 指向下一个待放入符合规则的位置（即在pointer之前的元素都是符合规则的（也可以这么写，后续的+1啥的简单点
-        for (int j=left; j<right; ++j) {
-            if (nums[j] <= pivot) {
-                swap(nums, i, j);
-                ++i;
+        int k = left; // note 记录下一个小于pivot的元素应该放的idx：最开始在最左段
+        for (int i=left; i<right; ++i) {
+            if (nums[i] <= pivot) {
+                swap(nums, k, i);
+                k++;
             }
         }
-        swap(nums, i, right);
-        return i;
+        // 分完之后k的位置大于pivot
+        swap(nums, k, right);
+        return k;
     }
     public static void quickSort(int[] nums, int left, int right) {
         if (left < right) {
@@ -212,6 +229,7 @@ public class QuickSort {
 * **设定两个指针，分别指向两个已经排序子序列的起始位置；比较两个指针所指向的元素，选择相对小的元素放入到合并空间**
 
 ```java
+// 改为new Solution()格式以后
 public class MergeSort {
     public static void merge(int[] nums, int left, int mid, int right) {
         // 将两个有序的子数组合并为一个有序数组 (左数组: [left, mid], 右数组[mid+1, right]
