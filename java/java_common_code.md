@@ -290,7 +290,7 @@ public class LazyMan {
 // note: 双重检测锁模式的懒汉式单例 / Double-Checked Locking (DCL懒汉式单例)
 public class LazyMan2 {
     // 将构造器私有化 防止直接new
-    private LazyMan2(){};
+    private LazyMan2(){} // 这里没分号
     // 创建一个私有的静态实例(不初始化)
     private static volatile LazyMan2 lazyMan; // note 请注意添加volatile关键字，禁止指令重排
     // 提供一个公共的静态方法返回实例

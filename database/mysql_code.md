@@ -116,7 +116,7 @@ insert into sc values('07' , '03' , 98);
   * 显式内连接: `select * from table1 as a inner join table as b on a.id = b.id`
 * limit **偏移量** 查询记录数
   * `limit 5`等价于`limit 0 5`: 表示返回前5条
-  * `limit 10 5`: 表示跳过前10条记录，返回从11开始的5条记录；常用于分页查询
+  * `limit 10 5`: 表示跳过前10条记录，返回从**11**开始的5条记录；常用于分页查询
     * 等价于`limit 5 offset 10`
 * distinct field: 字段去重
 * 判断是否为空: is null / is not null

@@ -168,6 +168,8 @@ TODO：
 
 #### notify() vs notifyall()
 
+> 补充：wait()和notify()都必须在synchronized代码块或方法中使用，因为这俩实现线程通信的时候，需要依赖于对象的监视器机制，**只有一个线程持有对象的锁后，才能调用这些方法**。否则，可能执行混乱，抛出异常
+
 * notify：理论上**随机**选择**一个**等待队列中的线程唤醒（不能确保唤醒的是最合适的线程），其他线程依然处于waiting
   * 但实际实现可能不同，取决于jvm，比如HotSpot JVM是按照**FIFO**的顺序唤醒的
 * notifyAll：唤醒等待池中的**所有线程**，所有线程退出waiting状态，开始竞争锁，但只有一个能抢到，更可能得到我们想要的结果，但也可能造成不必要的竞争
@@ -558,12 +560,20 @@ public final int getAndAddInt(Object o, long offset, int delta) {
 * 默认是**非公平锁**，可以通过构造函数写true来指定为公平锁
 * 底层基于`AQS`，后文再说（TODO 重要）
 
+---
+
+ReentrantLock底层原理简述：
+ReentrantLock内部维护一个**state字段**，表示锁的**持有者和重入次数**，如果=0，则锁空闲，如果>0，则锁被持有，且state表示被该线程重入的次数；
+* 调用lock()获取锁：如果state=0, 拿锁成功，将state设置为1；如果锁已被自己持有，则可以重入state++即可，如果被别人持有，则等待
+* 调用unlock()释放锁：如果state>0，则state--，如果减为0，别人就可以尝试获取锁
+
 #### ReentrantLock vs. synchronized ☆
 
 * 二者都是可重入锁
 * synchronize**基于JVM**的内置锁实现，并没有向外暴露什么实现；ReentrantLock**基于JDK**（API层面，需要手动lock(),unlock()配和try-finally完成），我们可以看到源码实现
   * Lock必须手动开关，synchronized出了作用域会自动释放
 * ~~Lock适合锁大量同步代码，synchronized适合少量代码同步~~
+* wait和notify基于对象锁，必须放在synchronized块/方法内，ReentrantLock中不让用
 * ReentrantLock有一些synchronized没的高级功能：
   * synchronized只能是**非**公平锁，即获取锁的顺序是不确定的，ReentrantLock均可
   * 可实现==选择性通知==: synchronized与wait()和notify()/notifyAll()方法相结合可以实现等待/通知机制，但这俩**不可以根据条件指定唤醒特定线程**。ReentrantLock类可以与Condition接口结合，更加灵活，实现更细粒度的线程等待和通知机制
@@ -639,7 +649,9 @@ threadLocalValue.remove()
 
 #### ThreadLocal内存泄漏
 
-ThreadLocalMap中使用的key是ThreadLocal的弱引用，value是强引用。故而ThreadLocal没有被外部强引用时，垃圾回收的时候key会被清理掉，而value并不会。这下Map就出现了key为null的Entry，这个value不会被GC回收，即为内存泄漏。（当线程结束时，ThreadLocalMap随之销毁，此时ThreadLocal对象还在...直到没有其他引用指向它为止
+> 还是搞不太明白，主要是ThreadlocalMap中value是强引用，无法被GC回收，导致内存泄漏，手动remove就没问题
+
+ThreadLocalMap中使用的key是ThreadLocal本身，value是value，key是一个**弱引用**，value是强引用。故而ThreadLocal(就是那个key)没有被外部强引用时，垃圾回收的时候key会被清理掉，而value并不会。这下Map就出现了key为null的Entry，这个value不会被GC回收，即为内存泄漏。（当线程结束时，ThreadLocalMap随之销毁，此时ThreadLocal对象还在...直到没有其他引用指向它为止
 （不太懂，看完jvm回来看
 
 ### BlockingQueue
