@@ -697,7 +697,7 @@ explain: 查看**查询计划**，可用于分析查询语句的性能瓶颈，�
 
 * 如果你通过网页获取用户输入的数据，并将其插入到一个mysql数据库，就可能发生sql注入的问题。
 * 永远不要信任用户的输入，必须认定用户输入的数据都是不安全的
-* 加入有一个简单的登录表单，用户输入用户名和密码：`SELECT * FROM users WHERE username = 'user' AND password = 'pass';`，如果攻击者在用户名字段输入`' OR '1'='1'; --`，则会生成`SELECT * FROM users WHERE username = '' OR '1'='1'; -- AND password = 'pass';`，这直接密码都不用了
+* 假如有一个简单的登录表单，用户输入用户名和密码：`SELECT * FROM users WHERE username = 'user' AND password = 'pass';`，如果攻击者在用户名字段输入`' OR '1'='1'; --`，则会生成`SELECT * FROM users WHERE username = '' OR '1'='1'; -- AND password = 'pass';`，这直接密码都不用了
 
 **如何防止sql注入？**
 
