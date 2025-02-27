@@ -1,0 +1,25 @@
+# login.yaml
+
+base_info:
+  api_name: 用户登录
+  url: /login
+  method: post
+  headers:
+    Content-Type: application/x-www-form-urlencoded
+
+test_cases:
+  - case_name: 正确的用户名和密码
+    data:
+      username: test_user
+      password: test_pass
+    validations:
+      - contains: 登录成功 # 最终你会判断/断言返回结果是否包含该字符串
+    extract:
+      - token
+
+  - case_name: 错误的用户名
+    data:
+      username: wrong_user
+      password: test_pass
+    validations:
+      - contains: 用户名或密码错误
