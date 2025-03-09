@@ -4,7 +4,7 @@
 * [操作系统](https://github.com/haooxia/CSJourney/blob/main/os/os.md)
   * [IO Multiplexing](https://github.com/haooxia/CSJourney/blob/main/os/IO_multiplexing.md)
   * [线程池](https://github.com/haooxia/CSJourney/tree/main/os/threadPool)
-* [计算机网络](https://github.com/haooxia/CSJourney/blob/main/network/network.md)
+* [计算机网络](https://github.com/haooxia/CSJourney/blob/main/network/network_essence.md)
   * [Socket](https://github.com/haooxia/CSJourney/blob/main/network/%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1.md)
 * [计算机组成原理](https://github.com/haooxia/CSJourney/blob/main/organization/organization.md)
 * [Linux](https://github.com/haooxia/CSJourney/blob/main/linux/linux.md)
@@ -22,3 +22,4 @@
 * [深度学习](https://github.com/haooxia/DeepLearning-Notes)
   * [阅读论文](https://github.com/haooxia/DeepLearning-Notes/tree/main/paper)
 * [机器学习](https://github.com/haooxia/MachineLearning-Notes)
+* [LLM & RAG](https://github.com/haooxia/CSJourney/blob/main/AI_dev/LLM.md)

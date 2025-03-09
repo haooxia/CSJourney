@@ -24,7 +24,7 @@
 
 AMQP协议基于TCP/IP，rabbitmq/AMQP示意图如下：
 
-![picture 35](../../images/7ceafca60fb04649b8d022064e672d6b5eb62479f4e182c4b3b7862e3abb00b3.png)  
+![picture 35](../images/7ceafca60fb04649b8d022064e672d6b5eb62479f4e182c4b3b7862e3abb00b3.png)  
 
 - publisher：生产者发送消息
 - consumer：消费者消费消息
@@ -43,7 +43,7 @@ AMQP协议基于TCP/IP，rabbitmq/AMQP示意图如下：
 * **路由模式(routing)/direct exchange**：根据Routing Key有选择地接收消息。不同的消息交给不同的队列消费（单生产者、多消费者、多队列(基于**Direct交换机**实现，队列与交换机绑定时制定一个rounting key)
 * 主题模式(Topic)/topic exchange: 也是基于routing key，只不过是可以在rountingKey中使用通配符了（#和*等），而direct中rountingkey必须是多个单词，以`.`分割
 
-![picture 36](../../images/fd9d9ed9321471129a069690245a891711cf4ab038279f113e83bfc8eb37dfcc.png)  
+![picture 36](../images/fd9d9ed9321471129a069690245a891711cf4ab038279f113e83bfc8eb37dfcc.png)  
 
 ### exchange类型
 
@@ -82,7 +82,7 @@ AMQP协议基于TCP/IP，rabbitmq/AMQP示意图如下：
 * 下单后，**30分钟未支付，取消订单，回滚库存**
 * 新用户注册成功7天后，发送短信问候（原来如此
 
-![picture 0](../../images/e3b969917cc572571b1ebd20e6a16e0852b4948e47e0bea727eb1616ac82b590.png)  
+![picture 0](../images/e3b969917cc572571b1ebd20e6a16e0852b4948e47e0bea727eb1616ac82b590.png)  
 > 可以看到：有正常交换机+正常队列 和 死信交换机+死信队列+死信消费者
 
 在RabbitMQ中并未提供延迟队列功能。但是可以使用：**TTL + 死信队列**组合实现延迟队列的效果

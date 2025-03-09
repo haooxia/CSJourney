@@ -176,7 +176,7 @@ Q: nginx反向代理的好处?
    1. 后续：**服务端从redis中取出token对应的value，判断是否存在**
 3. 如果存在，将用户信息存入ThreadLocal
 
-![picture 0](../../images/9cfa785533e5b7d34ffe66d02d20f8afcfac04c6624622f97b1f9b072634d844.png)
+![picture 0](../images/9cfa785533e5b7d34ffe66d02d20f8afcfac04c6624622f97b1f9b072634d844.png)
 
 ---
 
@@ -267,7 +267,7 @@ A: 第一个Interceptor拦截一切路径，刷新token的有效期，然后全�
 **R**: 所以，我设置两层拦截器，第一层拦截器拦截所有接口的请求，token存在则对token进行一个刷新，不存在直接放行。第二层拦截器拦截那些必须要登录才能完成的操作。
 
 
-![picture 16](../../images/6e719e968dcb544f408a48b2ade678a0651ca5e235ce191778ccb4c5047517fb.png)
+![picture 16](../images/6e719e968dcb544f408a48b2ade678a0651ca5e235ce191778ccb4c5047517fb.png)
 > 第二个Interceptor会排除一些无需登录校验的路径 `eg /login, /shop/**`  [code](https://github.com/cs001020/hmdp/blob/b9026b6da2274f4fc7f419aceb6d84c8e24222b7/src/main/java/com/hmdp/config/MvcConfig.java#L21-L44)
 
 **Q: 为何要设置两个Interceptor，不能在第一个Interceptor中遇到不存在token时直接拦截掉吗？**
@@ -368,9 +368,9 @@ A: Sorry, i dont know...
 
 **问题**：未考虑 **==缓存更新==**；如果已缓存了数据到redis，此时若数据库更新，reids就是旧数据了
 
-![picture 15](../../images/0706c177c974b297fd9c8af28adef16b1bd17a5ce5741e2dc2c1de28ebc6a89c.png){width=90%}
+![picture 15](../images/0706c177c974b297fd9c8af28adef16b1bd17a5ce5741e2dc2c1de28ebc6a89c.png){width=90%}
 
-![picture 4](../../images/a8c11ed401ffaa83af8f822924c2b01a49c64fb4dcd0f7315af641efa0baad9b.png)
+![picture 4](../images/a8c11ed401ffaa83af8f822924c2b01a49c64fb4dcd0f7315af641efa0baad9b.png)
 
 ### 缓存更新 / 缓存与数据库的一致性
 
@@ -378,7 +378,7 @@ A: Sorry, i dont know...
 
 缓存更新策略分为：==内存淘汰、超时剔除和主动更新==（一致性逐渐增高，维护成本也逐渐增高）
 
-<!-- ![picture 17](../../images/718baab9075abfab80e190254a9634363e75fe0aa881a90e4a512faf5d015a61.png){width=80%} -->
+<!-- ![picture 17](../images/718baab9075abfab80e190254a9634363e75fe0aa881a90e4a512faf5d015a61.png){width=80%} -->
 <!-- > **本项目中高一致性需求：店铺详情信息，以及优惠券信息** -->
 
 
@@ -395,7 +395,7 @@ A: 本项目是单体的，把缓存与数据库操作放到一个事务里即�
 **Q: 为什么要先操作/更新mysql数据库再删除redis缓存？能否反过来？**
 A: 不能，反过来发生数据不一致的概率高得多，原因左图（你删除了缓存，还没更新数据库之间，另一个线程查数据库然后更新了缓存，然后你才更新数据库，此时二者不一致了）：
 
-![picture 7](../../images/1bed325ca797f628967101354bb70ffccc9545738a59df3fa8ff240d4d303972.png)
+![picture 7](../images/1bed325ca797f628967101354bb70ffccc9545738a59df3fa8ff240d4d303972.png)
 > * 右侧正常情况是：线程2: 更新数据库->删缓存；-> 线程1: 查缓存未命中 -> 写入缓存
 > * 右侧的发生概率是极低的，但也可能发生，所以我们设置超时时间使用**超时剔除作为兜底**（即使我写缓存写错了，超时了自动会删掉
 
@@ -442,9 +442,9 @@ Q: 为什么要延迟N秒？
 ==**主动更新（Cache Aside旁路缓存策略） + 超时剔除**==
 
 * **读操作**：根据id查询商铺时，先查缓存，命中直接返回，未命中再去查数据库，将数据库结果写入缓存，**并设置超时时间ttl**；（30min）
-  * ![picture 5](../../images/669d40ab6c50e539a17489ae71014f1f55f6149deb717b4b6a05e765880ade9d.png)  
+  * ![picture 5](../images/669d40ab6c50e539a17489ae71014f1f55f6149deb717b4b6a05e765880ade9d.png)  
 * **写操作**：根据id修改店铺时，**先**修改/更新数据库，再**删除**缓存（同时开启事务保证两个操作的原子性
-  * ![picture 6](../../images/d698d944dd3d84f6d829dabf63f5c7587e1ac2bdc7432f451a667d50b8e53310.png)  
+  * ![picture 6](../images/d698d944dd3d84f6d829dabf63f5c7587e1ac2bdc7432f451a667d50b8e53310.png)  
 
 代码分析：当我们修改了数据之后，把缓存中的数据进行删除，查询时发现缓存中没有数据，则会从mysql中加载最新的数据，从而避免数据库和缓存不一致的问题。
 由于此项目是单体架构的项目，更新数据库操作和删除缓存操作都在一个方法里，需要通过**事务**去控制，来保证原子性。**但如果是分布式系统：在更新完数据库之后，删除缓存的操作不是自己来完成，而是通过mq去异步通知对方，对方去完成缓存的处理!!**
@@ -474,12 +474,12 @@ Result (R): 通过采用Cache-Aside模式并结合超时剔除机制，成功解
 **缓存穿透**问题：客户端请求的数据在缓存和数据库中都不存在，导致每次查询都会绕过缓存直接打到数据库，对数据库造成巨大压力（攻击数据库的好办法）；即**大量无效请求直接打到数据库**
 > Cache Penetration 其实翻译为'渗透'挺好（不怀好意者通过这个漏洞避开redis渗透到mysql
 
-![picture 19](../../images/b059d15ce48ae734425e98eb871f84c5c4098279e6686b127c579bf382b76648.png)  
+![picture 19](../images/b059d15ce48ae734425e98eb871f84c5c4098279e6686b127c579bf382b76648.png)  
 
 
 解决方案：**布隆过滤器 + 缓存空对象**
 
-![picture 20](../../images/960d47b27595a4bf6e3e55781d421fe72e25b8c3d8f6754b7d74dd75c019fd5e.png){width=60%}
+![picture 20](../images/960d47b27595a4bf6e3e55781d421fe72e25b8c3d8f6754b7d74dd75c019fd5e.png){width=60%}
 
 * 前端提交店铺id，首先会经过Bloom Filter计算查询是否存在该id（布隆过滤器内提前计算存储了数据库中所有的商铺id），如果bloom说没有则一定没有，直接拒绝，避免访问缓存和数据库，如果bloom说有则大概率存在，则继续查询缓存和数据库
   * 如果缓存和数据库都没找到的话，此时我们再去**缓存空对象**来防止短时间内的重复穿透（TTL 2min）
@@ -516,7 +516,7 @@ A: `redis.md`
 
 两种解法：互斥锁法
 
-![picture 9](../../images/05997c554e834ad7bd6a30145a6b4847e0fb22be71898d5cdd20d672566a2fb1.png)  
+![picture 9](../images/05997c554e834ad7bd6a30145a6b4847e0fb22be71898d5cdd20d672566a2fb1.png)  
 
 #### 互斥锁解法
 
@@ -525,16 +525,16 @@ A: `redis.md`
 
 实现 [code](https://github.com/cs001020/hmdp/blob/b9026b6da2274f4fc7f419aceb6d84c8e24222b7/src/main/java/com/hmdp/service/impl/ShopServiceImpl.java#L81-L108)
 
-![picture 21](../../images/3d5414c49bc379e4e0da6fabe912b31d24ab5f72ca473d1f19952381a0030555.png){width=80%}
+![picture 21](../images/3d5414c49bc379e4e0da6fabe912b31d24ab5f72ca473d1f19952381a0030555.png){width=80%}
 
-![picture 24](../../images/e57bdf8f1368a084d1b941abfd1f85170d6ceb151fc5106506552c0309a3f882.png)  
+![picture 24](../images/e57bdf8f1368a084d1b941abfd1f85170d6ceb151fc5106506552c0309a3f882.png)  
 
 
 > **获取锁成功之后还需要再次查询redis缓存是否命中做Double Check**，因为此时你获取的锁可能是别人重建结束后释放的锁（也就是你判断缓存没命中之后别人释放了），其实此时如果缓存重建成功的话，你不应该再去拿锁重建
 
 利用redis的String的指令`setnx lock 1 获取锁, del lock释放锁`
 
-![picture 10](../../images/f2df8d40963c0d97d460da67f4084484c01ddb28c80c34a94a2f2ac403867ce6.png)  
+![picture 10](../images/f2df8d40963c0d97d460da67f4084484c01ddb28c80c34a94a2f2ac403867ce6.png)  
 > 锁就是redis中的一个key；`setIfAbsent`即为`setnx`，ttl=10s (比业务长个几倍啥的就行)
 > **key使用店铺id**，即每个店铺有一把锁
 
@@ -575,7 +575,7 @@ Q: 我记得有个redission？TODO
 **现方案**：用户查缓存（**理论上都命中**，因为我们没删除，没命中的(穿透问题)我们提前用布隆过滤器过滤了），命中后将value取出，**判断value中的过期时间是否满足**，如果没有过期，则直接返回redis中的数据，**如果过期，尝试获取锁，拿到锁的那一个线程会开启独立线程去执行缓存重建**，不管拿没拿到锁，自己不负责重建，自己都会直接返回旧数据用着，重构完成后释放互斥锁。
 > 因为只需要一个线程去开启一个独立线程，故而需要竞争锁
 
-![picture 23](../../images/76a39bceb6c45fa5975e430a4c8e8f44fdee82f9417efbf9d29b9de71ed25bc9.png)  
+![picture 23](../images/76a39bceb6c45fa5975e430a4c8e8f44fdee82f9417efbf9d29b9de71ed25bc9.png)  
 > 我的bloom filter稍微和这里未命中不太一样 没了未命中 直接前面过滤了；不重要，这里关注击穿问题
 
 我们通过jmeter并发测试：发现就执行了一次缓存重建，在重建完成之间，直接返回旧的数据，重建成功之后返回新的数据（确实妙
@@ -584,7 +584,7 @@ Q: 为什么要开启独立线程做缓存更新而非自己更新？
 A: 自己更新那不就跟互斥锁解法类似了，自己需要等更新好才能用，异步更新的话，自己直接拿个旧的就行了
 
 
-<!-- ![picture 13](../../images/af3d9aa68f916477cb6e5a0e012ee2b339756a3c5939fa97d2f1d240bcf44945.png)   -->
+<!-- ![picture 13](../images/af3d9aa68f916477cb6e5a0e012ee2b339756a3c5939fa97d2f1d240bcf44945.png)   -->
 
 ## 3. 秒杀
 
@@ -607,7 +607,7 @@ A: 自己更新那不就跟互斥锁解法类似了，自己需要等更新好�
 #### 基本的优惠券下单
 
 前端提交优惠券下单请求(post id), 查询优惠券的信息，看看秒杀是否开始结束，看看库存是否充足，然后才扣减库存(`tb_seckill_voucher的stock`)，创建订单，插入数据库`tb_voucher_order`；
-![picture 25](../../images/46b0ca125168208373e5ede1a587075fdc6acc9f7a83ac65424021c4867f0e08.png){width=80%}
+![picture 25](../images/46b0ca125168208373e5ede1a587075fdc6acc9f7a83ac65424021c4867f0e08.png){width=80%}
 
 ```java
 // 核心代码
@@ -628,7 +628,7 @@ if (!success) {
 标准实现的问题：当我们使用jmeter用200个用户线程并发请求一起抢购（然而我们的优惠券stock=100），理论上只会下单100次，**然而**，我们发现执行完毕stock变成了-9!而且订单数量是109单，此乃**超卖现象**，不可接受，我商家亏麻了。
 
 原因：库存只有1时，多个线程一块查询认为还有库存，然后就都去扣减了
-![picture 26](../../images/564bd80fc56716bcc2da7a20ebd5bb1d767d09f1d85db9190a509b9c39fc97f5.png)  
+![picture 26](../images/564bd80fc56716bcc2da7a20ebd5bb1d767d09f1d85db9190a509b9c39fc97f5.png)  
 
 #### 乐观锁解决超卖问题
 
@@ -663,7 +663,7 @@ WHERE voucher_id = 'voucherId的值'
 
 问题：我们是卖优惠券的，但此时一个用户可以无限量抢单（利好黄牛），所以需要加一些限制逻辑。
 
-![picture 27](../../images/e5c27c9e45bd6f5f81aef2c6654e0f8cf25cdd8fe11bc230ed2d18a78d055ea3.png)  
+![picture 27](../images/e5c27c9e45bd6f5f81aef2c6654e0f8cf25cdd8fe11bc230ed2d18a78d055ea3.png)  
 秒杀扣减库存逻辑：判断是否在秒杀时间范围内，判断库存是否充足，**判断这个用户是否下过这个订单（根据用户id和优惠券id）**，若没有则扣减库存
 
 ```java
@@ -710,7 +710,7 @@ A: 在集群环境中，多个Tomcat实例各自运行在独立的JVM中。虽�
 服务器B的线程3和线程4也可以互斥，但无法与服务器A的线程1和2互斥。
 > 这里的**锁对象就是一个字符串对象**`userId.toString().intern()`，集群下这玩意儿是不同的，我们的字符串常量池都不是一个，怎么可能相同嘞
 
-![picture 28](../../images/1f9bd90b0f9c269cef307224ee99008c596bc5af5e83a60ce851d244e6cdda67.png){width=80%}
+![picture 28](../images/1f9bd90b0f9c269cef307224ee99008c596bc5af5e83a60ce851d244e6cdda67.png){width=80%}
 
 所以我们要想办法让多个jvm用同一把锁
 
@@ -725,7 +725,7 @@ A: 在集群环境中，多个Tomcat实例各自运行在独立的JVM中。虽�
 
 **分布式锁**：满足分布式系统或集群模式下**多进程可见**并且**互斥**的锁。
 
-![picture 29](../../images/785289bdd365699a2cee28673b5fedb34bae5907118192f2faae29d73a69c319.png)  
+![picture 29](../images/785289bdd365699a2cee28673b5fedb34bae5907118192f2faae29d73a69c319.png)  
 
 
 分布式锁特点：
@@ -733,7 +733,7 @@ A: 在集群环境中，多个Tomcat实例各自运行在独立的JVM中。虽�
 * 互斥：互斥是分布式锁的最基本的条件，使得程序串行执行
 * 高可用：程序不易崩溃，时时刻刻都保证较高的可用性
 
-![picture 0](../../images/03837eb62554e5d9b0140cd897ab512d8ee45d60a426740fd69fa170a38f2844.png)  
+![picture 0](../images/03837eb62554e5d9b0140cd897ab512d8ee45d60a426740fd69fa170a38f2844.png)  
 
 **Q: 如何基于MySQL实现分布式锁？**
 1. 创建一个锁表`lock`，字段：`lock_name`（锁的名称，作为主键primary key，唯一约束；锁的名称用来表示**某一资源的名称**），字段`lock_by`记录服务器节点ID
@@ -781,7 +781,7 @@ lock.unlock();
 
 ##### redission是如何实现可重入的
 
-![picture 30](../../images/bb6e6b3ef4580d1219e95740bece32dfa422d0dc9bb3ef291a4ebcc7b8fa1a02.png)  
+![picture 30](../images/bb6e6b3ef4580d1219e95740bece32dfa422d0dc9bb3ef291a4ebcc7b8fa1a02.png)  
 
 我们本来通过String的指令`set keyName valueName nx ex`自定义锁，来确保一次只能有一个线程获取锁。
 > 应该是：keyName是userId，valueName是线程标识`Thread.currentThread().getId();`，这样也就保证了一个用户只能有一个线程拿到锁
@@ -795,7 +795,7 @@ ReentrantLock是如何实现可重入的？基本原理：如果请求获取的�
 
 所以可以模仿，采用Hash类型，Key记录**锁名称**，field记录**线程标识**，value记录**计数器**
 
-![picture 31](../../images/a0b2c8479f9fc2861ae8708a40aa7ba92a580c75c286907fd02f28dc0eddfe34.png)  
+![picture 31](../images/a0b2c8479f9fc2861ae8708a40aa7ba92a580c75c286907fd02f28dc0eddfe34.png)  
 > Lua是一门编程语言，Redis提供了Lua脚本的功能，你可以在一个Lua脚本中编写多条redis命令，可以确保多条命令执行的**原子性**
 > 利用Hash结构实现的redis可重入锁的Lua脚本参考：[link](https://www.bilibili.com/video/BV1cr4y1671t?t=780.5&p=66)
 
@@ -805,7 +805,7 @@ ReentrantLock是如何实现可重入的？基本原理：如果请求获取的�
 
 如果我们设定了waitTime=1，则1s内会重试，但并不是一直轮询重试！精髓在于：利用了消息订阅机制，等你释放了再去尝试获取锁，cpu友好很多。
 
-![picture 32](../../images/a0e70f877e7fa2c7d1a34aa3ce4c3f413daa3dc5bb7f370c3dc966a548dbc51e.png)  
+![picture 32](../images/a0e70f877e7fa2c7d1a34aa3ce4c3f413daa3dc5bb7f370c3dc966a548dbc51e.png)  
 
 
 ##### redission是如何解决锁超时的问题的
@@ -820,11 +820,11 @@ watchDog看门狗机制：获取锁成功之后，开启一个定时任务，这
 ### 异步秒杀优化
 
 首先，众所周知，串行很慢（同步式）
-![picture 37](../../images/c8cac6f0995ccff017b5b62ea1160645fcfaeba6abdbe664b46569ef573ef966.png)  
+![picture 37](../images/c8cac6f0995ccff017b5b62ea1160645fcfaeba6abdbe664b46569ef573ef966.png)  
 
 故而异步完成，资格校验逻辑交给redis实现(lua保证原子性)，然后把**消息(用户ID，优惠券id，订单id)** 发给mq即可，此时下单就结束了，mq异步处理即可。
-![picture 39](../../images/b0e2db2e0d27ba2605f2075ec97e0cea449fec571b61aa553d55c3d4488b4f9a.png)  
-![picture 40](../../images/576871819c1be942edab1fc5b12adcf583eb71e97b8b6fa9fd70be7d0f57bfe1.png)  
+![picture 39](../images/b0e2db2e0d27ba2605f2075ec97e0cea449fec571b61aa553d55c3d4488b4f9a.png)  
+![picture 40](../images/576871819c1be942edab1fc5b12adcf583eb71e97b8b6fa9fd70be7d0f57bfe1.png)  
 > 我们将同步的写数据库操作，改为异步操作，一方面缩短秒杀业务的流程，从而大大**提高业务的并发**，另一方面**减轻了数据库压力**
 
 1. 将优惠券库存存到redis中(string)
@@ -891,7 +891,7 @@ A: **内存限制问题**：这玩意儿使用jvm内容，高并发时候可能�
 
 之所以要取消超时订单：我这边给你发消息时已经在redis中扣了库存，别人买的时候库存就少一个。
 
-![picture 0](../../images/e3b969917cc572571b1ebd20e6a16e0852b4948e47e0bea727eb1616ac82b590.png)
+![picture 0](../images/e3b969917cc572571b1ebd20e6a16e0852b4948e47e0bea727eb1616ac82b590.png)
 
 用户**下单**完成后，发送一个异步消息给消息队列，让消息队列去处理库存，同时还要发一个延时消息(15min)，到期后判断用户**支付**状态，如果是已完成，那啥事儿没有，如果是未支付，则应该恢复库存
 
@@ -1058,7 +1058,7 @@ https://chatgpt.com/c/66fe7896-bdec-8007-9f0b-3c41c7f1514e
 * es采用**倒排索引**，mysql中每行记录在es中叫一个**文档**document，文档按照**语义**分成**词条**term (分词)，然后底层给词条建立索引（比如hash，那根据词条搜索起来不就快了吗
 * 用的IK分词器，不是jieba哦
 
-![picture 33](../../images/d8713a367db9b2728c2957840b4b53833db75b0e645fba024ff6ed463a2f8a37.png)  
+![picture 33](../images/d8713a367db9b2728c2957840b4b53833db75b0e645fba024ff6ed463a2f8a37.png)  
 
 #### jmeter
 

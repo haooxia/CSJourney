@@ -232,7 +232,7 @@ public class OllamaApiClient {
 }
 ```
 
-
+<!-- 
 
 RAGflow API调用：
 
@@ -293,4 +293,4 @@ curl --request POST \
         "question": "请告诉我关于人工智能的知识",
         "stream": false
      }'
-```
+``` -->
