@@ -26,7 +26,6 @@
 
 TODO: plz read this and sum up: [link](https://www.nowcoder.com/discuss/650808006875127808?sourceSSR=dynamic)
 
-TODO: 冒泡排序、快排（递归和非递归形式）、手撕LRU
 
 ## 创建线程
 

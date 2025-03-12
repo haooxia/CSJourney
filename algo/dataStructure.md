@@ -108,7 +108,7 @@ public static void selectionSort(int[] nums) {
 public static void insertionSort(int[] nums) {
     int n = nums.length;
     for (int i = 1; i < n; ++i) { // 遍历无序列表
-        int tmp = nums[i];
+        int tmp = nums[i]; // 因为nums一直在变动，所以要固定为tmp
         int j;
         for (j = i-1; j >= 0 && tmp < nums[j]; --j) // 注意这个判断条件得写这儿, 写下面的话j会被多减
             nums[j+1] = nums[j];
@@ -151,17 +151,17 @@ public class QuickSort2 {
     }
 
     public static int partition(int[] nums, int left, int right) {
-        // note 以right作为pivot:小的交换到左边 大的自动就到右边了
-        int pivot = nums[right];
+        // note 以right作为pivot:<=的交换到左边 大的自动就到右边了
+        int pivot = right;
         int k = left; // note 记录下一个小于pivot的元素应该放的idx：最开始在最左段
         for (int i=left; i<right; ++i) {
-            if (nums[i] <= pivot) {
+            if (nums[i] <= nums[pivot]) { // 因为你最后pivot也要过去，所以=的也要挪过去
                 swap(nums, k, i);
                 k++;
             }
         }
         // 分完之后k的位置大于pivot
-        swap(nums, k, right);
+        swap(nums, k, pivot);
         return k;
     }
     public static void quickSort(int[] nums, int left, int right) {
@@ -237,7 +237,7 @@ public class MergeSort {
         int i = left, j = mid + 1;
         int k = 0;
         // note 核心思想其实很简单：两个数组都从头遍历，每次拿出小的存入临时数组
-        while (i <= mid && j <= right) {
+        while (i <= mid && j <= right) { // 不要用!= 这样==不一样
             if (nums[i] <= nums[j]) tmp[k++] = nums[i++];
             else tmp[k++] = nums[j++];
         }
@@ -247,7 +247,7 @@ public class MergeSort {
         for (int m=0; m<k; ++m) {
             nums[left+m] = tmp[m];
         }
-        tmp = null;
+        tmp = null; // 应该不需要
     }
 
     public static void mergeSort(int[] nums, int left, int right) {
@@ -266,3 +266,8 @@ public class MergeSort {
     }
 }
 ```
+
+---
+
+1. 快排按照pivot划分，归并按照mid划分
+2. 快排[left, pivot-1]和[pivot+1, right], 归并[left, mid]和[mid+1, right]

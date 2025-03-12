@@ -284,6 +284,20 @@ A: 源码中**没有自动缩容机制(已证实)**，remove()和clear()都不�
 * 功能方面：Array只有length属性，ArrayList提供了**增删等api**，如add(),remove(),size()等
 * 维度：Array可以多维，ArrayList只可以一维
 
+---
+
+补充一点（刷题注意事项）：
+
+```java
+int[] arr = new int[5];
+System.out.println(arr.length); // 5
+arr[2] = 4; // ok
+List<Integer> list = new ArrayList<>(5);
+System.out.println(list.size()); // 0
+list.set(2, 4); // 数组越界
+// 大概来说：因为这个5是预分配的初始容量Capacity，而非列表的实际大小size，实际大小依然为0
+```
+
 ### CopyOnWriteArrayList ☆
 
 > 读写分离思想：将数据库的读操作和写操作分开处理，以减轻数据库的负载，提高并发处理能力和响应速度。通常一个主库处理写，1-n个从库处理读。适合读多写少的场景
