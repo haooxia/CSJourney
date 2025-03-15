@@ -1,17 +1,14 @@
 # 点评
 
 - [点评](#点评)
-  - [bg](#bg)
-    - [怎么部署的](#怎么部署的)
+  - [0. 背景](#0-背景)
+    - [项目架构 \& 部署](#项目架构--部署)
     - [数据库表设计](#数据库表设计)
-  - [1.登录功能](#1登录功能)
+  - [1. 邮件登陆与验证](#1-邮件登陆与验证)
     - [关于session](#关于session)
-    - [基于Session的短信登录](#基于session的短信登录)
     - [Q \& A](#q--a)
-    - [利用redis解决集群的session共享问题](#利用redis解决集群的session共享问题)
       - [具体实现](#具体实现)
     - [STAR总结](#star总结)
-    - [优化：使用SMTP协议(qq邮箱)发送](#优化使用smtp协议qq邮箱发送)
       - [SMTP POP3 IMAP](#smtp-pop3-imap)
   - [2.缓存数据](#2缓存数据)
     - [标准操作](#标准操作)
@@ -44,122 +41,105 @@
       - [简单学下ES](#简单学下es)
       - [jmeter](#jmeter)
 
-> 建议结合`redis.md`, 本文档很多知识并未更新...
 
-<!-- ## STAR
+## 0. 背景
 
-first of all, STAR法介绍项目
+介绍：该项目是一款类似大众点评的智能运动休闲服务平台，为运动爱好者提供便捷的功能，包括短信登录、运动场所查询和推荐、智能推荐、优惠券秒杀等功能
 
-* Situation：背景
-* Task：你的任务
-* Action：你的具体行动
-* Result：结果，最好量化 -->
+> 代码行数：**5000 line+**；count by `vscode counter plugin`
 
-## bg
 
-介绍：该项目是一个聚焦运动健身领域的点评平台，为运动爱好者提供便捷的功能，包括短信登录、运动场所查询、运动课程优惠券抢购、用户点评等功能
+### 项目架构 & 部署
 
-荔康智慧医疗是帮忙给导师做的一个项目，导师做了一些智能体检设备，放在了深圳各大医院，然后我开发了这么一个项目帮助大家去查询设备自助站点，然后我们还会定期发放免费体检优惠券供大家抢购，然后大家使用之后还可以进行点评，这个项目可以很好地推广我们的体检设备，也可以方便大家的体检需求。
-
-> 代码行数：**4000行**；count by `vscode counter plugin`
-
-### 怎么部署的
-
-项目是前后端分离的，我负责后端模块的编码，前端工程的静态资源(html, css, js)直接部署在nginx服务器上，后端工程会打包成一个jar包，运行在tomcat服务器中。
-
-* 用户点击页面的时候，请求发送到nginx，然后请求通过ajax发送到后端，后端会向mysql/redis请求数据，然后返回给前端。
-* nginx充当高性能的http服务器，和反向代理服务器
-  * 使用Nginx对后端服务器进行反向代理，使用户只需要访问Nginx服务器便可获得后端服务器的服务（便于后期扩展集群，提高系统并发量）。
-* 如果后端一台tomcat扛不住，那就复制几个tomcat构成一个集群，nginx是可以负载均衡过去的。
+1. 项目是前后端分离的，前端工程的静态资源(html, css, js)直接部署在nginx服务器上，后端工程会打包成一个jar包，运行在tomcat服务器中。
+   1. nginx首先可以反向代理，将请求转发到后端的tomcat服务器上（即从一个url转发到另一个url）
+   2. nginx还可以做负载均衡，将请求转发到多个tomcat服务器上，实现负载均衡
+2. 分层
+   1. view层：用户点集页面，前端发送请求到nginx，nginx会把请求转发到后端的tomcat服务器
+   2. controller层：接收请求，调用service层的方法，返回数据
+   3. model层：负责数据的存储和操作，mysql，redis
 
 > 前端浏览器访问: `localhost:8080/api/voucher/list/1`; nginx会将8080/api代理到8081/backend，然后backend被负载均衡到8081和8082（都是我们设置好的
 
 Q: nginx反向代理的好处?
 
-* **提高访问速度**: 因为nginx本身可以进行缓存，如果访问的同一接口，并且做了数据缓存，nginx就直接可把数据返回
-* **进行负载均衡**: 把大量的请求按照我们指定的方式均衡的分配给集群中的每台服务器
-* **保证后端服务安全**: 因为一般后台服务地址不会暴露，所以使用浏览器不能直接访问，可以把nginx作为请求访问的入口，请求到达nginx后转发到具体的服务中，从而保证后端服务的安全
-
----
-
-* mysql服务器直接用docker安装，且把端口映射到本地，ip地址就是127.0.0.1/localhost:3306
-  * docker容器内的mysql是与宿主机隔离的，有自己独立的ip port，宿主机外部无法直接访问。将该端口映射到宿主机的某个端口，这样宿主机和外部网络就可以通过**宿主机ip+port**访问容器内的服务了。
-  * docker pull mysql拉取mysql容器，然后`docker run..`运行该容器
+* **进行负载均衡**:
+* **保证后端服务安全**: 一般后台服务地址不会暴露
+* **提高访问速度**: nginx本身可以缓存之前访问的接口的数据
 
 
 ### 数据库表设计
 
-1. 为什么要用到user和user_info
-2. 优惠券（就是我们的商品）和优惠券订单表
-
-
-* tb_user: 用户表: id主键, phone, name
-  * 存用户基本信息
-* tb_user_info: 用户详情表: user_id主键, city, fans, followee, gender, level...
-  * 存用户详情信息
-* tb_shop: 运动场所信息表: id主键, name, type_id(逻辑外键), images, address, score, avg_price
-  * 存店铺基本信息
-  * 根据场所名称建立**索引**
-* tb_shop_type: 店铺类型表: id主键, 类型name, sort
-  * 店铺类型：健身中心、游泳馆、球类运动(乒乓、羽毛球、篮球、足球、高尔夫)、武术搏击、溜冰、马术、攀岩
-* tb_blog：用户探店日记: id主键, shop_id(逻辑外键), user_id(逻辑外键), titile标题, content内容, images
-* tb_voucher：优惠券表: id, shop_id, 代金券名title, type(0普通券 1特价券) 
-* tb_seckill_voucher: 特价秒杀券表（秒杀券要多填的消息，即秒杀券扩展字段）：库存stock，抢购起止时间
-* tb_voucher_order：优惠券的订单表: id主键, user_id(逻辑外键), voucher_id(逻辑外键)
-* tb_follow：用户关注表: id, user_id, follow_user_id
-
 **Q: 数据库表是如何设计的?**
 
 0. 项目主要包括用户表、用户详情表、商铺/运动场所信息表、优惠券表、优惠券订单表、商铺特征向量表
-1. 比如user中：采用**varchar**(设置不同的最大长度)存储`email`, `password`, `nick_name`, `icon`，以节省空间。头像`icon`存储**url链接**，url来自阿里云OSS图床。
-2. 符合数据库设计的**三大范式**：第一：各个字段都是原子性的，比如shop表中的地址，我们是按照`省-市-区-具体地址`进行设计的，每个部分占用一个字段，确保每个字段都是最小的不可分割单元。第二：表的非主键字段完全依赖于主键（比如user表中，都依赖user_id）；第三：每个字段都只依赖于主键，没有冗余依赖。
-3. 我们将用户信息拆分为`user`基本信息和`user_info`扩展信息两个表分开存储，算是**垂直拆分**，避免一个表过于庞大，影响性能。
-4. **建立索引**提升查询速度：user表中的`phone/email`字段，运动场所名称，每个表的主键有索引
-5. 商铺特征向量表中: `shop_id int, feature_vector varchar`，每个店铺存储[200,1]的float数组
+1. 符合数据库设计的**三大范式**：第一：各个字段都是原子性的，比如shop表中的地址，我们是按照`省-市-区-具体地址`进行设计的，每个部分占用一个字段，确保每个字段都是最小的不可分割单元。第二：表的非主键字段完全依赖于主键（比如user表中，都依赖user_id）；第三：每个字段都只依赖于主键，没有冗余依赖。
+2. 我们将用户信息拆分为`user`基本信息和`user_info`扩展信息两个表分开存储，算是**垂直拆分**，避免一个表过于庞大，影响性能。
+3. **建立索引**提升查询速度：user表中的`phone/email`字段，运动场所名称`name`，每个表的主键有索引
+4. 商铺特征向量表中: `shop_id int, feature_vector varchar`，每个店铺存储[200,1]的float数组
+<!-- 5. 比如user中：采用**varchar**(设置不同的最大长度)存储`email`, `password`, `nick_name`, `icon`，以节省空间。头像`icon`存储**url链接**，url来自阿里云OSS图床。 -->
 
-## 1.登录功能
+---
 
-主要是基于session实现短信登录功能（利用阿里云发送验证码）
-然后使用Redis替代session，解决集群下session共享的问题（多台tomcat不共享session空间）
-然后还用双重拦截器进行token状态刷新和用户登录校验（并把用户信息存入ThreadLocal）
+> * tb_user: 用户基本表: id主键, phone, name
+> * tb_user_info: 用户详情表: user_id主键, city, fans, followee, gender, level...
+> * tb_shop: 店铺信息表: id主键, name, type_id(逻辑外键), images, address, score, avg_price
+> * tb_shop_type: 店铺类型表: id主键, 类型name, sort
+>   * 店铺类型：健身中心、游泳馆、球类运动(乒乓、羽毛球、篮球、足球、高尔夫)、武术搏击、溜冰、马术、攀岩
+> * tb_blog：用户探店日记: id主键, shop_id(逻辑外键), user_id(逻辑外键), titile标题, content内容, images
+> * tb_voucher：优惠券表: id, shop_id, 代金券名title, type(0普通券 1特价券) 
+> * tb_seckill_voucher: 特价秒杀券表（秒杀券要多填的消息，即秒杀券扩展字段）：库存stock，抢购起止时间
+> * tb_voucher_order：优惠券的订单表: id主键, user_id(逻辑外键), voucher_id(逻辑外键)
 
-**（未注册的手机号码验证后自动创建账户）：后端会检测登录的手机/邮箱是否注册过（查询数据库中有没有相应的手机/邮箱(这儿设置了个索引)），如果没注册过就注册(存到数据库: `email+random_nick_name`)。**
+## 1. 邮件登陆与验证
 
-### 关于session
-
-* Session用来**存放会话内的数据**，本项目中存了验证码、用户信息
-* **一个客户端对应一个会话**，该**客户端后续的请求都属于该会话** (有效期内)，因为会带上sessionID，所以服务端将其视为一个会话内
-* **不同客户端对应不同会话**（不同的浏览器、设备、用户），这样大家就可以各登录各的，互不干扰
-* 一个客户端发送请求给服务端，如果没带sessionid，就意味着是一个**新客户端**，服务端为其创建一个会话，并返回一个sessionid
-* 默认情况下session有效期是30min，超时了就要重新登陆
-* HttpSession参数会有SpringMVC自动注入，当你发送请求的时候
-
-### 基于Session的短信登录
-
-> 首先，短信验证登录的作用：账号密码登录容易泄露密码，短信登录还可以减少用户的记密码的负担，注册也更方便
-
-1. 发送验证码（收到请求 -> 校验phone合法性 -> 生成验证码通过阿里云服务发送）
-2. 登录与注册（收到账号和验证码请求 -> 校验验证码正确性 -> 查数据库中有无账号，无则注册 -> 将用户user存到session中）
-  1. 将整个User类对象user都存入session/ThreadLocal
+1. 发送验证码（收到用户登录请求 -> 校验邮箱合法性 -> 生成验证码通过SMTP发送）
+2. 登录与注册（收到用户提交的账号和验证码请求 -> 校验验证码正确性 -> 查数据库中有无账号，无则注册 -> 将用户user存到session/redis中）
+  <!-- 1. 将整个User类对象user都存入session/ThreadLocal -->
 3. 其他请求校验登录状态（收到用户请求 -> 从http请求中取出session -> 从session取出user，如不存在则拦截 -> 将user存到ThreadLocal）
 
-**发送验证码**：[code](https://github.com/cs001020/hmdp/blob/master/src/main/java/com/hmdp/service/impl/UserServiceImpl.java#L52-L67)
-1. 用户通过post提交手机号到服务器(接口为 `@PostMapping("code")`)
-2. 服务端校验手机号的合法性: `regex正则表达式`；if 不合法则返回错误
-3. 服务端生成验证码(`code=Random(6)`)，同时**将验证码保存到当前客户端对应的会话session中**(`session.setAttribute("code", code)`)，通过短信的方式将验证码发送给用户
-   1. ==**后续验证码也存到redis中**==
-   2. 不同客户端对应不同session会话，这个setAttribute()是把k-v数据存到这个客户端的会话中（存在服务端）
-   3. 发送操作可以借助阿里云SMS短信服务，暂时不做了，我目前只是模拟了下，手动从后台拿到验证码登录；大概**4分一条**，我也可以做了，很easy
+---
+
+**1.1 使用SMTP协议(qq邮箱)发送验证码邮件** [link](https://github.com/haopengmai/dianping/blob/master/src/main/java/com/hmdp/utils/MailUtils.java) [code](https://github.com/cs001020/hmdp/blob/master/src/main/java/com/hmdp/service/impl/UserServiceImpl.java#L52-L67)
+
+1. 用户输入邮箱，点击发送验证码，前端会将邮箱post给服务端 (`@PostMapping("/code")`)
+2. 后端生成验证码，并通过SMTP协议发送邮件给用户
+   1. 生成随机验证码
+   2. 将验证码存入session，并设置过期时间（eg 2min）`session.setAttribute("email_code", code), session.setAttribute("code_expire", 2min);`
+      1. ==redis==: `stringRedisTemplate.opsForValue().set("email_code" + email, code, 2, TimeUnit.MINUTES);`
+   3. 使用JavaMailAPI发送邮件
+3. 用户输入验证码登录
+4. 后端读取session中存的验证码，验证是否匹配&在有效期内，如果匹配则登录成功，**记录用户登录状态**`session["user_logged_in"] = True`
+   1. 后续用户访问其它接口时，服务器可以检查session中用户登录状态
+5. 之后的其他请求中，前端会自动带上 Session ID
+   1. sessionID是服务端通过set-cookie发给前端的，前端会在cookie中保存，每次请求都会带上该字段
+
+> * 不同用户客户端对应不同session会话；而Redis同样是不同用户对应着不同的key
+
+得了：回头从头看看视频吧
+
+---
+
+后端发送邮件的具体：
+
+1. 服务端设置属性和smtp身份验证：首先设置邮件属性，如SMTP**邮箱服务器**`smtp.qq.com`、端口`587`、邮箱账号`992045294@qq.com`和密码`16位秘钥`
+2. 创建`mailSession`和`MimeMessage`邮件发送对象，设置发件人、**收件人**、主题和内容，最后调用`Transport.send`发送邮件
+   1. 都是**JavaMailAPI**的功劳（`javax.mail`）。它提供了一个**平台无关**和**协议无关**的框架，允许开发者轻松地**构建邮件和消息应用程序**。
+   2. 这里的验证码是随机生成的，重要的是我们会把验证码以`String`的形式存到redis中(key与邮箱相关，ttl是2min到期)，方便后续校验
+      1. `stringRedisTemplate.opsForValue().set("login:code" + email, code, 2, TimeUnit.MINUTES);`
 
 
+---
 
 **短信验证码登录、注册**：[code](https://github.com/cs001020/hmdp/blob/master/src/main/java/com/hmdp/service/impl/UserServiceImpl.java#L71-L110)
-1. 用户输入验证码，将手机号和验证码一块post给服务端 (`@PostMapping("/login")`)
+1. 用户输入验证码，将邮箱和验证码一块post给服务端 (`@PostMapping("/login")`)
 2. 服务端**从session拿到当前验证码**(`session.getAttribute("code")`)，然后和用户输入的验证码进行校验；如果不一致，校验失败
-3. 根据手机号去`tb_user`查询用户，如果用户不存在，则为用户**创建用户信息**并保存
+   1. redis: `stringRedisTemplate.opsForValue().get("login:code" + email)`，然后和用户输入的验证码进行校验
+3. 根据邮箱`tb_user`表查询用户，如果用户不存在，则为用户**创建用户信息**（随机一个用户名）
 4. **将用户信息保存到session中**(`session.setAttribute("user", user)`)，方便后续获得当前登录信息
-   1. 后续这一步改为：==**将用户信息存到redis中**==（通过UUID生成一个随机token作为key）
+   1. redis: 将用户信息存到redis中（通过UUID生成一个随机token作为key）
 
+---
 
 **校验登录状态**(use interceptor): [code](https://github.com/cs001020/hmdp/blob/master/src/main/java/com/hmdp/interceptor/RefreshTokenInterceptor.java#L30-L50)
 
@@ -171,18 +151,28 @@ Q: nginx反向代理的好处?
 
 ![picture 0](../images/9cfa785533e5b7d34ffe66d02d20f8afcfac04c6624622f97b1f9b072634d844.png)
 
----
+
+
+
+### 关于session
+
+* Session用来**存放会话内的数据**，本项目中存了验证码、用户信息
+* **一个客户端对应一个会话**，该**客户端后续的请求都属于该会话** (有效期内)，因为会带上sessionID，所以服务端将其视为一个会话内
+* **不同客户端对应不同会话**（不同的浏览器、设备、用户），这样大家就可以各登录各的，互不干扰
+* 一个客户端发送请求给服务端，如果没带sessionid，就意味着是一个**新客户端**，服务端为其创建一个会话，并返回一个sessionid
+* 默认情况下session有效期是30min，超时了就要重新登陆
+* HttpSession参数会有SpringMVC自动注入，当你发送请求的时候
 
 ### Q & A
 
-**Q: 为什么要把验证码存到session？为何不存到mysql嘞？**
+<!-- **Q: 为什么要把验证码存到session？为何不存到mysql嘞？**
 A: 临时性存储：验证码通常是临时的，存储在session中可以确保在用户会话期间有效，且在会话结束后自动失效。存到mysql会增加复杂性，没必要
 
 **Q: 最终为什么要存到redis，而非session?**
 A: 出现session共享问题
 
 **Q: 为何可以用这个session校验登录状态？**
-A: 因为只有你登录之后会被赋予一个sessionid，然后查询你这个id就可以找到对应的session，那固然就找到了这个会话； 在会话期间我们想要快速访问用户数据，避免频繁查询数据库，主要是后续的权限校验需要对比；因为这个session
+A: 因为只有你登录之后会被赋予一个sessionid，然后查询你这个id就可以找到对应的session，那固然就找到了这个会话； 在会话期间我们想要快速访问用户数据，避免频繁查询数据库，主要是后续的权限校验需要对比；因为这个session -->
 
 **Q: 为什么要把用户信息存到ThreadLocal？为什么不直接去session中或者mysql取？**
 
@@ -200,38 +190,23 @@ A: 首先用户信息会经常使用(比如用户下单时，我们需要获取�
 A: 项目中很多Controller/业务需要校验用户的登录，我们不可能在每个业务中都写校验逻辑;
 SpringMVC中，请求会先走interceptor组件的`preHandle()`，成功后再到达相应的controller, 你可以配置所有请求都走拦截器，也可以通过`execludePathPatterns()`排除路径，比如我们排除了`/shop/**`看看商铺肯定是不用校验登录的；
 
-因此我们把用户校验登录的功能交给拦截器做
 
-> 但是需要把拦截器中拿到的用户信息通过ThreadLocal传递到各个Controller层去，传递的过程中还需注意线程安全问题。
+Q: 何所谓session共享问题?
 
-
-ok，到这儿基于session登录结束，但有集群的session共享问题
-
----
-
-### 利用redis解决集群的session共享问题
-
-**问题：** ==何所谓session共享问题?==
 **多台tomcat并不共享session空间，当切换到不同tomcat时，数据会丢失。**
 详：每个tomcat中都有一份自己的session, 假设用户第一次请求被负载均衡到了第一台tomcat，并且把user信息存放到第一台服务器的session中，但第二次请求被负载均衡到第二台tomcat，那么在第二台服务器上，肯定没有第一台服务器存放的session，所以校验登录状态就无法从session中取出user信息了
 
-> tomcat暂且就理解为webserver吧
 
-解决方案A：
-
-* **Session拷贝**：当任意一台tomcat的session修改时，都会同步给其他的Tomcat服务器的session
-  * 问题：冗余 服务器压力大 拷贝延迟
-
-解决方案B (Ours)：
+解决方案：
 
 **使用Redis实现共享session登录，主要是为了解决在分布式系统中，用户session无法共享的问题**。
 
-因为传统的session是存储在服务器端的内存中，当请求分发到不同的服务器时，就无法获取到用户的session信息。而Redis作为一个内存数据库，具有高性能、高并发、持久化等特点，非常适合用来存储和共享session。
+因为传统的session是存储在服务器端的内存中，当请求分发到不同的服务器时，就无法获取到用户的session信息。而Redis作为一个内存数据库，具有**高性能、高并发、持久化**等特点，非常适合用来存储和共享session。
 
-redis替代session实现登录注册功能的好处：
+Q: redis替代session实现登录注册功能的好处
 
-* **分布式**支持与扩展性：**Redis更适合分布式系统**，很容易扩展。在多服务器环境下，Redis可以作为中央session存储，而传统内存session难以在多服务器间共享。
-* **持久化**：Redis的多种持久化方式可将数据持久化到磁盘(RDB, AOF)；而session数据会因为系统故障或者重启而丢失
+* **分布式**支持：Redis更适合分布式系统，很容易扩展
+* **持久化**：可将数据持久化到磁盘(RDB, AOF)；而session数据会因为系统故障或者重启而丢失
 * **灵活**：可以用各种数据结构存储会话数据，eg 字符串、哈希表、列表等
 
 #### 具体实现
@@ -265,23 +240,6 @@ A: 第一个Interceptor拦截一切路径，刷新token的有效期，然后全�
 
 **Q: 为何要设置两个Interceptor，不能在第一个Interceptor中遇到不存在token时直接拦截掉吗？**
 A: 不能，因为有一些功能不需要校验，比如浏览店铺，登录入口，所以你如果在第一个Interceptor拦截过滤掉，那这些功能就没啦。所以由于我们想过滤一部分请求不进行校验，然后我们又想对所有请求进行token刷新，故而需要两个Interceptor做不同的拦截
-
-### 优化：使用SMTP协议(qq邮箱)发送
-
-[link](https://github.com/haopengmai/dianping/blob/master/src/main/java/com/hmdp/utils/MailUtils.java)
-
-暂时使用个人账号发送短信验证码，你当然可以使用**阿里云邮件推送服务**
-
-发送邮件：
-1. 设置属性和smtp身份验证：首先设置邮件属性，如SMTP**邮箱服务器**`smtp.qq.com`、端口`587`、邮箱账号`992045294@qq.com`和密码`16位秘钥`
-2. 创建邮件会话（传入属性和验证信息）
-3. 创建`mailSession`和`MimeMessage`对象，设置发件人、收件人、主题和内容，最后调用`Transport.send`发送邮件。
-   1. 都是JavaMailAPI的功劳（`javax.mail`）。它提供了一个**平台无关**和**协议无关**的框架，允许开发者轻松地**构建邮件和消息应用程序**。功能强大: JavaMail API支持多种邮件协议，包括 **SMTP、POP3和IMAP**，使得发送和接收邮件变得简单。
-
-验证码生成：（随机生成就完事儿了）
-1. 字符集: 定义可用字符（不包括易混淆的字符）
-2. **打乱顺序**: 使用 Collections.shuffle() 随机打乱字符顺序
-3. 生成验证码: 从打乱后的字符串中提取子串作为验证码
 
 #### SMTP POP3 IMAP
 
