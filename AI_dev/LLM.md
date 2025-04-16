@@ -1,6 +1,20 @@
 # LLM
 
-[toc]
+- [LLM](#llm)
+  - [DeepSeek \& RAG](#deepseek--rag)
+    - [网页ds vs. 本地ds](#网页ds-vs-本地ds)
+    - [幻觉: SFT vs. RLHF vs.RAG](#幻觉-sft-vs-rlhf-vsrag)
+      - [SFT vs. RLHF vs. RAG](#sft-vs-rlhf-vs-rag)
+      - [微调还是RAG?](#微调还是rag)
+    - [本地部署deepseek + RAG](#本地部署deepseek--rag)
+      - [悦动探针智慧客服](#悦动探针智慧客服)
+  - [SFT](#sft)
+    - [LoRA](#lora)
+    - [LLama-Factory](#llama-factory)
+    - [FastAPI暴露接口](#fastapi暴露接口)
+    - [后端调用](#后端调用)
+  - [RAG更进一步？](#rag更进一步)
+
 
 ## DeepSeek & RAG
 
@@ -294,3 +308,6 @@ curl --request POST \
         "stream": false
      }'
 ``` -->
+
+## RAG更进一步？
+
