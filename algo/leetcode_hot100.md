@@ -46,6 +46,15 @@
     - [12. 二叉搜索树中第K小的元素](#12-二叉搜索树中第k小的元素)
     - [13. 二叉树展开为链表](#13-二叉树展开为链表)
     - [14. 将有序数组转换为平衡二叉搜索树 (构建二叉树)](#14-将有序数组转换为平衡二叉搜索树-构建二叉树)
+    - [15. 根据前序和中序序列构造二叉树](#15-根据前序和中序序列构造二叉树)
+    - [16. 根据后序和中序序列构造二叉树](#16-根据后序和中序序列构造二叉树)
+  - [回溯](#回溯)
+    - [1. 全排列：无重复数组的全排列](#1-全排列无重复数组的全排列)
+    - [2. 全排列：有重复元素数组的全排列](#2-全排列有重复元素数组的全排列)
+    - [3. 组合1: 返回1-n中所有的k个数组合](#3-组合1-返回1-n中所有的k个数组合)
+    - [4. 组合2: 找到数组中和为tar的所有组合](#4-组合2-找到数组中和为tar的所有组合)
+    - [5. 组合3：找到数组中和为tar的所有组合（不可重复取\&组合不能重复）](#5-组合3找到数组中和为tar的所有组合不可重复取组合不能重复)
+    - [6. 子集：返回数组所有子集](#6-子集返回数组所有子集)
 
 TODO:
 
@@ -922,6 +931,25 @@ public int kthSmallest(TreeNode root, int k) {
 
 ### 13. 二叉树展开为链表
 
+题目：将一颗二叉树转为单链表，要求按前序遍历的顺序展开。
+思想：先序遍历：将左子树挪到右子树位置，将老的右子树接到新右子树的最右下角。
+
+```java
+public void flatten(TreeNode root) {
+    if (root == null) return;
+    TreeNode tmp = root.right;
+    root.right = root.left;
+    root.left = null;
+    TreeNode t = root;
+    while (t.right != null) t = t.right;
+    t.right = tmp;
+    // 这时候我们想往下走，那就递归往下就行了，也就是先序
+    flatten(root.left);
+    flatten(root.right);
+    return;
+}
+```
+
 ### 14. 将有序数组转换为平衡二叉搜索树 (构建二叉树)
 
 题目：给定升序数组，将其转换为平衡二叉搜索树
@@ -938,5 +966,256 @@ public TreeNode dfs(int[] nums, int left, int right) { // [l, r]
 }
 public TreeNode sortedArrayToBST(int[] nums) {
     return dfs(nums, 0, nums.length-1);
+}
+```
+
+### 15. 根据前序和中序序列构造二叉树
+
+思路：同样是划分数组递归构建树，由pre构建root，然后在inorder中找到root的index，划分左右子树。
+```java
+public TreeNode recurse(int[] preorder, int preLeft, int preRight, int[] inorder, int inLeft, int inRight) { // []
+    if (preRight < preLeft || inRight < inLeft) return null;
+    int val = preorder[preLeft];
+    TreeNode root = new TreeNode(val);
+    // 在inorder中找到root 然后作为分割
+    int idx = 0;
+    for (; inorder[idx]!=val; idx++);
+    int subLeftLen = idx - inLeft;
+    root.left = recurse(preorder, preLeft+1, preLeft+subLeftLen, inorder, inLeft, idx-1);
+    root.right = recurse(preorder, preLeft+subLeftLen+1, preRight, inorder, idx+1, inRight);
+    return root;
+}
+public TreeNode buildTree(int[] preorder, int[] inorder) {
+    return recurse(preorder, 0, preorder.length-1, inorder, 0, inorder.length-1);
+}
+```
+
+### 16. 根据后序和中序序列构造二叉树
+
+思路：同样是由post构建root，然后再inorder中找root的index，划分左右子树。就是划分的时候仔细点就行。
+
+```java
+public TreeNode recurse(int[] inorder, int inLeft, int inRight, int[] postorder, int postLeft, int postRight) {
+    if (inLeft > inRight || postLeft > postRight) return null;
+    TreeNode root = new TreeNode(postorder[postRight]);
+    int idx = 0;
+    for (; inorder[idx] != postorder[postRight]; ++idx);
+    int subLeftLen = idx - inLeft;
+    root.left = recurse(inorder, inLeft, idx - 1, postorder, postLeft, postLeft+subLeftLen-1);
+    root.right = recurse(inorder, idx + 1, inRight, postorder, postLeft+subLeftLen, postRight-1); // 这里postLeft不+1
+    return root;
+}
+public TreeNode buildTree(int[] inorder, int[] postorder) {
+    return recurse(inorder, 0, inorder.length-1, postorder, 0, postorder.length-1);
+}
+```
+
+## 回溯
+
+似乎回溯搞来搞去就模板+这些东西：
+
+1. 你不想下层从0开始的话：加个startIdx，遍历的时候从startIdx开始
+2. 上下层去重：`if (used[i]) continue;`
+3. 同层去重：`if (i>0 && !used[i] && nums[i]==nums[i-1]) continue;`
+
+### 1. 全排列：无重复数组的全排列
+
+思路：每次从头取，唯一要求就是不能重复取，所以搞个used数组即可。
+> 或者List有个api：list.indexOf(val)，可以判断是否存在val
+
+```java
+List<List<Integer>> result = new ArrayList<>();
+List<Integer> list = new ArrayList<>();
+public void backtracing(int[] nums, boolean[] used) {
+    if (list.size() == nums.length) {
+        result.add(new ArrayList<>(list));
+        return;
+    }
+    for (int i=0; i<nums.length; ++i) {
+        if (used[i]) continue;
+        list.add(nums[i]);
+        used[i] = true;
+        backtracing(nums, used);
+        list.remove(list.size()-1);
+        used[i] = false;
+    }
+}
+public List<List<Integer>> permute(int[] nums) {
+    boolean[] used = new boolean[nums.length]; // 默认就是false
+    // Arrays.fill(used, false);
+    backtracing(nums, used);
+    return result;
+}
+```
+
+### 2. 全排列：有重复元素数组的全排列
+
+思路：多加一个同层去重即可
+总结：同层去重和上下层去重：
+* 最清晰的方法：借助used数组：`used[i-1]=true`代表在下层，`used[i-1]=false`代表在同层。（当然一般要排序）
+* 或者你有用到startIdx时：当下一层时i=startIdx; 同层时i>startIdx
+
+```java
+List<List<Integer>> result = new ArrayList<>();
+List<Integer> list = new ArrayList<>();
+public void backtracing(int[] nums, boolean[] used) {
+    if (list.size() == nums.length) {
+        result.add(new ArrayList<>(list));
+        return;
+    }
+    for (int i=0; i<nums.length; ++i) {
+        if (i>0 && !used[i-1] && nums[i] == nums[i-1]) continue;
+        if (used[i]) continue;
+        list.add(nums[i]);
+        used[i] = true;
+        backtracing(nums, used);
+        list.remove(list.size()-1);
+        used[i] = false;
+    }
+}
+public List<List<Integer>> permuteUnique(int[] nums) {
+    Arrays.sort(nums);
+    boolean[] used = new boolean[nums.length];
+    backtracing(nums, used);
+    return result;
+}
+```
+
+### 3. 组合1: 返回1-n中所有的k个数组合
+
+思路：不重复选同一元素，每次往后选即可满足题意。
+
+```java
+List<List<Integer>> result = new ArrayList<>();
+List<Integer> list = new ArrayList<>();
+public void backtracing(int n, int k, int startIdx) {
+    if (list.size() == k) {
+        result.add(new ArrayList<>(list));
+        return;
+    }
+    for (int i=startIdx; i<=n; ++i) {
+        list.add(i);
+        backtracing(n, k, i+1);
+        list.remove(list.size() - 1);
+    }
+}
+public List<List<Integer>> combine(int n, int k) {
+    backtracing(n, k, 1);
+    return result;
+}
+```
+<!-- 
+### 4. 组合2：返回1-9中的k个数组合，其和为n
+
+思想：同上
+
+```java
+List<List<Integer>> result = new ArrayList<>();
+List<Integer> list = new ArrayList<>();
+int sum = 0;
+public void backtracing(int n, int k, int startIdx) {
+    if (sum > n) return;
+    if (list.size() == k && sum == n) {
+        result.add(new ArrayList<>(list));
+        return;
+    }
+    for (int i=startIdx; i<=9; ++i) { // 1-9而已
+        list.add(i);
+        sum += i;
+        backtracing(n, k, i+1);
+        list.remove(list.size() - 1);
+        sum -= i;
+    }
+}
+public List<List<Integer>> combinationSum3(int k, int n) {
+    backtracing(n, k, 1);
+    return result;
+}
+``` -->
+
+### 4. 组合2: 找到数组中和为tar的所有组合
+
+思路：注意重复就行（debug输出例子可以很简单看到）；本题每次得往现在/往后取（可以无限取同一元素，但不能重复）
+
+> 可以进一步排序，然后根据tar-sum < can[i]进行剪枝
+
+```java
+List<List<Integer>> result = new ArrayList<>();
+List<Integer> list = new ArrayList<>();
+int sum = 0;
+public void backtracing(int[] candidates, int target, int startIdx) {
+    if (sum > target) return;
+    if (sum == target) {
+        result.add(new ArrayList<>(list));
+        return;
+    }
+    for (int i=startIdx; i<candidates.length; ++i) {
+        list.add(candidates[i]);
+        sum += candidates[i];
+        backtracing(candidates, target, i);
+        list.remove(list.size()-1);
+        sum -= candidates[i];
+    }
+}
+public List<List<Integer>> combinationSum(int[] candidates, int target) {
+    backtracing(candidates, target, 0);
+    return result;
+}
+```
+
+### 5. 组合3：找到数组中和为tar的所有组合（不可重复取&组合不能重复）
+
+思路：同时考虑同层去重和上下层去重即可
+// 由于每个元素只能用一次：所以上下层需要去重
+// 由于组合要求不能重复：所以同层需要去重
+
+```java
+List<List<Integer>> result = new ArrayList<>();
+List<Integer> list = new ArrayList<>();
+int sum = 0;
+public void backtracing(int[] candidates, int target, int startIdx, boolean[] used) {
+    if (sum > target) return;
+    if (sum == target) {
+        result.add(new ArrayList<>(list));
+        return;
+    }
+    for (int i=startIdx; i<candidates.length; ++i) {
+        if (used[i]) continue;
+        if (i>0 && !used[i-1] && candidates[i]==candidates[i-1]) continue; // 同层去重
+        list.add(candidates[i]);
+        used[i] = true;
+        sum += candidates[i];
+        backtracing(candidates, target, i, used);
+        list.remove(list.size()-1);
+        sum -= candidates[i];
+        used[i] = false;
+    }
+}
+public List<List<Integer>> combinationSum2(int[] candidates, int target) {
+    Arrays.sort(candidates);
+    boolean[] used = new boolean[candidates.length];
+    backtracing(candidates, target, 0, used);
+    return result;
+}
+```
+
+### 6. 子集：返回数组所有子集
+
+题目：返回数组的所有子集
+
+```java
+List<List<Integer>> result = new ArrayList<>();
+List<Integer> list = new ArrayList<>();
+public void backtracing(int[] nums, int startIdx) {
+    result.add(new ArrayList<>(list));
+    for (int i=startIdx; i<nums.length; ++i) {
+        list.add(nums[i]);
+        backtracing(nums, i+1);
+        list.remove(list.size()-1);
+    }
+}
+public List<List<Integer>> subsets(int[] nums) {
+    backtracing(nums, 0);
+    return result;
 }
 ```

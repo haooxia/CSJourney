@@ -13,7 +13,9 @@
     - [LLama-Factory](#llama-factory)
     - [FastAPI暴露接口](#fastapi暴露接口)
     - [后端调用](#后端调用)
-  - [RAG更进一步？](#rag更进一步)
+  - [Prompt技巧](#prompt技巧)
+      - [RTF框架](#rtf框架)
+      - [思考链模式](#思考链模式)
 
 
 ## DeepSeek & RAG
@@ -309,5 +311,14 @@ curl --request POST \
      }'
 ``` -->
 
-## RAG更进一步？
+## Prompt技巧
 
+#### RTF框架
+
+* Role：指定模型的角色：程序员、数据分析师、讲解员、记者等
+* Task：指定模型的任务：编写代码、分析数据、撰写文章等
+* Format：指定模型的输出格式：JSON、Markdown、表格等
+
+#### 思考链模式
+
+* prompt末尾加上“让我们逐步思考”即可。适合复杂问题
