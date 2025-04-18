@@ -55,12 +55,23 @@
     - [4. 组合2: 找到数组中和为tar的所有组合](#4-组合2-找到数组中和为tar的所有组合)
     - [5. 组合3：找到数组中和为tar的所有组合（不可重复取\&组合不能重复）](#5-组合3找到数组中和为tar的所有组合不可重复取组合不能重复)
     - [6. 子集：返回数组所有子集](#6-子集返回数组所有子集)
+  - [二分查找](#二分查找)
+    - [1. 二分查找 / 搜索插入位置](#1-二分查找--搜索插入位置)
+    - [2. 搜索二维矩阵](#2-搜索二维矩阵)
+    - [3. 搜索二维矩阵II](#3-搜索二维矩阵ii)
+    - [4. 有序数组中查找tar元素的首尾位置](#4-有序数组中查找tar元素的首尾位置)
+    - [5. 搜索旋转排序数组](#5-搜索旋转排序数组)
+    - [6. 寻找旋转排序数组中的最小值](#6-寻找旋转排序数组中的最小值)
+    - [7. 寻找两个正序数据的中位数](#7-寻找两个正序数据的中位数)
+  - [堆](#堆)
+    - [1. 数组中第k个最大元素](#1-数组中第k个最大元素)
 
 TODO:
 
 * 接雨水
 * 和为K的子数组
 * LRU
+* 矩阵类
 
 ## 哈希表
 
@@ -1219,3 +1230,180 @@ public List<List<Integer>> subsets(int[] nums) {
     return result;
 }
 ```
+
+TODO
+
+## 二分查找
+
+### 1. 二分查找 / 搜索插入位置
+
+题目：给定升序数组，和target
+思想：搜索插入位置：最后返回`left`即可 / `right+1`亦可
+
+```java
+public int search(int[] nums, int target) {
+    int left = 0, right = nums.length - 1;
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+        if (nums[mid] == target) return mid;
+        else if (nums[mid] > target) right = mid - 1;
+        else left = mid + 1;
+    }
+    return -1;
+    // return left; // 搜索插入位置
+}
+```
+
+### 2. 搜索二维矩阵
+
+题目：给定升序二维矩阵，判断target是否在矩阵中。
+思想：加个一维序列转化为二维xy坐标即可。
+
+```java
+public boolean searchMatrix(int[][] matrix, int target) {
+    int m = matrix.length, n = matrix[0].length;
+    int left = 0, right = m * n - 1;
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+        int x = mid / n;
+        int y = mid % n;
+        if (matrix[x][y] == target) return true;
+        else if (matrix[x][y] > target) right = mid - 1;
+        else left = mid + 1;
+    }
+    return false;
+}
+```
+
+### 3. 搜索二维矩阵II
+
+题目：每行元素从左往右升序，每列从上往下升序，判断target是否在矩阵中。
+思路：左旋45度，从右上角出发即可，然后看做一颗二叉树，也有点二分思想在里头。
+
+```java
+public boolean searchMatrix(int[][] matrix, int target) {
+    int m = matrix.length, n = matrix[0].length;
+    int x = 0, y = n - 1;
+    while (x <= m - 1 && y >= 0) {
+        if (matrix[x][y] == target) return true;
+        else if (matrix[x][y] > target) y--;
+        else x++;
+    }
+    return false;
+}
+```
+
+### 4. 有序数组中查找tar元素的首尾位置
+
+题目：给定升序数组，和target，返回target的首尾位置（即可能存在一个或多个相同元素，相邻在一块）
+思路：二分找到一个target位置，然后左右扩展找到边界即可
+
+```java
+public int[] searchRange(int[] nums, int target) {
+    int left = 0, right = nums.length - 1;
+    int idx = -1; // 是否存在
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+        if (nums[mid] == target) {
+            idx = mid;
+            break;
+        }
+        else if (nums[mid] > target) right = mid - 1;
+        else left = mid + 1;
+    }
+    if (idx == -1) return new int[]{-1,-1};
+    // 下面左右扩展找边界
+    int l = idx, r = idx;
+    while (l>=0 && nums[l] == target) --l;
+    while (r<=nums.length-1 && nums[r] == target) ++r;
+    ++l; --r;
+    return new int[]{l, r};
+}
+```
+
+### 5. 搜索旋转排序数组
+
+题目：给定一个升序数组，可能旋转过，判断target是否在数组中。eg `[4,5,6,7,8,1,2,3]`
+思路：旋转之后，**mid左右一定有一侧是有序的**。首先确定哪一侧有序，如果左侧有序，根据target和`[nums[left], nums[mid]]`的**边界关系确定往哪个方向走**。右侧同理。
+
+```java
+public int search(int[] nums, int target) {
+    int left = 0, right = nums.length - 1;
+    // mid左侧or右侧一定有一侧是有序的
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+        if (nums[mid] == target) return mid;
+        else if (nums[mid] >= nums[left]) {
+            // 左侧有序，那么根据tar和左侧区间边界的关系即可确定应该往哪儿走
+            if (target >= nums[left] && target <= nums[mid]) right = mid - 1;
+            else left = mid + 1;
+        } else {
+            // 右侧有序，即小的在左侧，大的左右都有
+            if (target >= nums[mid] && target <= nums[right]) left = mid + 1;
+            else right = mid - 1;
+        }
+    }
+    return -1;
+}
+```
+
+### 6. 寻找旋转排序数组中的最小值
+
+题目：给定一个升序数组，可能旋转过1-n次，O(logn)复杂度下找到最小值。
+思路：无论旋转多少次，mid左右一定有一侧是有序的。我们可以根据有序侧的边界关系来判断往哪儿走。
+如果左侧有序，那么最小值一定在右侧；如果右侧有序，那么最小值一定在左侧。
+还要注意可能`[left,right]`区间已经有序了。。根据`nums[left]<nums[right]`判断
+
+```java
+public int findMin(int[] nums) {
+    int left = 0, right = nums.length - 1;
+    int result = nums[0];
+    while (left <= right) {
+        if (nums[left] < nums[right]) { // 当前区间已经是有序的了，直接返回最左侧
+            result = Math.min(result, nums[left]);
+            break;
+        }
+        int mid = left + (right - left) / 2;
+        result = Math.min(result, nums[mid]);
+        if (nums[mid] >= nums[left]) {
+            // 左侧有序 最小值在右侧（虽然左右都有小的，但此时右侧无序，最小值一定在右侧）
+            left = mid + 1;
+        } else {
+            // 右侧有序 最小值在左侧
+            right = mid - 1;
+        }
+    }
+    return result;
+}
+```
+
+### 7. 寻找两个正序数据的中位数
+
+题目：给定两个升序数组，找到两个数组的中位数。即俩在一块的中位数。时间复杂度`O(log(m+n))`
+思路1：暴力合并...但是O(m+n)
+
+```java
+public double findMedianSortedArrays(int[] nums1, int[] nums2) {
+    int m = nums1.length, n = nums2.length;
+    int[] nums = new int[m+n];
+    int i=0, j=0;
+    int k = 0;
+    while (i <= m-1 && j <= n-1) {
+        if (nums1[i] <= nums2[j]) nums[k++] = nums1[i++];
+        else nums[k++] = nums2[j++];
+    }
+    while (i <= m - 1) nums[k++] = nums1[i++];
+    while (j <= n - 1) nums[k++] = nums2[j++];
+    // 找到中位数
+    if ((m + n) % 2 == 1) return nums[(m+n) / 2];
+    else return (nums[(m+n)/2] + nums[(m+n)/2-1]) / 2.0;
+}
+```
+
+思路2：二分，感觉挺难的吧，先放了...有空再做
+reference [link](https://leetcode.cn/problems/median-of-two-sorted-arrays/solutions/2950686/tu-jie-xun-xu-jian-jin-cong-shuang-zhi-z-p2gd)
+
+## 堆
+
+### 1. 数组中第k个最大元素
+
