@@ -55,6 +55,9 @@
     - [4. 组合2: 找到数组中和为tar的所有组合](#4-组合2-找到数组中和为tar的所有组合)
     - [5. 组合3：找到数组中和为tar的所有组合（不可重复取\&组合不能重复）](#5-组合3找到数组中和为tar的所有组合不可重复取组合不能重复)
     - [6. 子集：返回数组所有子集](#6-子集返回数组所有子集)
+    - [7. 电话号码的字母组合](#7-电话号码的字母组合)
+    - [8. 括号生成](#8-括号生成)
+    - [9. 分割回文串 (分割问题)](#9-分割回文串-分割问题)
   - [二分查找](#二分查找)
     - [1. 二分查找 / 搜索插入位置](#1-二分查找--搜索插入位置)
     - [2. 搜索二维矩阵](#2-搜索二维矩阵)
@@ -65,13 +68,21 @@
     - [7. 寻找两个正序数据的中位数](#7-寻找两个正序数据的中位数)
   - [堆](#堆)
     - [1. 数组中第k个最大元素](#1-数组中第k个最大元素)
+    - [2. 前k个高频元素 ☆](#2-前k个高频元素-)
+  - [栈](#栈)
+    - [1. 有效的括号](#1-有效的括号)
+    - [2. 最小栈](#2-最小栈)
+    - [3. 字符串解码 (难)](#3-字符串解码-难)
 
 TODO:
 
-* 接雨水
 * 和为K的子数组
 * LRU
 * 矩阵类
+* 合并k个有序链表
+* 每日温度
+* 接雨水
+* 子串问题
 
 ## 哈希表
 
@@ -1231,7 +1242,101 @@ public List<List<Integer>> subsets(int[] nums) {
 }
 ```
 
-TODO
+### 7. 电话号码的字母组合
+
+题目：给定一个数字字符串，返回所有可能的字母组合。每个数字对应一个字母集合。（电话机上的字母mapping）
+思路：一层for循环，数字那一层不需要，用一个startIdx每次走到下一个数字即可
+
+```java
+String[] tel = {"", "", "abc", "def", "ghi","jkl", "mno", "pqrs", "tuv", "wxyz"};
+List<String> result = new ArrayList<>();
+StringBuilder sb = new StringBuilder();
+public void backtracing(String digits, int startIdx) {
+    if (sb.length() == digits.length()) {
+        result.add(new String(sb)); // or sb.toString();
+        return;
+    }
+    // 没让你组合数字23；每次递归都会选下一个数字 用startIdx标识
+    String str = tel[digits.charAt(startIdx) - '0'];
+    for (int i=0; i<str.length(); ++i) {// 每次选这个str的一个字母 遍历
+        sb.append(str.charAt(i));
+        backtracing(digits, startIdx+1); // 下一次选下一个数字
+        sb.deleteCharAt(sb.length() - 1);
+    }
+}
+public List<String> letterCombinations(String digits) {
+    if (digits.length() == 0) return result;
+    backtracing(digits, 0);
+    return result;
+}
+```
+
+### 8. 括号生成
+
+题目：给定n对括号，返回所有合法的括号组合。（只有括号
+思路：每次递归都可以选择`(`或`)`，即for(i从0到1)。然后**使用两个计数器统计左右括号数量**，进行合法性判断
+
+```java
+List<String> result = new ArrayList<>();
+StringBuilder sb = new StringBuilder();
+// char[] arr = {'(', ')'}; // 没必要
+// int left = 0, right = 0; // 放外面也行 这样需要手动++ --
+public void backtracing(int n, int left, int right) {
+    if (left > n || right > n) return;
+    if (right > left) return; // 某时刻)比(那不就不匹配了
+    if (left == n && right == n) {
+        result.add(new String(sb));
+        return;
+    }
+    for (int i=0; i<2; ++i) {
+        if (i == 0) {
+            sb.append('(');
+            backtracing(n, left+1, right);
+        } else {
+            sb.append(')');
+            backtracing(n, left, right+1);
+        }
+        sb.deleteCharAt(sb.length() - 1);
+    }
+}
+public List<String> generateParenthesis(int n) {
+    backtracing(n, 0, 0);
+    return result;
+}
+```
+
+### 9. 分割回文串 (分割问题)
+
+题目：给定一个字符串，返回所有可能的分割方式，使得每个子串都是回文串。
+思路：分割问题就是**通过startIdx和i控制分割区间**
+
+```java
+List<List<String>> result = new ArrayList<>();
+List<String> list = new ArrayList<>();
+public boolean isHuiwen(String s) {
+    for (int i=0, j=s.length()-1; i<=j; ++i, --j)
+        if (s.charAt(i) != s.charAt(j)) return false;
+    return true;
+}
+public void backtracing(String s, int startIdx) {
+    if (startIdx == s.length()) {
+        result.add(new ArrayList<>(list));
+        return;
+    }
+    for (int i=startIdx; i<s.length(); ++i) {
+        String substr = s.substring(startIdx, i+1); // 左闭右开
+        if (!isHuiwen(substr)) continue;
+        list.add(substr);
+        backtracing(s, i+1);
+        list.remove(list.size() - 1);
+    }
+}
+public List<List<String>> partition(String s) {
+    backtracing(s, 0);
+    return result;
+}
+```
+
 
 ## 二分查找
 
@@ -1407,3 +1512,152 @@ reference [link](https://leetcode.cn/problems/median-of-two-sorted-arrays/soluti
 
 ### 1. 数组中第k个最大元素
 
+题目：返回数组中第k大元素，要求时间复杂度O(n)。
+思路：**往堆中插入元素offer时间复杂度是O(logm) (m是堆中元素个数)**。
+
+所以使用**小**顶堆（k个元素），堆offer插入一次元素时间复杂度为O(logk)，所以总复杂度为O(nlogk)，也即O(n)。
+
+大顶堆不对：n个元素全offer，再poll k-1个，时间复杂度为O(nlogn)。
+
+```java
+public int findKthLargest(int[] nums, int k) {
+    Queue<Integer> pq = new PriorityQueue<>(); // 小顶堆
+    for (int i=0; i<nums.length; ++i) {
+        if (i < k) pq.offer(nums[i]);
+        else {
+            // 先放进去k个，然后遇到更大的放进去，替换掉堆中最小的元素（堆顶）
+            if (nums[i] > pq.peek()) {
+                pq.poll();
+                pq.offer(nums[i]);
+            }
+        }
+    }
+    return pq.peek(); // 最终堆顶就是第k大
+}
+```
+
+### 2. 前k个高频元素 ☆
+
+题目：返回数组中前k个高频元素（数组中存在重复元素咯一般）。
+思路：Map记录value:freq，然后依旧是小顶堆的思路，最后收集堆中所有元素即可。时间复杂度`O(nlogk)`
+
+```java
+public int[] topKFrequent(int[] nums, int k) {
+    Map<Integer, Integer> map = new HashMap<>();
+    for (int num:nums)
+        map.put(num, map.getOrDefault(num, 0) + 1);
+    // 搞一个小顶堆（堆顶放频率最低的）
+    Queue<Integer> pq = new PriorityQueue<>(
+        (a, b) -> (map.get(a) - map.get(b))
+    );
+    // Queue<Map.Entry<Integer, Integer>> pq = new PriorityQueue<>(
+    //     (a, b) -> (a.getValue() - b.getValue())
+    // ); // 当然你存下entry也可以
+    int cnt = 0;
+    for (Integer key:map.keySet()) {
+        if (cnt < k) {
+            pq.offer(key);
+            cnt++;
+        } else {
+            if (map.get(key) > map.get(pq.peek())) {
+                pq.poll();
+                pq.offer(key);
+            }
+        }
+    }
+    int[] result = new int[k];
+    int i = 0;
+    for (Integer key:pq) {
+        result[i++] = key;
+    }
+    return result;
+}
+```
+
+## 栈
+
+### 1. 有效的括号
+
+题目：给定一个字符串（只包括`(,),[,],{,}`），判断括号是否有效。
+思路：用栈，遇到左括号就push对应的右括号
+
+
+```java
+public boolean isValid(String s) {
+    Deque<Character> stack = new ArrayDeque<>();
+    for (char ch : s.toCharArray()) {
+        if (ch == '(') stack.push(')');
+        else if (ch == '[') stack.push(']');
+        else if (ch == '{') stack.push('}');
+        else {
+            // 右括号的话，就看栈顶是否匹配
+            if (stack.size() == 0) return false; // 多了个右括号
+            else if (ch != stack.peek()) return false;
+            else stack.pop();
+        }
+    }
+    return stack.size() == 0;
+}
+```
+
+### 2. 最小栈
+
+题目：设计一个栈，支持push, pop, top, getMin操作，getMin的时间复杂度O(1)
+思路：核心是用一个辅助栈来存储最小值。每次push时，判断当前值是否小于等于辅助栈的栈顶元素（提前还需要给辅助栈push一个`MAX_VALUE`
+
+```java
+Deque<Integer> stack = new ArrayDeque<>();
+Deque<Integer> minStack = new ArrayDeque<>(); // 辅助栈
+public MinStack() {
+    // 在这儿new也行
+    minStack.push(Integer.MAX_VALUE); // 核心
+}
+public void push(int val) {
+    stack.push(val);
+    if (val < minStack.peek()) minStack.push(val);
+    else minStack.push(minStack.peek()); // 核心：为什么一定要push一次对应的给minStack加个元素呢；为了同时pop方便吧
+}
+public void pop() {
+    stack.pop();
+    minStack.pop();
+}
+public int top() {
+    return stack.peek();
+}
+public int getMin() {
+    return minStack.peek();
+}
+```
+
+### 3. 字符串解码 (难)
+
+题目：给定一个字符串，包含数字和字母，数字表示重复次数，字母表示字符。eg `3[a2[c]]` -> `accaccacc`
+思路：用栈，数字和字母分两个栈处理。数字入栈，字母入栈，遇到`[`就push一个空字符串，遇到`]`就pop出一个字符串，然后拼接即可。
+
+```java
+public String decodeString(String s) {
+    // 就正向硬解 借助两个stack
+    Deque<Integer> kStack = new ArrayDeque<>();
+    Deque<StringBuilder> strStack = new ArrayDeque<>();
+    int k = 0;
+    StringBuilder str = new StringBuilder();
+    for (char ch : s.toCharArray()) {
+        if (ch >= '0' && ch <= '9') {
+            k = k * 10 + ch - '0'; // 可能有多位数字
+        } else if (ch == '[') { // 记录k和str 并归零
+            kStack.push(k);
+            strStack.push(str);
+            k = 0;
+            str = new StringBuilder(); // 准备构建新的子串
+        } else if (ch == ']') { // 先pop一个k 然后乘法 然后加上左边的
+            int curK = kStack.pop();
+            StringBuilder prev = strStack.pop(); // 拿到前面的字符
+            for (int i=0; i<curK; ++i) prev.append(str);
+            str = prev;
+        } else { // 剩下的都是[]内部的字符
+            str.append(ch);
+        }
+    }
+    return str.toString();
+}
+```

@@ -8,6 +8,7 @@
       - [微调还是RAG?](#微调还是rag)
     - [本地部署deepseek + RAG](#本地部署deepseek--rag)
       - [悦动探针智慧客服](#悦动探针智慧客服)
+    - [RAG深入](#rag深入)
   - [SFT](#sft)
     - [LoRA](#lora)
     - [LLama-Factory](#llama-factory)
@@ -16,6 +17,8 @@
   - [Prompt技巧](#prompt技巧)
       - [RTF框架](#rtf框架)
       - [思考链模式](#思考链模式)
+  - [Agent](#agent)
+    - [Tool Calling](#tool-calling)
 
 
 ## DeepSeek & RAG
@@ -132,7 +135,9 @@ RAG:
    2. “我想周三晚上学瑜伽，有地方开课吗？”
 
 
+### RAG深入
 
+TODO
 
 ## SFT
 
@@ -311,6 +316,7 @@ curl --request POST \
      }'
 ``` -->
 
+
 ## Prompt技巧
 
 #### RTF框架
@@ -322,3 +328,65 @@ curl --request POST \
 #### 思考链模式
 
 * prompt末尾加上“让我们逐步思考”即可。适合复杂问题
+
+## Agent
+
+> 各个公司(openai, google..)对Agent都有自己的解释
+
+* Key components:
+  * **LLM**(大脑)
+  * **multi-modal inputs**(感官): 眼镜，耳朵；text, image, voice
+    * 编码后送入LLM
+  * **tools**(手脚): web search, DB operation, External Knowledge
+    * LLM可以通过 **==tool-calling==** 来调用tools，拿到信息反哺到LLM，LLM作进一步处理（eg chatgpt的web search, cursor创建新文件..）
+    * 这个tools其实就是一个个function call吧
+    * 数据库操作，文件操作中的写操作需要human approval (human in the loop)
+  * memory(记忆)：有选择地存储上下文
+    * short-term memory: 任务相关的上下文（eg gpt当前会话的上下文，chat history）
+    * long-term memory: 任务无关的上下文（eg cross-conversation）
+  * evaluation(评估): 评估当前的任务是否完成（可能在output之前/后，一般是benchmark时候用吧
+  * **output**: 任务的最终结果
+* 该图是一个 **==loop==**，agent之所以强大，是因为**他可以自己决定什么时候停止**。
+
+> RAG你可以理解为一个“文档检索”的外部tools，你也可以理解为一种long-term memory
+
+![picture 4](../images/6def87060c25fae3fb16b2f572eb93ede525e1409d8052ede56f3eeb493d6a51.png){width=70%}
+
+
+Agent framework: LangGraph, LangChain...
+
+
+### Tool Calling
+
+* 通过instructions/description模型可以知道去call哪个function/tool，同时我们就知道了这个function需要哪些parameters（不够的话反过来找user要），然后我们收集够了就可以去call。然后返回结果。
+  * i.e., Mapping: `{prompt/human language : function_name}`
+  * 这个tool是什么时候给LLM的呢？这个就是一个function schema，通过function calling接口明确传递给LLM的
+
+![picture 5](../images/b01a502cbbe46abc28ca5dab5a664f4063f251c8cfbf52f0d6a4c386d05dffb8.png)  
+> refer [link](https://www.bilibili.com/video/BV1CQ91YVEx5?t=4075.9); function schema可以参考，openai, langchain啥的写法不太一样吧都
+
+function schema大概长这样
+```json
+{
+  "model": "gpt-4",
+  "messages": [ 
+    { "role": "user", "content": "我想查一下上海今天的天气" }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "获取指定城市的天气信息",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "city": {
+              "type": "string",
+              "description": "需要查询天气的城市名称"
+            }
+          },
+          "required": ["city"]
+        }}}]
+}
+```
