@@ -19,6 +19,7 @@
       - [思考链模式](#思考链模式)
   - [Agent](#agent)
     - [Tool Calling](#tool-calling)
+  - [MCP](#mcp)
 
 
 ## DeepSeek & RAG
@@ -390,3 +391,10 @@ function schema大概长这样
         }}}]
 }
 ```
+
+## MCP
+
+由于tools缺乏统一性，不好复用。所以Anthropic提出了MCP协议
+
+MCP: Model Context Protocol, 一个社区共建的开放协议，提供一个通用的开放标准，用于连接LLM和外部数据、工具或者行为。
+

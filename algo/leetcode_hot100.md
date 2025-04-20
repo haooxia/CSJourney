@@ -1,78 +1,92 @@
-# Leetcode hot 100
+<!-- # Leetcode hot 100 -->
 
 > 总结leetcode-hot-100，以及常见面试考题
 
-- [Leetcode hot 100](#leetcode-hot-100)
-  - [哈希表](#哈希表)
-    - [1. 两数之和](#1-两数之和)
-    - [2. 字母异位词分组](#2-字母异位词分组)
-    - [3. 最长连续序列](#3-最长连续序列)
-  - [双指针](#双指针)
-    - [4. 移动零](#4-移动零)
-    - [5. 盛最多水的容器](#5-盛最多水的容器)
-    - [6. 三数之和](#6-三数之和)
-  - [滑动窗口](#滑动窗口)
-    - [7. 无重复字符的最长子串](#7-无重复字符的最长子串)
-    - [8. 找到字符串中所有的字母异位词 ☆](#8-找到字符串中所有的字母异位词-)
-  - [普通数组](#普通数组)
-    - [9. 最大子数组和](#9-最大子数组和)
-    - [10. 合并区间 ☆](#10-合并区间-)
-    - [11. 轮转数组](#11-轮转数组)
-    - [12. 除自身以外数组的乘积](#12-除自身以外数组的乘积)
-  - [链表](#链表)
-    - [13. 相交链表](#13-相交链表)
-    - [16. 环形链表](#16-环形链表)
-    - [17. 环形链表 II](#17-环形链表-ii)
-    - [18. 合并两个有序链表](#18-合并两个有序链表)
-    - [19. 两数相加](#19-两数相加)
-    - [20. 删除链表倒数第k个节点](#20-删除链表倒数第k个节点)
-    - [22. 随机链表的复制](#22-随机链表的复制)
-    - [23. 排序链表](#23-排序链表)
-    - [14. 反转链表](#14-反转链表)
-    - [15. 回文链表](#15-回文链表)
-    - [21. 两两交换链表节点](#21-两两交换链表节点)
-  - [二叉树](#二叉树)
-    - [1. 二叉树前序遍历](#1-二叉树前序遍历)
-    - [2. 二叉树后序遍历](#2-二叉树后序遍历)
-    - [3. 二叉树中序遍历](#3-二叉树中序遍历)
-    - [4. 翻转二叉树](#4-翻转二叉树)
-    - [5. 对称二叉树](#5-对称二叉树)
-    - [6. 二叉树的最大深度](#6-二叉树的最大深度)
-    - [7. 二叉树的最小深度](#7-二叉树的最小深度)
-    - [8. 二叉树的直径](#8-二叉树的直径)
-    - [9. 二叉树的最近公共祖先](#9-二叉树的最近公共祖先)
-    - [10. 二叉树的层序遍历](#10-二叉树的层序遍历)
-    - [11. 验证二叉搜索树](#11-验证二叉搜索树)
-    - [12. 二叉搜索树中第K小的元素](#12-二叉搜索树中第k小的元素)
-    - [13. 二叉树展开为链表](#13-二叉树展开为链表)
-    - [14. 将有序数组转换为平衡二叉搜索树 (构建二叉树)](#14-将有序数组转换为平衡二叉搜索树-构建二叉树)
-    - [15. 根据前序和中序序列构造二叉树](#15-根据前序和中序序列构造二叉树)
-    - [16. 根据后序和中序序列构造二叉树](#16-根据后序和中序序列构造二叉树)
-  - [回溯](#回溯)
-    - [1. 全排列：无重复数组的全排列](#1-全排列无重复数组的全排列)
-    - [2. 全排列：有重复元素数组的全排列](#2-全排列有重复元素数组的全排列)
-    - [3. 组合1: 返回1-n中所有的k个数组合](#3-组合1-返回1-n中所有的k个数组合)
-    - [4. 组合2: 找到数组中和为tar的所有组合](#4-组合2-找到数组中和为tar的所有组合)
-    - [5. 组合3：找到数组中和为tar的所有组合（不可重复取\&组合不能重复）](#5-组合3找到数组中和为tar的所有组合不可重复取组合不能重复)
-    - [6. 子集：返回数组所有子集](#6-子集返回数组所有子集)
-    - [7. 电话号码的字母组合](#7-电话号码的字母组合)
-    - [8. 括号生成](#8-括号生成)
-    - [9. 分割回文串 (分割问题)](#9-分割回文串-分割问题)
-  - [二分查找](#二分查找)
-    - [1. 二分查找 / 搜索插入位置](#1-二分查找--搜索插入位置)
-    - [2. 搜索二维矩阵](#2-搜索二维矩阵)
-    - [3. 搜索二维矩阵II](#3-搜索二维矩阵ii)
-    - [4. 有序数组中查找tar元素的首尾位置](#4-有序数组中查找tar元素的首尾位置)
-    - [5. 搜索旋转排序数组](#5-搜索旋转排序数组)
-    - [6. 寻找旋转排序数组中的最小值](#6-寻找旋转排序数组中的最小值)
-    - [7. 寻找两个正序数据的中位数](#7-寻找两个正序数据的中位数)
-  - [堆](#堆)
-    - [1. 数组中第k个最大元素](#1-数组中第k个最大元素)
-    - [2. 前k个高频元素 ☆](#2-前k个高频元素-)
-  - [栈](#栈)
-    - [1. 有效的括号](#1-有效的括号)
-    - [2. 最小栈](#2-最小栈)
-    - [3. 字符串解码 (难)](#3-字符串解码-难)
+- [哈希表](#哈希表)
+  - [1. 两数之和](#1-两数之和)
+  - [2. 字母异位词分组](#2-字母异位词分组)
+  - [3. 最长连续序列](#3-最长连续序列)
+- [双指针](#双指针)
+  - [4. 移动零](#4-移动零)
+  - [5. 盛最多水的容器](#5-盛最多水的容器)
+  - [6. 三数之和](#6-三数之和)
+- [滑动窗口](#滑动窗口)
+  - [7. 无重复字符的最长子串](#7-无重复字符的最长子串)
+  - [8. 找到字符串中所有的字母异位词 ☆](#8-找到字符串中所有的字母异位词-)
+- [普通数组](#普通数组)
+  - [10. 合并区间 ☆](#10-合并区间-)
+  - [11. 轮转数组](#11-轮转数组)
+  - [12. 除自身以外数组的乘积](#12-除自身以外数组的乘积)
+- [链表](#链表)
+  - [13. 相交链表](#13-相交链表)
+  - [16. 环形链表](#16-环形链表)
+  - [17. 环形链表 II](#17-环形链表-ii)
+  - [18. 合并两个有序链表](#18-合并两个有序链表)
+  - [19. 两数相加](#19-两数相加)
+  - [20. 删除链表倒数第k个节点](#20-删除链表倒数第k个节点)
+  - [22. 随机链表的复制](#22-随机链表的复制)
+  - [23. 排序链表](#23-排序链表)
+  - [14. 反转链表](#14-反转链表)
+  - [15. 回文链表](#15-回文链表)
+  - [21. 两两交换链表节点](#21-两两交换链表节点)
+- [二叉树](#二叉树)
+  - [1. 二叉树前序遍历](#1-二叉树前序遍历)
+  - [2. 二叉树后序遍历](#2-二叉树后序遍历)
+  - [3. 二叉树中序遍历](#3-二叉树中序遍历)
+  - [4. 翻转二叉树](#4-翻转二叉树)
+  - [5. 对称二叉树](#5-对称二叉树)
+  - [6. 二叉树的最大深度](#6-二叉树的最大深度)
+  - [7. 二叉树的最小深度](#7-二叉树的最小深度)
+  - [8. 二叉树的直径](#8-二叉树的直径)
+  - [9. 二叉树的最近公共祖先](#9-二叉树的最近公共祖先)
+  - [10. 二叉树的层序遍历](#10-二叉树的层序遍历)
+  - [11. 验证二叉搜索树](#11-验证二叉搜索树)
+  - [12. 二叉搜索树中第K小的元素](#12-二叉搜索树中第k小的元素)
+  - [13. 二叉树展开为链表](#13-二叉树展开为链表)
+  - [14. 将有序数组转换为平衡二叉搜索树 (构建二叉树)](#14-将有序数组转换为平衡二叉搜索树-构建二叉树)
+  - [15. 根据前序和中序序列构造二叉树](#15-根据前序和中序序列构造二叉树)
+  - [16. 根据后序和中序序列构造二叉树](#16-根据后序和中序序列构造二叉树)
+- [回溯](#回溯)
+  - [1. 全排列：无重复数组的全排列](#1-全排列无重复数组的全排列)
+  - [2. 全排列：有重复元素数组的全排列](#2-全排列有重复元素数组的全排列)
+  - [3. 组合1: 返回1-n中所有的k个数组合](#3-组合1-返回1-n中所有的k个数组合)
+  - [4. 组合2: 找到数组中和为tar的所有组合](#4-组合2-找到数组中和为tar的所有组合)
+  - [5. 组合3：找到数组中和为tar的所有组合（不可重复取\&组合不能重复）](#5-组合3找到数组中和为tar的所有组合不可重复取组合不能重复)
+  - [6. 子集：返回数组所有子集](#6-子集返回数组所有子集)
+  - [7. 电话号码的字母组合](#7-电话号码的字母组合)
+  - [8. 括号生成](#8-括号生成)
+  - [9. 分割回文串 (分割问题)](#9-分割回文串-分割问题)
+- [二分查找](#二分查找)
+  - [1. 二分查找 / 搜索插入位置](#1-二分查找--搜索插入位置)
+  - [2. 搜索二维矩阵](#2-搜索二维矩阵)
+  - [3. 搜索二维矩阵II](#3-搜索二维矩阵ii)
+  - [4. 有序数组中查找tar元素的首尾位置](#4-有序数组中查找tar元素的首尾位置)
+  - [5. 搜索旋转排序数组](#5-搜索旋转排序数组)
+  - [6. 寻找旋转排序数组中的最小值](#6-寻找旋转排序数组中的最小值)
+  - [7. 寻找两个正序数据的中位数](#7-寻找两个正序数据的中位数)
+- [堆](#堆)
+  - [1. 数组中第k个最大元素](#1-数组中第k个最大元素)
+  - [2. 前k个高频元素 ☆](#2-前k个高频元素-)
+- [栈](#栈)
+  - [1. 有效的括号](#1-有效的括号)
+  - [2. 最小栈](#2-最小栈)
+  - [3. 字符串解码 (难)](#3-字符串解码-难)
+- [动规DP](#动规dp)
+  - [1. 爬楼梯](#1-爬楼梯)
+  - [2. 最小花费爬楼梯](#2-最小花费爬楼梯)
+  - [3. 杨辉三角](#3-杨辉三角)
+  - [4. 打家劫舍](#4-打家劫舍)
+  - [5. 打家劫舍 II](#5-打家劫舍-ii)
+  - [6. 打家劫舍 III](#6-打家劫舍-iii)
+  - [7. 网格不同路径](#7-网格不同路径)
+  - [8. 网格不同路径 II](#8-网格不同路径-ii)
+  - [9. 01背包](#9-01背包)
+  - [10. 完全背包](#10-完全背包)
+  - [11. 分割为两个等和子集](#11-分割为两个等和子集)
+  - [12. 最后一块石头的重量 II](#12-最后一块石头的重量-ii)
+  - [13. 目标和](#13-目标和)
+- [贪心](#贪心)
+  - [1. 最大子数组和](#1-最大子数组和)
 
 TODO:
 
@@ -83,6 +97,7 @@ TODO:
 * 每日温度
 * 接雨水
 * 子串问题
+* 三个线程交替打印0-100
 
 ## 哈希表
 
@@ -277,24 +292,6 @@ public List<Integer> findAnagrams(String s, String p) {
 ```
 
 ## 普通数组
-
-### 9. 最大子数组和
-
-题目：找到数组中和最大的子数组(连续)，返回该和。
-思路：贪心，如果和<0，立马放弃。
-
-```java
-public int maxSubArray(int[] nums) {
-    int sum = 0;
-    int result = Integer.MIN_VALUE;
-    for (int i=0; i<nums.length; ++i) {
-        sum += nums[i];
-        result = Math.max(result, sum);
-        if (sum < 0) sum = 0;
-    }
-    return result;
-}
-```
 
 ### 10. 合并区间 ☆
 
@@ -1659,5 +1656,344 @@ public String decodeString(String s) {
         }
     }
     return str.toString();
+}
+```
+
+## 动规DP
+
+### 1. 爬楼梯
+
+题目：给定一个楼梯，有n级台阶，每次可以爬1级或2级，问有多少种爬法。
+思路：`dp[i] = dp[i-1] + dp[i-2]`。dp[i]表示爬到i台阶的方法数
+
+```java
+public int climbStairs(int n) {
+    int[] dp = new int[n+1];
+    dp[0] = 1;
+    dp[1] = 1;
+    for (int i=2; i<=n; ++i)
+        dp[i] = dp[i-1] + dp[i-2];
+    return dp[n];
+}
+```
+
+### 2. 最小花费爬楼梯
+
+题目：给定一个楼梯，有n级台阶，每次可以爬1级或2级，问有多少种爬法。每个台阶都有一个花费，求最小花费。
+思路：`dp[i] = min(dp[i-1] + cost[i-1], dp[i-2] + cost[i-2])`。dp[i]表示爬到i的花费
+```java
+public int minCostClimbingStairs(int[] cost) {
+    int n = cost.length;
+    int[] dp = new int[n+1];
+    dp[0] = 0;
+    dp[1] = 0;
+    for (int i=2; i<=n; ++i)
+        dp[i] = Math.min(dp[i-1] + cost[i-1], dp[i-2] + cost[i-2]);
+    return dp[n];
+}
+```
+
+### 3. 杨辉三角
+
+题目：给定一个整数n，返回前n行的杨辉三角
+思路：每行首尾是1。中间的元素是上一行的两个元素之和。注意`dp[i][j] = dp[i-1][j-1] + dp[i-1][j]`。
+
+```java
+public List<List<Integer>> generate(int numRows) {
+    List<List<Integer>> result = new ArrayList<>();
+    for (int i=0; i<numRows; ++i) {
+        List<Integer> list = new ArrayList<>();
+        for (int j=0; j<=i; ++j) {
+            if (j == 0 || j == i) list.add(1);
+            else list.add(result.get(i-1).get(j-1) + result.get(i-1).get(j));
+        }
+        result.add(list);
+    }
+    return result;
+}
+```
+
+### 4. 打家劫舍
+
+题目：给定一个数组，表示每个房屋的金额，不能偷相邻的房屋，求能偷的最大金额。
+思路：`dp[i]=max(dp[i-1], dp[i-2]+nums[i])`。dp[i]表示偷到i能偷的最大金额。
+
+```java
+public int rob(int[] nums) {
+    int n = nums.length;
+    int[] dp = new int[n];
+    dp[0] = nums[0];
+    if (n == 1) return nums[0];
+    dp[1] = Math.max(nums[0], nums[1]);
+    for (int i=2; i<n; ++i)
+        dp[i] = Math.max(dp[i-1], dp[i-2]+nums[i]);
+    return dp[n-1];
+}
+```
+
+### 5. 打家劫舍 II
+
+题目：数组首尾连接为一个圈，其他同上。
+思路：分两种情况：偷第一个和不偷第一个。
+
+```java
+public int rob(int[] nums) {
+    // 围成一圈: 分两次偷，一次偷1~n-1，另一次偷2~n, 看看谁大
+    int n = nums.length;
+    if (n == 1) return nums[0];
+    int[] dp1 = new int[n];
+    int[] dp2 = new int[n+1];
+    dp1[1] = nums[0];
+    for (int i=2; i<n; ++i) dp1[i] = Math.max(dp1[i-1], dp1[i-2] + nums[i-1]);
+    dp2[1] = 0;
+    for (int i=2; i<=n; ++i) dp2[i] = Math.max(dp2[i-1], dp2[i-2] + nums[i-1]);
+    return Math.max(dp1[n-1], dp2[n]);
+}
+```
+
+### 6. 打家劫舍 III
+
+题目：给定一棵二叉树，表示每个房屋的金额，不能偷相邻的房屋，求能偷的最大金额。
+
+> 暂时记忆吧
+
+```java
+// 返回一个dp数组：记录偷与不偷的金额
+public int[] rob_tree(TreeNode root) {
+    if (root == null) return new int[]{0,0};
+    int[] left = rob_tree(root.left); // root左子树偷与不偷的金额
+    int[] right = rob_tree(root.right);
+    int[] result = new int[2];
+    result[0] = root.val + left[1] + right[1]; // 偷root的话 左右不能偷
+    // 不偷root的话 左右可以选择偷
+    // result[1] = left[0] + right[0]; 
+    // 但是问题是不偷root的话 你得分清这俩孩子哪个值比较大（即孩子那一层未必是偷root>不偷）
+    // 案例：[4,1,null,2,null,3]
+    result[1] = Math.max(left[0], left[1]) + Math.max(right[0], right[1]);
+    return result;
+}
+public int rob(TreeNode root) {
+    // 二叉树
+    int[] result = rob_tree(root);
+    return Math.max(result[0], result[1]);
+}
+```
+
+### 7. 网格不同路径
+
+题目：给定一个m*n的网格，左上角到右下角有多少种路径。只能向下或向右走。
+思路：`dp[i][j] = dp[i-1][j] + dp[i][j-1]`。dp[i][j]表示到达(i,j)的路径数。
+
+```java
+public int uniquePaths(int m, int n) {
+    int[][] dp = new int[m][n];
+    // 首行首列初始化为1
+    for (int i=0; i<m; ++i) dp[i][0] = 1;
+    for (int j=0; j<n; ++j) dp[0][j] = 1;
+    for (int i=1; i<m; ++i) {
+        for (int j=1; j<n; ++j) {
+            dp[i][j] = dp[i-1][j] + dp[i][j-1];
+        }
+    }
+    return dp[m-1][n-1];
+}
+```
+
+### 8. 网格不同路径 II
+
+题目：网格中有障碍物。
+思路：如果有障碍物，直接赋值为0。
+
+```java
+public int uniquePathsWithObstacles(int[][] obstacleGrid) {
+    int m = obstacleGrid.length, n = obstacleGrid[0].length;
+    int[][] dp = new int[m][n];
+    // 首行首列初始化为1
+    for (int i=0; i<m && obstacleGrid[i][0] != 1; ++i) dp[i][0] = 1;
+    for (int j=0; j<n && obstacleGrid[0][j] != 1; ++j) dp[0][j] = 1;
+    for (int i=1; i<m; ++i) {
+        for (int j=1; j<n; ++j) {
+            if (obstacleGrid[i][j] == 1) dp[i][j] = 0;
+            else dp[i][j] = dp[i-1][j] + dp[i][j-1];
+        }
+    }
+    return dp[m-1][n-1];
+}
+```
+
+### 9. 01背包
+
+题目：给定一个背包，容量为N，有M个物品，每个物品的重量和价值分别为w[i]和v[i]。求能装下的最大价值。
+思路：`dp[i][j] = max(dp[i-1][j], dp[i-1][j-weight[i]] + value[i])`。dp[i][j]表示任取物品0-i，空间j能装的最大价值。
+
+<!-- ```java
+public class Main {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int M = sc.nextInt(); // 材料种类
+        int N = sc.nextInt(); // 空间
+        int[] weight = new int[M+1];
+        int[] value = new int[M+1];
+        for (int i=1; i<=M; ++i) weight[i] = sc.nextInt();
+        for (int i=1; i<=M; ++i) value[i] = sc.nextInt();
+        int[][] dp = new int[M+1][N+1]; 
+        for (int i=1; i<=M; ++i) {
+            for (int j=1; j<=N; ++j) {
+                if (j >= weight[i]) {
+                    dp[i][j] = Math.max(value[i]+dp[i-1][j-weight[i]], dp[i-1][j]);
+                } else dp[i][j] = dp[i-1][j];
+            }
+        }
+        System.out.println(dp[M][N]);
+    }
+}
+``` -->
+
+二维DP核心代码：
+```java
+public int bag(int[] weight, int[] value, int N, int N) {
+    int[][] dp = new int[M+1][N+1]; 
+    for (int i=1; i<=M; ++i) {
+        for (int j=1; j<=N; ++j) {
+            if (j >= weight[i]) {
+                dp[i][j] = Math.max(value[i]+dp[i-1][j-weight[i]], dp[i-1][j]);
+            } else dp[i][j] = dp[i-1][j];
+        }
+    }
+    return dp[M][N];
+}
+```
+
+一维DP核心代码：
+```java
+public int bag(int[] weight, int[] value, int N, int N) {
+    int[] dp = new int[N+1]; 
+    for (int i=1; i<=M; ++i) {
+        for (int j=N; j>=weight[i]; --j) { // 注意从后往前遍历
+            dp[j] = Math.max(value[i]+dp[j-weight[i]], dp[j]);
+        }
+    }
+    return dp[N];
+}
+```
+
+### 10. 完全背包
+
+> 01背包一维需要**从后往前**遍历，完全背包一维需要**从前往后**遍历
+
+题目：给定一个背包，容量为N，有M个物品，每个物品的重量和价值分别为w[i]和v[i]。每个物品可以用**任意次**，求能装下的最大价值。
+
+思路：`dp[i][j] = max(dp[i-1][j], dp[i][j-weight[i]] + value[i])`。注意这里**拿了value[i]的时候还可以再拿，所以是dp[i]**.
+
+二维核心：
+```java
+public int bag(int[] weight, int[] value, int N, int N) {
+    int[][] dp = new int[M+1][N+1]; 
+    for (int i=1; i<=M; ++i) {
+        for (int j=1; j<=N; ++j) {
+            if (j >= weight[i]) {
+                dp[i][j] = Math.max(value[i]+dp[i][j-weight[i]], dp[i-1][j]); // i是核心
+            } else dp[i][j] = dp[i-1][j];
+        }
+    }
+    return dp[M][N];
+}
+```
+
+一维核心：
+```java
+public int bag(int[] weight, int[] value, int N, int N) {
+    int[] dp = new int[N+1]; 
+    for (int i=1; i<=M; ++i) {
+        for (int j=weight[i]; j<=N; ++j) { // 注意从前往后遍历
+            dp[j] = Math.max(value[i]+dp[j-weight[i]], dp[j]);
+        }
+    }
+    return dp[N];
+}
+```
+
+### 11. 分割为两个等和子集
+
+题目：给定一个数组，判断是否可以分割为两个子集，使得两个子集的和相等。
+思路：01背包。最大能装的价值是否是sum/2；
+
+```java
+public boolean canPartition(int[] nums) {
+    int sum = 0;
+    for (int num : nums) sum += num;
+    if (sum % 2 == 1) return false;
+    int M = nums.length; // 物品数
+    int N = sum / 2; // 容量
+    // 如果容量N 存在一种可能装出和为N的组合 即容量N能装的最大空间（最大也就是sum/2了 但不一定能装出来）
+    int[] dp = new int[N+1];
+    for (int i=1; i<=M; ++i) {
+        for (int j=N; j>= nums[i-1]; --j) {
+            dp[j] = Math.max(dp[j], nums[i-1] + dp[j-nums[i-1]]);
+        }
+    }
+    return dp[N] == N;
+}
+```
+
+### 12. 最后一块石头的重量 II
+
+题目：给定一个数组，表示石头的重量，每次可以选俩石头，进行抵消，求最后剩下的石头的最小重量。
+思路：找出一个组合使得总和最接近sum/2
+
+```java
+public int lastStoneWeightII(int[] stones) {
+    int sum = Arrays.stream(stones).sum();
+    int M = stones.length; // 物品个数
+    int N = sum / 2; // 背包容量； 奇数应该问题不大
+    int[] dp = new int[N+1];
+    for (int i=1; i<=M; ++i) {
+        for (int j=N; j>=stones[i-1]; --j) {
+            dp[j] = Math.max(dp[j], stones[i-1]+dp[j-stones[i-1]]);
+        }
+    }
+    return sum - 2 * dp[N]; // 另一个是S-dp[N]，会更大(因为dp[N]最大是S/2)
+}
+```
+
+### 13. 目标和
+
+
+
+## 贪心
+
+### 1. 最大子数组和
+
+题目：找到数组中和最大的子数组(连续)，返回该和。
+思路：贪心，如果和<0，立马放弃。
+
+```java
+public int maxSubArray(int[] nums) {
+    int sum = 0;
+    int result = Integer.MIN_VALUE;
+    for (int i=0; i<nums.length; ++i) {
+        sum += nums[i];
+        result = Math.max(result, sum);
+        if (sum < 0) sum = 0;
+    }
+    return result;
+}
+```
+
+动态规划:
+
+```java
+public int maxSubArray(int[] nums) {
+    // dp[i]表示以i结尾的最大连续子数组之和
+    // dp[i] = max(dp[i-1]+nums[i], nums[i]); // 要么连着前面 要么重开(前面小于0咯)
+    int n = nums.length;
+    int[] dp = new int[n];
+    dp[0] = nums[0];
+    for (int i=1; i<n; ++i)
+        dp[i] = Math.max(nums[i], dp[i-1]+nums[i]);
+    int result = Integer.MIN_VALUE;
+    for (int i=0; i<n; ++i)
+        result = Math.max(result, dp[i]);
+    return result;
 }
 ```

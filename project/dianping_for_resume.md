@@ -4,6 +4,7 @@
   - [0. 背景](#0-背景)
     - [项目架构 \& 部署](#项目架构--部署)
     - [数据库表设计](#数据库表设计)
+    - [Answer summary](#answer-summary)
   - [1. 邮件登陆与验证](#1-邮件登陆与验证)
     - [关于session](#关于session)
     - [Q \& A](#q--a)
@@ -46,7 +47,7 @@
 
 介绍：该项目是一款类似大众点评的智能运动休闲服务平台，为运动爱好者提供便捷的功能，包括短信登录、运动场所查询和推荐、智能推荐、优惠券秒杀等功能
 
-> 代码行数：**5000 line+**；count by `vscode counter plugin`
+> 代码行数：**6000 line+**；count by `vscode counter plugin`
 
 
 ### 项目架构 & 部署
@@ -55,7 +56,7 @@
    1. nginx首先可以反向代理，将请求转发到后端的tomcat服务器上（即从一个url转发到另一个url）
    2. nginx还可以做负载均衡，将请求转发到多个tomcat服务器上，实现负载均衡
 2. 分层
-   1. view层：用户点集页面，前端发送请求到nginx，nginx会把请求转发到后端的tomcat服务器
+   1. view层：用户点击页面，前端发送请求到nginx，nginx会把请求转发到后端的tomcat服务器
    2. controller层：接收请求，调用service层的方法，返回数据
    3. model层：负责数据的存储和操作，mysql，redis
 
@@ -90,6 +91,28 @@ Q: nginx反向代理的好处?
 > * tb_voucher：优惠券表: id, shop_id, 代金券名title, type(0普通券 1特价券) 
 > * tb_seckill_voucher: 特价秒杀券表（秒杀券要多填的消息，即秒杀券扩展字段）：库存stock，抢购起止时间
 > * tb_voucher_order：优惠券的订单表: id主键, user_id(逻辑外键), voucher_id(逻辑外键)
+
+### Answer summary
+
+Q1: 基于 SMTP 协议 (QQ 邮箱) 实现邮件登录，使用 Redis 替代传统 Session 机制，实现集群环境下的Session 共享；
+
+**大概总结**：
+1.项目中实现了基于QQ邮箱的邮箱验证码登录。通过JavaMail API配置SMTP邮件服务，向用户发送带有2分钟有效期的验证码，并将其存入Redis。
+2.用户提交验证码后，后端从Redis中验证一致性，通过后生成一个随机Token（用户相关的, eg 基于UUID），作为用户身份标识存储在Redis中(ttl 7days)。
+3.Token通过HTTP请求的Authorization头(请求头属性)携带，后续服务可通过该Token获取用户信息，实现了类似Session的身份认证机制，并支持集群环境下的会话共享。
+
+> redis key使用string即可，一个`email_code`，一个`UUID_token`
+
+---
+
+Q2: 利用双重拦截器，完成用户登录状态校验及Token自动续期
+
+1.首先很多地方需要校验用户登录，所以不能每个业务都写校验逻辑。且我们知道springMVC中在执行controller之前会走interceptor的preHandle()逻辑，我们可以配置拦截路径。
+2.第一个Interceptor拦截一切路径，刷新token的有效期，然后全部放行；第二个Interceptor拦截需要登录的路径。(注意浏览店铺、登录入口是不需要校验登录的，无需拦截)
+
+---
+
+
 
 ## 1. 邮件登陆与验证
 
@@ -213,7 +236,7 @@ Q: redis替代session实现登录注册功能的好处
 
 可以用String来存储，也可以用Hash结构存储，占用更少内存
 
-**Q: 我们用什么key？**
+**==Q: 我们用什么key？==**
 A: 验证码的key: `login:code:{phone}`
 用户信息的key: `login:token:{Radom_UUID}`；通过UUID随机生成; 可以用手机号，但有点敏感
 
