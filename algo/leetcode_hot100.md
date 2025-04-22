@@ -2,33 +2,47 @@
 
 > 总结leetcode-hot-100，以及常见面试考题
 
+- [Classical](#classical)
+  - [1. 手撕LRU缓存](#1-手撕lru缓存)
+  - [2. 排序算法](#2-排序算法)
+    - [冒泡排序](#冒泡排序)
+    - [插入排序](#插入排序)
+    - [归并排序](#归并排序)
+    - [快速排序](#快速排序)
+  - [3. 单例模式](#3-单例模式)
+  - [4. 三个线程交替打印1-100](#4-三个线程交替打印1-100)
+  - [SQL essence](#sql-essence)
 - [哈希表](#哈希表)
   - [1. 两数之和](#1-两数之和)
   - [2. 字母异位词分组](#2-字母异位词分组)
   - [3. 最长连续序列](#3-最长连续序列)
 - [双指针](#双指针)
-  - [4. 移动零](#4-移动零)
-  - [5. 盛最多水的容器](#5-盛最多水的容器)
-  - [6. 三数之和](#6-三数之和)
+  - [1. 移动零](#1-移动零)
+  - [2. 盛最多水的容器](#2-盛最多水的容器)
+  - [3. 三数之和 ☆](#3-三数之和-)
+  - [4. 最长回文子串 ☆](#4-最长回文子串-)
 - [滑动窗口](#滑动窗口)
-  - [7. 无重复字符的最长子串](#7-无重复字符的最长子串)
-  - [8. 找到字符串中所有的字母异位词 ☆](#8-找到字符串中所有的字母异位词-)
+  - [1. 无重复字符的最长子串 ☆](#1-无重复字符的最长子串-)
+  - [2. 找到字符串中所有的字母异位词 ☆](#2-找到字符串中所有的字母异位词-)
 - [普通数组](#普通数组)
-  - [10. 合并区间 ☆](#10-合并区间-)
-  - [11. 轮转数组](#11-轮转数组)
-  - [12. 除自身以外数组的乘积](#12-除自身以外数组的乘积)
+  - [1. 合并区间 (重叠区间) ☆](#1-合并区间-重叠区间-)
+  - [2. 轮转数组](#2-轮转数组)
+  - [3. 除自身以外数组的乘积](#3-除自身以外数组的乘积)
 - [链表](#链表)
-  - [13. 相交链表](#13-相交链表)
-  - [16. 环形链表](#16-环形链表)
-  - [17. 环形链表 II](#17-环形链表-ii)
-  - [18. 合并两个有序链表](#18-合并两个有序链表)
-  - [19. 两数相加](#19-两数相加)
-  - [20. 删除链表倒数第k个节点](#20-删除链表倒数第k个节点)
-  - [22. 随机链表的复制](#22-随机链表的复制)
-  - [23. 排序链表](#23-排序链表)
-  - [14. 反转链表](#14-反转链表)
-  - [15. 回文链表](#15-回文链表)
-  - [21. 两两交换链表节点](#21-两两交换链表节点)
+  - [1. 相交链表](#1-相交链表)
+  - [2. 环形链表](#2-环形链表)
+  - [3. 环形链表 II](#3-环形链表-ii)
+  - [4. 合并两个有序链表 ☆](#4-合并两个有序链表-)
+  - [5. 合并K个升序链表 ☆☆](#5-合并k个升序链表-)
+  - [6. 两数相加](#6-两数相加)
+  - [7. 删除链表倒数第k个节点](#7-删除链表倒数第k个节点)
+  - [8. 随机链表的复制](#8-随机链表的复制)
+  - [9. 排序链表](#9-排序链表)
+  - [10. 反转链表 ☆](#10-反转链表-)
+  - [11. 指定区间反转链表 ☆](#11-指定区间反转链表-)
+  - [11. K个一组翻转链表](#11-k个一组翻转链表)
+  - [11. 回文链表](#11-回文链表)
+  - [12. 两两交换链表节点](#12-两两交换链表节点)
 - [二叉树](#二叉树)
   - [1. 二叉树前序遍历](#1-二叉树前序遍历)
   - [2. 二叉树后序遍历](#2-二叉树后序遍历)
@@ -39,7 +53,7 @@
   - [7. 二叉树的最小深度](#7-二叉树的最小深度)
   - [8. 二叉树的直径](#8-二叉树的直径)
   - [9. 二叉树的最近公共祖先](#9-二叉树的最近公共祖先)
-  - [10. 二叉树的层序遍历](#10-二叉树的层序遍历)
+  - [10. 二叉树的层序遍历 ☆](#10-二叉树的层序遍历-)
   - [11. 验证二叉搜索树](#11-验证二叉搜索树)
   - [12. 二叉搜索树中第K小的元素](#12-二叉搜索树中第k小的元素)
   - [13. 二叉树展开为链表](#13-二叉树展开为链表)
@@ -47,7 +61,7 @@
   - [15. 根据前序和中序序列构造二叉树](#15-根据前序和中序序列构造二叉树)
   - [16. 根据后序和中序序列构造二叉树](#16-根据后序和中序序列构造二叉树)
 - [回溯](#回溯)
-  - [1. 全排列：无重复数组的全排列](#1-全排列无重复数组的全排列)
+  - [1. 全排列：无重复数组的全排列 ☆](#1-全排列无重复数组的全排列-)
   - [2. 全排列：有重复元素数组的全排列](#2-全排列有重复元素数组的全排列)
   - [3. 组合1: 返回1-n中所有的k个数组合](#3-组合1-返回1-n中所有的k个数组合)
   - [4. 组合2: 找到数组中和为tar的所有组合](#4-组合2-找到数组中和为tar的所有组合)
@@ -61,17 +75,17 @@
   - [2. 搜索二维矩阵](#2-搜索二维矩阵)
   - [3. 搜索二维矩阵II](#3-搜索二维矩阵ii)
   - [4. 有序数组中查找tar元素的首尾位置](#4-有序数组中查找tar元素的首尾位置)
-  - [5. 搜索旋转排序数组](#5-搜索旋转排序数组)
+  - [5. 搜索旋转排序数组 ☆](#5-搜索旋转排序数组-)
   - [6. 寻找旋转排序数组中的最小值](#6-寻找旋转排序数组中的最小值)
   - [7. 寻找两个正序数据的中位数](#7-寻找两个正序数据的中位数)
 - [堆](#堆)
   - [1. 数组中第k个最大元素](#1-数组中第k个最大元素)
   - [2. 前k个高频元素 ☆](#2-前k个高频元素-)
 - [栈](#栈)
-  - [1. 有效的括号](#1-有效的括号)
+  - [1. 有效的括号 ☆](#1-有效的括号-)
   - [2. 最小栈](#2-最小栈)
   - [3. 字符串解码 (难)](#3-字符串解码-难)
-- [动规DP](#动规dp)
+- [动态规划](#动态规划)
   - [1. 爬楼梯](#1-爬楼梯)
   - [2. 最小花费爬楼梯](#2-最小花费爬楼梯)
   - [3. 杨辉三角](#3-杨辉三角)
@@ -86,18 +100,306 @@
   - [12. 最后一块石头的重量 II](#12-最后一块石头的重量-ii)
   - [13. 目标和](#13-目标和)
 - [贪心](#贪心)
-  - [1. 最大子数组和](#1-最大子数组和)
+  - [1. 最大子数组和 ☆](#1-最大子数组和-)
+  - [2. 买卖股票的最佳时机 ☆](#2-买卖股票的最佳时机-)
+  - [3. 买卖股票的最佳时机 II](#3-买卖股票的最佳时机-ii)
+  - [4. 跳跃游戏](#4-跳跃游戏)
+  - [5. 跳跃游戏 II](#5-跳跃游戏-ii)
 
 TODO:
 
 * 和为K的子数组
-* LRU
 * 矩阵类
-* 合并k个有序链表
-* 每日温度
-* 接雨水
+* 单调栈：接雨水 每日温度
 * 子串问题
-* 三个线程交替打印0-100
+
+
+## Classical
+
+### 1. 手撕LRU缓存
+
+题目：设计一个LRU缓存机制，支持`get`和`put`操作。缓存大小为`capacity`，当缓存满时，移除最久未使用的元素。
+
+1. LRU使用双向链表组织 & 使用Map记录key->Node的映射以加速
+2. get的时候需要把Node移动到链表头部(删除 & 头插)
+3. put的时候需要判断是否存在key，如果存在，更新值并移动到头部；如果不存在，判断是否满了，满了就删除尾部元素，再头插，同时更新map。
+
+```java
+class Node {
+    int key, value;
+    Node prev;
+    Node next;
+    Node (int k, int v) {
+        this.key = k;
+        this.value = v;
+    }
+}
+
+// 0. LRU使用双向链表组织 & 使用Map记录key->Node的映射以加速
+// 1. 内存管理的时候key代表页号，value代表页面内容，题目一样的int仅是示例
+// 2. 为了快速找到key对应的Node，因为get和put需要O(1)，所以肯定有Map(key->Node)
+// 3. 双向链表：可以根据Node本身删掉Node & 方便删除末尾元素
+
+class LRUCache {
+    Node dummyNode;
+    int capacity;
+    Map<Integer, Node> map;
+    public LRUCache(int capacity) {
+        this.dummyNode = new Node(0, 0);
+        this.dummyNode.prev = this.dummyNode;
+        this.dummyNode.next = this.dummyNode;
+        this.capacity = capacity;
+        this.map = new HashMap<>();
+    }
+    public void remove(Node node) {
+        // 双链表根据一个节点就可以删除
+        node.prev.next = node.next;
+        node.next.prev = node.prev;
+    }
+    
+    public void addHead(Node node) {
+        // 将节点加到双链表头结点
+        node.next = dummyNode.next;
+        dummyNode.next.prev = node;
+        node.prev = dummyNode;
+        dummyNode.next = node;
+    }
+    public int get(int key) {
+        // get访问要是O(1) 且我们需要通过key找到Node 所以需要借助Map存储key:Node
+        // 访问后需要更新位置：删除 再头插 (头部是最新的 尾部是最久没用的)
+        if (!map.containsKey(key)) return -1;
+        Node node = map.get(key);
+        remove(node);
+        addHead(node);
+        return node.value;
+    }
+    public void put(int key, int value) {
+        // 插入的时候 如果存在 需要更新value
+        if (map.containsKey(key)) {
+            Node node = map.get(key);
+            node.value = value;
+            remove(node);
+            addHead(node);
+        } else {
+            // 不存在 则新增
+            if (map.size() == this.capacity) {
+                map.remove(dummyNode.prev.key); // 先删掉map中的记录
+                remove(dummyNode.prev);
+            }
+            // 在头部加上新节点
+            Node newNode = new Node(key, value);
+            addHead(newNode);
+            map.put(key, newNode);
+        }
+    }
+}
+```
+
+### 2. 排序算法
+
+#### 冒泡排序
+
+思路：执行n-1次 每次冒出一个最大的放到最后
+
+```java
+public void bubbleSort(int[] arr) {
+    int n = arr.length;
+    for (int i=0; i<n-1; ++i) {
+        boolean flag = false;
+        for (int j=0; j<n-i-1; ++j) {
+            if (arr[j+1] < arr[j]) {
+                flag = true; // 有进行交换
+                swap(arr, j, j+1); // swap略
+            }
+        }
+        if (!flag) return;
+    }
+}
+```
+
+#### 插入排序
+
+思路：每次从无序序列选一个最小的与无序序列开头交换
+
+```java
+public void selectSort(int[] arr) {
+    int n = arr.length;
+    for (int i = 0; i < n; ++i) {
+        int minIdx = i;
+        for (int j = i+1; j < n; ++j)
+            if (arr[j] < arr[minIdx])
+                minIdx = j;
+        // 找到了最小的idx 与i交换即可吧
+        if (minIdx != i) swap(arr, minIdx, i);
+    }
+}
+```
+
+#### 归并排序
+
+思想：分治：每次二等分，递归下去，然后合并；注意需要**搞个新数组**
+
+```java
+public void merge(int[] arr, int left, int mid, int right) {
+    int[] newArr = new int[right - left + 1];
+    int i = left, j = mid + 1, k = 0;
+    while (i <= mid && j <= right) {
+        if (arr[i] <= arr[j]) newArr[k++] = arr[i++];
+        else newArr[k++] = arr[j++];
+    }
+    while (i <= mid) newArr[k++] = arr[i++];
+    while (j <= right) newArr[k++] = arr[j++];
+    for (int m=left; m<=right; ++m) arr[m] = newArr[m-left]; // 注意拷贝时候的下标对应关系
+}
+
+public static void mergeSort(int[] arr, int left, int right) {
+    // 当left==right时，表示区间只有一个元素，此时已经有序，无需进一步划分和排序
+    if (left < right) {
+        int mid = left + (right - left) / 2;
+        mergeSort(arr, left, mid);
+        mergeSort(arr, mid+1, right);
+        merge(arr, left, mid, right);
+    }
+}
+// mergeSort(arr, 0, arr.length-1);
+```
+
+#### 快速排序
+
+思路：先选pi，再分别递归地排pi左右两侧的区间（pi已经拍好了）
+选最右作为pivot，然后从头到尾遍历，<=的全往前swap，这样>的自动就在右侧。需要一个**指针k维持下一个<=应该去的位置**
+
+```java
+public int partition(int[] arr, int left, int right) {
+    int pivot = right;
+    int k = left; // 记录下一个<=的值该放的位置
+    for (int i=left; i<right; ++i) {
+        if (arr[i] <= arr[pivot]) {
+            swap(arr, i, k);
+            k++;
+        }
+    }
+    swap(arr, k, pivot); // 永远是交换的 而非直接赋值的
+    return k;
+}
+
+public static void quickSort(int[] arr, int left, int right) {
+    // 每次选一个patition，然后把小的放左边，大的放右边
+    if (left < right) {
+        int pi = partition(arr, left, right);
+        quickSort(arr, left, pi-1);
+        quickSort(arr, pi+1, right);
+    }
+}
+// quickSort(arr, 0, arr.length-1);
+```
+
+### 3. 单例模式
+
+单例模式：为了保证**资源唯一性，避免重复创建对象**。单例模式有两种实现方式：饿汉模式和懒汉模式。
+
+```java
+// 饿汉模式
+public class Hungary {
+    // 1. 私有化构造器 防止直接new
+    private Hungary() {}
+    // 2. 私有化静态实例
+    private final static Hungary hungary = new Hungary();
+    // 3. 暴露公共的static方法返回实例
+    public static Hungary getInstance() {
+        return hungary;
+    }
+}
+
+// 懒汉模式
+public class LazyMan {
+    // 1. 私有化构造器 防止直接new
+    private LazyMan(){};
+    // 2. 创建私有static静态变量 不初始化
+    private static LazyMan lazyMan;
+    // 提供公共的staitc方法返回
+    public static LazyMan getInstance() {
+        if (lazyMan == null)
+            lazyMan = new LazyMan();
+        return lazyMan;
+    }
+}
+
+// 懒汉模式-双重校验锁-DCL
+public class LazyMan2 {
+    // 1. 私有化构造器 防止直接new
+    private LazyMan2(){};
+    // 2. 创建私有static静态变量
+    private static volatile LazyMan2 lazyMan; // volatile保证可见性，当线程A new了之后，其他线程可以立马看到，此时lazyMan!=null
+    public static LazyMan2 getInstance() {
+        if (lazyMan == null) {
+            synchronized (LazyMan2.class) { // 创建实例的时候才加锁，减少开销
+                if (lazyMan == null) { // 一些线程通过了if，但只有一个线程拿到锁；如果没有该if，则会重复new
+                    lazyMan = new LazyMan2();
+                }
+            }
+        }
+        return lazyMan;
+    }
+}
+```
+
+### 4. 三个线程交替打印1-100
+
+```java
+public class Main {
+    private static volatile int num = 0; // 共享变量保证可见性
+    private static final Object lock = new Object(); // lock用于同步 防止同时访问
+    public static void main(String[] args) {
+        Thread t1 = new Thread(new PrintTask(0), "Thread-1");
+        Thread t2 = new Thread(new PrintTask(1), "Thread-2");
+        Thread t3 = new Thread(new PrintTask(2), "Thread-3");
+        t1.start();
+        t2.start();
+        t3.start();
+    }
+
+    static class PrintTask implements Runnable {
+        private final int id; // 线程标识：0,1,2
+        public PrintTask(int id) {
+            this.id = id;
+        }
+        @Override
+        // 如果轮到自己：打印num并递增，然后唤醒其他所有等待线程
+        // 如果不是自己，就wait等待
+        public void run() {
+            while (num <= 100) {
+                synchronized (lock) {
+                    // 判断是否轮到当前线程
+                    if (num % 3 == id) {
+                        System.out.println(Thread.currentThread().getName() + ": " + num++);
+                        lock.notifyAll(); // 唤醒其他线程；必须被唤醒才能检查是否轮到自己，否则程序卡死
+                    } else {
+                        try {
+                            lock.wait(); // 不是自己的轮次，等待
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+            }}}}}}}
+```
+
+### SQL essence
+
+```sql
+select 查询字段 from 表名 where 分组前过滤 group by 分组字段 having 分组后过滤 order by 排序字段;
+```
+
+```sql
+select * from users WHERE age > 18 and gender = 'male'; -- 条件过滤
+select name, age from users ORDER BY age DESC; -- 排序
+select country, count(*) from users GROUP BY country HAVING count(*) > 10; -- 分组 ground by & having
+-- group by分组之后，查询的字段只能是分组字段、聚合函数和常数
+-- select . from . where 分组前过滤 group by . having 分组后过滤
+select * from users LIMIT 10 offset 20; -- 分页：跳过前20行，返回10行
+
+select a.name, b.total from users INNER JOIN orders as b ON a.id = b.user_id; -- 连接查询
+select name from users where id IN (select user_id from orders); -- 子查询
+-- 如果要查询的字段全来自一张表（而select的条件列来自于不同表），考虑子查询；如果结果列来自多张表，考虑联结
+```
 
 ## 哈希表
 
@@ -165,7 +467,7 @@ public int longestConsecutive(int[] nums) {
 
 ## 双指针
 
-### 4. 移动零
+### 1. 移动零
 
 题目：将数组中所有的0移动到数组末尾，保持非零元素的相对顺序。
 思路：双指针，一个指向0，一个指向非0，交换即可。
@@ -185,7 +487,7 @@ public void moveZeroes(int[] nums) {
 }
 ```
 
-### 5. 盛最多水的容器
+### 2. 盛最多水的容器
 
 题目：数组每个元素表示高度，找出两个柱子，盛最多的水。
 思路：左右指针向中间逼近，然后贪心，每次先挪矮的即可。
@@ -205,7 +507,7 @@ public int maxArea(int[] height) {
 }
 ```
 
-### 6. 三数之和
+### 3. 三数之和 ☆
 
 题目：给一个数组，找到和为0的ijk三元组，返回这三个数（不能重复）。
 思路：先排序，第一个指针遍历，然后内层左右双指针，和<0左指针右移，否则右指针左移。（核心在于去重）
@@ -235,6 +537,38 @@ public List<List<Integer>> threeSum(int[] nums) {
 }
 ```
 
+### 4. 最长回文子串 ☆
+
+题目：给你一个字符串s，找到s中最长的回文子串。
+思路：从每个字符开始，向两边扩散。
+
+```java
+public String longestPalindrome(String s) {
+    // 暴力解：两层for找到所有子串 加一层for判断是否回文
+    // 优化：两侧扩散法；从每个元素出发，然后向两侧扩散
+    char[] arr = s.toCharArray();
+    int cnt = 0;
+    String result = "";
+    for (int i=0; i<arr.length; ++i) {
+        // 两侧扩散：先跳过相同元素
+        int left = i - 1, right = i + 1;
+        while (left>=0 && arr[left] == arr[i]) --left;
+        while (right<arr.length && arr[right] == arr[i]) ++right;
+        while (left>=0 && right<arr.length && arr[left] == arr[right]) {
+            --left;
+            ++right;
+        }
+        // 此时l+1,r-1就是一个回文子串
+        ++left; --right;
+        if (right - left + 1 > cnt) {
+            cnt = right - left + 1;
+            result = s.substring(left, right+1);
+        }
+    }
+    return result;
+}
+```
+
 <!-- ## 单调栈
 
 ### 接雨水
@@ -242,7 +576,7 @@ public List<List<Integer>> threeSum(int[] nums) {
 
 ## 滑动窗口
 
-### 7. 无重复字符的最长子串
+### 1. 无重复字符的最长子串 ☆
 
 题目：返回str中不含重复字符的最长子串的长度。
 思路：滑动窗口，使用set记录滑动窗口内的字符，如果right已经出现在set中，那left++，同时删掉set中对应left值。
@@ -265,7 +599,7 @@ public int lengthOfLongestSubstring(String s) {
 }
 ```
 
-### 8. 找到字符串中所有的字母异位词 ☆
+### 2. 找到字符串中所有的字母异位词 ☆
 
 题目：给定两个字符串s和p，找到s中所有p的异位词子串，返回这些子串的开始索引。
 思想：先存子串p到map，然后滑动窗口，map[right]如果=0，说明p没这个字符，map[left]++（++是核心，慢慢体会吧，其实和上面非常一致
@@ -293,7 +627,7 @@ public List<Integer> findAnagrams(String s, String p) {
 
 ## 普通数组
 
-### 10. 合并区间 ☆
+### 1. 合并区间 (重叠区间) ☆
 
 题目：给定区间数组(二维数组)，合并重叠区间。返回合并后的区间数组。
 思路：按照区间左端点排序，然后遍历，如果当前区间的右侧<=下一个区间的左侧，说明可以合并。
@@ -319,7 +653,7 @@ public int[][] merge(int[][] intervals) {
 }
 ```
 
-### 11. 轮转数组
+### 2. 轮转数组
 
 题目：将数组中元素向右轮转k个位置。
 思路：先reverse前n-k,再reverse后k，再reverse所有
@@ -342,7 +676,7 @@ public void rotate(int[] nums, int k) {
 }
 ```
 
-### 12. 除自身以外数组的乘积
+### 3. 除自身以外数组的乘积
 
 题目：返回新数组，每个元素值为除自身以外的乘积。
 思路：先用result从左往右累积，再从右往左累积(用一个right变量即可)。
@@ -367,7 +701,7 @@ public int[] productExceptSelf(int[] nums) {
 
 ## 链表
 
-### 13. 相交链表
+### 1. 相交链表
 
 题目：找到两个链表的交点。给定两个链表的头结点headA和headB。
 思路：先用set遍历一个即可。或者双指针基于长度
@@ -383,7 +717,7 @@ public ListNode getIntersectionNode(ListNode headA, ListNode headB) {
 }
 ```
 
-### 16. 环形链表
+### 2. 环形链表
 
 题目：判断一个链表是否有环。给定head。
 思路：1. 用set存；2. 快慢指针，一个走两步一个走一步，肯定会相遇（可以数学证明）。
@@ -400,7 +734,7 @@ public boolean hasCycle(ListNode head) {
 }
 ```
 
-### 17. 环形链表 II
+### 3. 环形链表 II
 
 题目：返回环形链表的入口节点。没环的话返回null。
 思路：1. 用set；2. 快慢指针，相遇后，一个从head，一个从fast出发，再次相遇即为入口。
@@ -424,7 +758,7 @@ public ListNode detectCycle(ListNode head) {
 }
 ```
 
-### 18. 合并两个有序链表
+### 4. 合并两个有序链表 ☆
 
 题目：合并两个有序链表。给定head1和head2。
 思想：搞个dummy，然后双指针比大小接到dummy后面即可。
@@ -450,7 +784,31 @@ public ListNode mergeTwoLists(ListNode list1, ListNode list2) {
 }
 ```
 
-### 19. 两数相加
+### 5. 合并K个升序链表 ☆☆
+
+题目：给定k个升序链表`ListNode[]`，合并成一个升序链表`ListNode`。
+思路1：暴力解法，写个MergeTwoLists，然后顺序遍历两两合并。
+思路2：归并思想。
+```java
+// public ListNode mergeTwoList(ListNode list1, ListNode){...} 省略同上
+public ListNode merge(ListNode[] lists, int left, int right) {
+    if (left < right) {
+        int mid = (left + right) / 2;
+        ListNode leftList = merge(lists, left, mid); // 不同于数组 合并链表之后需要返回合并得新链表
+        ListNode rightList = merge(lists, mid + 1, right);
+        return mergeTwoLists(leftList, rightList);
+    }
+    return lists[left]; // 如果只有一个链表 直接返回即可
+}
+public ListNode mergeKLists(ListNode[] lists) {
+    // 归并思想：每次选择俩list进行合并（同等规模）
+    if (lists.length == 0) return null;
+    return merge(lists, 0, lists.length-1);
+}
+```
+
+
+### 6. 两数相加
 
 题目：将两个**逆序**的链表相加，每个节点是一个数字，返回一个新链表。eg 243 + 564 -> 708。（即逆序相加，向后进位）
 思路：dummy，然后双指针，加个carry变量即可。
@@ -475,7 +833,7 @@ public ListNode addTwoNumbers(ListNode l1, ListNode l2) {
 }
 ```
 
-### 20. 删除链表倒数第k个节点
+### 7. 删除链表倒数第k个节点
 
 题目：删除链表倒数第k个节点。
 思路：快慢指针，一个先走k步，然后一块走。
@@ -494,7 +852,7 @@ public ListNode removeNthFromEnd(ListNode head, int n) {
 }
 ```
 
-### 22. 随机链表的复制
+### 8. 随机链表的复制
 
 题目：给定一个链表，节点包括next指针和random指针，你需要深拷贝得到一个全新的val和指针一样的链表。
 思路：用map存源节点和新节点的映射（在复制next的时候），然后加上random指针。
@@ -518,7 +876,7 @@ public Node copyRandomList(Node head) {
 }
 ```
 
-### 23. 排序链表
+### 9. 排序链表
 
 题目：排序无序链表。
 思路1(O(n)空间)：存到ArrayList，然后`Collections.sort(list)`，然后存回链表。
@@ -554,7 +912,7 @@ public ListNode sortList(ListNode head) {
 }
 ```
 
-### 14. 反转链表
+### 10. 反转链表 ☆
 
 题目：反转一个单链表。给定头结点head。
 思路：双指针：cur，pre，tmp指针，无需dummy。
@@ -574,7 +932,104 @@ public ListNode reverseList(ListNode head) {
 }
 ```
 
-### 15. 回文链表
+### 11. 指定区间反转链表 ☆
+
+题目：给定一个链表，反转从位置l到r的链表节点，返回反转后的链表。
+思路：先找到l-1位置的节点，然后反转l到r的链表，最后连接上去。
+
+```java
+public ListNode reverseBetween(ListNode head, int left, int right) {
+    // 记录一下left-1节点似乎就行了
+    ListNode dummyNode = new ListNode(0, head);
+    ListNode before = dummyNode;
+    for (int i=1; i<left; ++i) before = before.next;
+    ListNode cur = before.next, pre = cur.next;
+    for (int i=0; i<right-left; ++i) {
+        ListNode tmp = pre.next;
+        pre.next = cur;
+        cur = pre;
+        pre = tmp;
+    }
+    before.next.next = pre;
+    before.next = cur; // 这两步连接稍微细心点即可
+    return dummyNode.next;
+}
+```
+
+### 11. K个一组翻转链表
+
+题目：给定一个链表，k个一组翻转链表。
+思路1：基于区间翻转
+
+```java
+public void reverse(ListNode dummy, int left, int right) {
+    // 翻转区间内的节点
+    ListNode beforeLeft = dummy;
+    for (int i=0; i<left-1; ++i) beforeLeft = beforeLeft.next;
+    ListNode cur = beforeLeft.next;
+    ListNode pre = cur.next;
+    for (int i=0; i<right-left; ++i) {
+        ListNode tmp = pre.next;
+        pre.next = cur;
+        cur = pre;
+        pre = tmp;
+    }
+    beforeLeft.next.next = pre;
+    beforeLeft.next = cur;
+}
+
+public ListNode reverseKGroup(ListNode head, int k) {
+    ListNode dummy = new ListNode(0, head);
+    int len = 0;
+    for (ListNode p =head; p!=null; p=p.next) len++;
+    // 用p去一边遍历 一边翻转有些问题：我们的p会挪位置 不在对应的idx
+    // 所以索性简单点 直接统计长度
+    // for (ListNode p = head; p!=null; p=p.next) {
+    for (int idx=1; idx<=len; ++idx)
+        if (idx % k == 0)
+            reverse(dummy, idx-k+1, idx); // 左闭右闭从1开始; 传入dummy还是很骚的
+    return dummy.next;
+}
+```
+
+思路2：写到一个函数中
+
+```java
+public ListNode reverseKGroup(ListNode head, int k) {
+    if (head.next == null) return head;
+    ListNode dummy = new ListNode(0, head);
+    ListNode leftPre = dummy;
+    int cnt = 1;
+    for (ListNode p = head; p!=null; p=p.next) {
+        if (cnt % k == 0) {
+            // 进行翻转
+            // left = cnt - k + 1; right = cnt;
+            ListNode cur = leftPre.next;
+            ListNode pre = cur.next;
+            for (int i=1; i<k; ++i) {
+                ListNode tmp = pre.next;
+                pre.next = cur;
+                cur = pre;
+                pre = tmp;
+            }
+            // 连接
+            leftPre.next.next = pre;
+            ListNode t = leftPre.next; // 先记下反转后的末尾节点
+            leftPre.next = cur;
+            // 变位置
+            p = pre;
+            leftPre = t; // 移动到需要的位置
+            if (p == null) break; // 我们可能直接给p调整到null了  这样子for里面的p.next就直接报错了
+            cnt++; // 我们将p后移一下cnt顺带++
+        }
+        cnt++;
+    }
+    
+    return dummy.next;
+}
+```
+
+### 11. 回文链表
 
 题目：判断一个链表是否是回文链表。
 思路：找到中点，反转后半部分，然后双指针比较。（当然你可以先用list存储）
@@ -602,7 +1057,7 @@ public boolean isPalindrome(ListNode head) {
 }
 ```
 
-### 21. 两两交换链表节点
+### 12. 两两交换链表节点
 
 题目：两两交换链表节点。
 思路：dummy，依然是双指针(cur, pre, tmp)。method_image_link: [link](https://www.notion.so/haooxia/1453e076b37f8191841aee7a29a9158e?pvs=4#19e3e076b37f805fab93ecb3560221f5)
@@ -855,7 +1310,7 @@ public TreeNode lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q) {
 
 更优解：[link](https://www.notion.so/haooxia/1453e076b37f81758bfbe25fe197237d?pvs=4#1453e076b37f815388bfc3221d0e6c80)
 
-### 10. 二叉树的层序遍历
+### 10. 二叉树的层序遍历 ☆
 
 题目：一层一层输出二叉树节点。
 思想：借助queue，每次把一层的节点offer进去，下一次把一层的pull出来。
@@ -1037,7 +1492,7 @@ public TreeNode buildTree(int[] inorder, int[] postorder) {
 2. 上下层去重：`if (used[i]) continue;`
 3. 同层去重：`if (i>0 && !used[i] && nums[i]==nums[i-1]) continue;`
 
-### 1. 全排列：无重复数组的全排列
+### 1. 全排列：无重复数组的全排列 ☆
 
 思路：每次从头取，唯一要求就是不能重复取，所以搞个used数组即可。
 > 或者List有个api：list.indexOf(val)，可以判断是否存在val
@@ -1423,7 +1878,7 @@ public int[] searchRange(int[] nums, int target) {
 }
 ```
 
-### 5. 搜索旋转排序数组
+### 5. 搜索旋转排序数组 ☆
 
 题目：给定一个升序数组，可能旋转过，判断target是否在数组中。eg `[4,5,6,7,8,1,2,3]`
 思路：旋转之后，**mid左右一定有一侧是有序的**。首先确定哪一侧有序，如果左侧有序，根据target和`[nums[left], nums[mid]]`的**边界关系确定往哪个方向走**。右侧同理。
@@ -1573,7 +2028,7 @@ public int[] topKFrequent(int[] nums, int k) {
 
 ## 栈
 
-### 1. 有效的括号
+### 1. 有效的括号 ☆
 
 题目：给定一个字符串（只包括`(,),[,],{,}`），判断括号是否有效。
 思路：用栈，遇到左括号就push对应的右括号
@@ -1659,7 +2114,7 @@ public String decodeString(String s) {
 }
 ```
 
-## 动规DP
+## 动态规划
 
 ### 1. 爬楼梯
 
@@ -1962,7 +2417,7 @@ public int lastStoneWeightII(int[] stones) {
 
 ## 贪心
 
-### 1. 最大子数组和
+### 1. 最大子数组和 ☆
 
 题目：找到数组中和最大的子数组(连续)，返回该和。
 思路：贪心，如果和<0，立马放弃。
@@ -1997,3 +2452,78 @@ public int maxSubArray(int[] nums) {
     return result;
 }
 ```
+
+### 2. 买卖股票的最佳时机 ☆
+
+题目：给定一个数组，表示股票的价格，求最大利润。只能买卖一次。
+思路：贪心，// 搞一个变量记录前面的最小值就行啦 别想那么多
+
+```java
+public int maxProfit(int[] prices) {
+    int minPrice = Integer.MAX_VALUE;
+    int maxProfit = 0;
+    for (int i=0; i<prices.length; ++i) {
+        minPrice = Math.min(minPrice, prices[i]);
+        maxProfit = Math.max(maxProfit, prices[i] - minPrice);
+    }
+    return maxProfit;
+}
+```
+
+### 3. 买卖股票的最佳时机 II
+
+题目：给定一个数组，表示股票的价格，求最大利润。可以买卖多次。
+思路：贪心，遍历数组，记录每次上涨的利润。
+
+```java
+public int maxProfit(int[] prices) {
+    // 这不更简单：只要后一天更高就买前一天的...纯贪心，纯开天眼
+    if (prices.length == 1) return 0;
+    int result = 0;
+    for (int i=1; i<prices.length; ++i)
+        if (prices[i] > prices[i-1]) 
+            result += prices[i] - prices[i-1];
+    return result;
+}
+```
+
+### 4. 跳跃游戏
+
+题目：给定一个数组，表示每个位置能跳的最大步数，问**是否**能到达最后一个位置。
+
+```java
+public boolean canJump(int[] nums) {
+    if (nums.length == 1) return true;
+    // 如果可以超过最后一个元素，就说明可以跳到最后一个元素(因为数值只是最大可以跳的嘛)
+    int cover = nums[0];
+    for (int i=1; i<=cover; ++i) {
+        cover = Math.max(cover, i+nums[i]);
+        if (cover >= nums.length-1) return true;
+    }
+    return false;
+}
+```
+
+### 5. 跳跃游戏 II
+
+题目：给定一个数组，表示每个位置能跳的最大步数，问**最少**需要多少步才能到达最后一个位置。
+
+```java
+public int jump(int[] nums) {
+    if (nums.length == 1) return 0;
+    int cover = nums[0];
+    int maxCover = nums[0];
+    int cnt = 1;
+    for (int i=1; i<=cover; ++i) {
+        if (cover >= nums.length - 1) break;
+        // 核心：由于我们需要统计最小跳跃次数，贪心：我们要找cover范围内的的最大值 才跳一次
+        maxCover = Math.max(maxCover, i + nums[i]);
+        if (i == cover) { // 如果走到了cover 才去更新为最大值
+            cover = maxCover;
+            ++cnt;
+        }
+    }
+    return cnt;
+}
+```
+

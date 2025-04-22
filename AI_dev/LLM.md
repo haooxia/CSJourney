@@ -7,8 +7,8 @@
       - [SFT vs. RLHF vs. RAG](#sft-vs-rlhf-vs-rag)
       - [微调还是RAG?](#微调还是rag)
     - [本地部署deepseek + RAG](#本地部署deepseek--rag)
+      - [RAGflow底层 / RAG底层](#ragflow底层--rag底层)
       - [悦动探针智慧客服](#悦动探针智慧客服)
-    - [RAG深入](#rag深入)
   - [SFT](#sft)
     - [LoRA](#lora)
     - [LLama-Factory](#llama-factory)
@@ -18,6 +18,7 @@
       - [RTF框架](#rtf框架)
       - [思考链模式](#思考链模式)
   - [Agent](#agent)
+    - [客服改进](#客服改进)
     - [Tool Calling](#tool-calling)
   - [MCP](#mcp)
 
@@ -39,15 +40,15 @@ llm在回答自己不太懂的问题时候会出现幻觉问题，生成内容�
 
 原因：
 
-* gpt的目标是预测下一个词，以生成连贯的文本。即追求的是“看起来像真的”，而非“真的是真的”
+* gpt的目标是预测下一个词，以生成连贯的文本。即**追求的是“看起来像真的”，而非“真的是真的”**
 * 有的训练数据有问题
 * **缺少垂直领域的数据**
 
 Q: 如何避免幻觉?
 
-* RAG
-* Finetune
-* 模型对齐：RLHF
+* RAG：让模型有据可依
+* Finetune：垂直数据，也是有据可依
+* 模型对齐：RLHF：让他在不知道的时候承认不知道
 
 #### SFT vs. RLHF vs. RAG
 
@@ -55,10 +56,10 @@ Q: 如何避免幻觉?
 * **RLHF (Reinforcement Learning from Human Feedback) 强化学习**：模型根据人类反馈区调整自己的生成结果，可以生成更符合人类偏好的回答。
   * DPO (Direct Preference Optimization): 直接偏好优化：人类对比选择
   * PPO (Proximal Policy Optimization): 近端策略优化：奖励信号（点赞、点踩）
-* **RAG(Retrieval-Augmented Generation)**: 不改变模型权重，在生成回答之前，检索外部知识库找到和问题相关的知识，增强生成过程的信息来源，从而提升生成的质量。（RAG是**开卷考试**，模型看到你的问题，开始翻你的知识库，以实时生成更准确的答案）
+* **RAG(Retrieval-Augmented Generation)**: **不改变模型权重**，在生成回答之前，检索外部知识库找到和问题相关的知识，增强生成过程的信息来源，从而提升生成的质量。（RAG是**开卷考试**，模型看到你的问题，开始翻你的知识库，以实时生成更准确的答案）
   * 检索（Retrieval）：当用户提出问题时，系统会**从外部的知识库(文档、数据库或互联网)中检索出与用户输入相关的内容**。
-  * 基于Embedding模型(eg BERT)都Embedding一手，然后基于向量相似性搜索(eg 余弦相似度)寻找（这不跟我推荐系统一样吗~
-  * embedding模型简单来说就是把自然语言 -> 高维向量
+  * 基于Embedding模型(eg BERT)都Embedding一手，然后基于向量相似性搜索(eg 余弦相似度)寻找（~~这不跟我推荐系统一样吗~~
+    * embedding模型简单来说就是把自然语言 -> 高维向量
   * 增强（Augmentation）：系统将检索到的信息与用户的输入**结合**，**扩展模型的上下文**(也就是**模型的记忆/思考背景**，比如可以通过搜到的数据增强嘛)。这让生成模型可以利用外部知识，使生成的答案更准确和丰富。
   * 生成（Generation）：生成模型基于增强后的输入生成最终的回答。弥补了传统生成模型**知识更新慢**、**可能产生“幻觉”**的不足。
 
@@ -99,6 +100,15 @@ RAG:
 
 ![picture 3](../images/c9017f17e83d172ddf188f2949e55b1f316530c569a655b2d73667c7c7603a57.png)  
 
+#### RAGflow底层 / RAG底层
+
+我上传了一些资料，**Chat**模型选择了Deepseek-r1:32b, embedding模型选择了`BAAI/bge-large-zh-1.5`，RAGflow底层做了什么？
+
+
+1. 资料文档会被切分为**小段落/块/chunk**，每段通常**几百个字**。分块一般采用滑动窗口的方式，**每个块之间有重叠**，避免**上下文断裂**。
+   1. 按句子分割会有点短，语义不完整
+2. 每个chunk经过embedding模型编码为高维向量，向量存储到**向量数据库**(FAISS, postgreSQL, ES, etc)，且系统会建立倒排索引啥的进行加速
+3. 提出问题 -> retrieval(问题被embedding -> 找到语义最相似的chunk) -> augmentation(拼接在提问之前形成新prompt) -> generation (新prompt送入ds模型生成回答)
 
 #### 悦动探针智慧客服
 
@@ -135,10 +145,6 @@ RAG:
    1. “xxx周末营业吗？”
    2. “我想周三晚上学瑜伽，有地方开课吗？”
 
-
-### RAG深入
-
-TODO
 
 ## SFT
 
@@ -356,6 +362,10 @@ curl --request POST \
 
 Agent framework: LangGraph, LangChain...
 
+### 客服改进
+
+目前RAG + LLM更多是在**回答问题**
+加入Agent之后，可以**解决问题**：eg 自动下单、退单（基于functionCall功能）
 
 ### Tool Calling
 

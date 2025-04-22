@@ -619,6 +619,9 @@ Linux提供了三种IO多路复用的系统调用：select, poll, epoll，**进�
 
 #### select
 
+> linux遍历fd_set如何标识IO就绪的fd呢？内核会将就绪的**fd保持为1**，未就绪的改为0.
+> 早期select的fdset长度为1024(32bit电脑)，后续扩展到2048
+
 ==**select实现机制**==: 将想要检测的fd的fd_set值置为1(想要监听什么事件就用对应的fd_set, eg readfds, writefds, exceptfds)，然后调用select()，内核会从用户空间**拷贝**一份fdset，然后**遍历**检测是否有读/写/异常事件发生(即检测read/write buffer是否就绪)，然后将结果写入到fd_set标记为可读/可写，然后我们将该fd_set**拷贝**会用户空间，然后**遍历**拿出值为1的fd就可以执行具体的操作（如去read buffer读数据）
 * 缺陷：
   * **拷贝开销大**：select和poll会将fd_set从用户态拷贝到内核态，然后内核修改完毕之后再拷贝回用户态
