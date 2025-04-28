@@ -23,6 +23,9 @@
   - [推荐系统](#推荐系统)
     - [电商项目常见推荐系统](#电商项目常见推荐系统)
     - [我们的流程](#我们的流程)
+    - [改进](#改进)
+      - [1. 基于向量数据库进行改进](#1-基于向量数据库进行改进)
+      - [2. 模型层面的提升](#2-模型层面的提升)
       - [简单学下ES](#简单学下es)
       - [jmeter](#jmeter)
   - [3. 秒杀](#3-秒杀)
@@ -777,6 +780,7 @@ Q: ==**如何评估你的智能推荐系统的效果**==?
 
 第三：**用户问卷调研**（user study），问核心用户主观感受，内容是否相关，是否喜欢
 
+
 **改进空间：**
 
 * 计算用户特征向量时，可以增加对用户行为的分析：如浏览时间
@@ -796,6 +800,24 @@ https://chatgpt.com/c/66fe7896-bdec-8007-9f0b-3c41c7f1514e
 核心代码参考:
 `java\project\recommend\recommend.ipynb`
 `java\project\recommend\recommend.java`
+
+### 改进
+
+#### 1. 基于向量数据库进行改进
+
+使用高效的向量数据库代替MySQL+Redis存储向量。
+
+原本需要从Redis取出向量数据，然后使用java做余弦相似度计算。
+
+Milvus：高性能本地部署
+
+1. 内置了高效的近似最近邻(ANN)搜索算法（eg HNSW, IVF, Flat）
+2. 会自动将向量索引数据缓存到内存
+
+#### 2. 模型层面的提升
+
+1. 使用句向量模型`text2vec-base-chinese`替代`word2vec`，效果好很多；[link](https://huggingface.co/shibing624/text2vec-base-chinese)
+2. 可以考虑进一步fine-tune模型
 
 #### 简单学下ES
 

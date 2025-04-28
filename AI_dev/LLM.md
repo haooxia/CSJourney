@@ -7,8 +7,11 @@
       - [SFT vs. RLHF vs. RAG](#sft-vs-rlhf-vs-rag)
       - [微调还是RAG?](#微调还是rag)
     - [本地部署deepseek + RAG](#本地部署deepseek--rag)
-      - [RAGflow底层 / RAG底层](#ragflow底层--rag底层)
       - [悦动探针智慧客服](#悦动探针智慧客服)
+    - [RAGflow底层 / RAG底层](#ragflow底层--rag底层)
+      - [改进: 暴力搜索 -\> ANN](#改进-暴力搜索---ann)
+      - [改进: 混合检索 Hybrid Search](#改进-混合检索-hybrid-search)
+      - [Milvus向量数据库](#milvus向量数据库)
   - [SFT](#sft)
     - [LoRA](#lora)
     - [LLama-Factory](#llama-factory)
@@ -100,16 +103,6 @@ RAG:
 
 ![picture 3](../images/c9017f17e83d172ddf188f2949e55b1f316530c569a655b2d73667c7c7603a57.png)  
 
-#### RAGflow底层 / RAG底层
-
-我上传了一些资料，**Chat**模型选择了Deepseek-r1:32b, embedding模型选择了`BAAI/bge-large-zh-1.5`，RAGflow底层做了什么？
-
-
-1. 资料文档会被切分为**小段落/块/chunk**，每段通常**几百个字**。分块一般采用滑动窗口的方式，**每个块之间有重叠**，避免**上下文断裂**。
-   1. 按句子分割会有点短，语义不完整
-2. 每个chunk经过embedding模型编码为高维向量，向量存储到**向量数据库**(FAISS, postgreSQL, ES, etc)，且系统会建立倒排索引啥的进行加速
-3. 提出问题 -> retrieval(问题被embedding -> 找到语义最相似的chunk) -> augmentation(拼接在提问之前形成新prompt) -> generation (新prompt送入ds模型生成回答)
-
 #### 悦动探针智慧客服
 
 
@@ -145,6 +138,100 @@ RAG:
    1. “xxx周末营业吗？”
    2. “我想周三晚上学瑜伽，有地方开课吗？”
 
+---
+
+### RAGflow底层 / RAG底层
+
+我上传了一些资料，**Chat**模型选择了Deepseek-r1:32b, embedding模型选择了`BAAI/bge-large-zh-1.5`，RAGflow底层做了什么？
+
+
+1. 资料文档会被切分为**小段落/块/chunk**，每段通常**几百个字**。分块一般采用滑动窗口的方式，**每个块之间有重叠**，避免**上下文断裂**。
+   1. 按句子分割会有点短，语义不完整
+   2. 文本分割很重要，影响检索
+2. 每个chunk经过embedding模型编码为高维向量，向量存储到**向量数据库**，且系统会建立倒排索引啥的进行加速
+   1. 向量数据库：可以作为LLM的Long-term Memory；eg. mulvus, FAISS, ES, postgreSQL
+   2. 传统数据库(mysql)主要用于存储结构化数据（行列），侧重于**精准匹配**；向量数据库主要用于存储非结构化数据（文本、图片、音频等）经过特征提取后的特征表示，侧重于**相似性搜索**
+3. 提出问题 -> retrieval(问题被embedding -> 找到语义最相似的chunk) -> augmentation(拼接在提问之前形成新prompt) -> generation (新prompt送入ds模型生成回答)
+   1. 检索细节：找到与query最近的k个chunk，然后reranking得到context；eg 欧氏距离，余弦相似度，点积相似度
+
+#### 改进: 暴力搜索 -> ANN
+
+> 暴力搜索 -> ANN -> 构建索引 -> HNSW
+
+Q: 近似最近邻算法（Approximate Nearest Neighbor, ANN）是什么？
+
+在处理大规模高维数据（如图像、文本 embedding）时，我们通常需要快速查找与某个向量最相近的向量。这就用到了最近邻搜索（Nearest Neighbor Search）。
+
+1. 精确最近邻（Exact Nearest Neighbor）存在的问题
+   1. 暴力搜索（Brute-force Search） 是精确最近邻的一种实现方式：
+      1. 每次查询都与所有向量计算相似度（如欧氏距离或余弦相似度）
+      2. 简单粗暴，计算成本非常高。
+   2. 高维空间下效率低：精确搜索面临维度灾难（Curse of Dimensionality），计算会变得非常慢。
+
+2. ANN：在准确率与效率之间的平衡，通过**构建索引**，实现**近似**的快速搜索，**牺牲少量精度换取巨大速度提升**。
+   1. 向量索引就是将大量高维向量按某种逻辑（如聚类、图结构）组织起来，加速相似度搜索。在你的场景中，比如把 100 个店铺的文档拆分成 chunk，转成 embedding，然后用 HNSW 建立索引。
+   2. 常见的ANN实现算法/**构建向量索引**vector indexing：
+      1. LSH（Locality Sensitive Hashing）：基于哈希
+      2. HNSW（Hierarchical Navigable Small World）：基于图结构
+      3. FAISS（Facebook AI Similarity Search）：集成多种高效索引算法
+3. **Vector Indexing**是 ANN 的核心技术手段，目标是**让相似的向量尽可能靠近**。
+   1. Hash-based: 局部敏感哈希算法LSH：将高维向量映射到低维空间，使用哈希函数将相似的向量映射到同一个桶中
+   2. Tree-based: Spotify的Annoy算法
+   3. Graph-based: HNSW
+   4. Cluster-based: K-means，将搜索空间控制到某个小范围内
+
+4. HNSW：一种高效的图结构索引方法; Hierarchical Navigable Small World Graph（多层导航小世界图）
+   1. **多层图结构**：
+      1. **高层图**由较少的节点组成(稀疏)，支持快速的大范围跳跃，负责粗略搜索
+      2. **低层图**包含更多的节点(密集)，负责精确搜索，最底层的图包括所有点
+         1. 有点像redis skiplist
+
+
+![picture 6](../images/3cf8c70d95421c55221d22d074bdacb7ee5d607d8aac4d92dc1f9d0825d8ed04.png)  
+
+---
+
+捋一下总体流程：
+
+1. 提前计算并存储店铺的embedding：（离线计算，系统启动之间）
+   1. 计算好所有店铺的特征向量embedding，使用text2vec模型
+2. 将这些店铺的向量存储到Milvus中。
+3. 创建索引（HNSW）：
+   1. 在插入所有店铺向量之后，你需要为这些向量创建索引。可以显著加速之后的搜索过程。
+4. 查询时进行近似最近邻搜索：（实时查询）
+   1. 当用户发送查询请求时，同样embdding，**然后会被输入到Milvus中**，系统会基于创建的索引（如HNSW）来搜索与用户向量最相似的店铺向量。
+5. 返回最相似的店铺：
+   1. Milvus会根据用户向量和店铺向量的相似度（如**余弦相似度**）返回最匹配的店铺，并将它们按相似度排序，给出前N个最相似的推荐。
+
+---
+
+* milvus本身可以进行相似度计算，milvus基于HNSW向量索引加速相似度计算过程。当用户发送查询时，HNSW 索引会先通过高层图进行粗略筛选，从而快速定位到可能包含相似向量的区域。然后，通过低层图进行更精细的搜索，从而找到与查询向量最相似的向量。
+* mivlus在查询的时候，会自动将一部分索引和数据库加载到内存，加速
+* 然后原始向量数据和索引数据存在磁盘中
+* mivlus还支持分布式存储，可以管理大规模数据
+
+code reference: `project\recommend\recommend.ipynb`
+
+#### 改进: 混合检索 Hybrid Search
+
+* **keyword search/关键词匹配/稀疏embedding**: 通过精确的关键词匹配来检索相关文档。
+  * 缺陷：只能检索到包含关键词的文档，无法处理**同义词、拼写错误**等变体。eg “狗”和“汪星人”
+  * model: eg BM25
+* **vector search/向量搜索/稠密embedding**：基于文本语义进行查找，可以处理同义词、拼写错误等变体。
+  * 缺陷：在处理缩写、产品编号、人名或员工号特定短语时，可能会出现问题。这正是关键词搜索的优势
+  * model: eg BERT
+* 融合：eg 加权平均
+
+
+![picture 7](../images/44e5a3517e9f95981011ff371c6b991755fc273a8ea836fd345883cb018efb12.png)
+
+![picture 8](../images/7b03312fb9ab6f4764c7b70c28e2074a9ee77bf74889159e86a19c29ef0ffe08.png)  
+
+#### Milvus向量数据库
+
+ref: `project\recommend\recommend.ipynb`
+
+---
 
 ## SFT
 
@@ -408,3 +495,23 @@ function schema大概长这样
 
 MCP: Model Context Protocol, 一个社区共建的开放协议，提供一个通用的开放标准，用于连接LLM和外部数据、工具或者行为。
 
+MCP的主要特点：
+
+* 统一的工具调用格式：不同的工具都遵循相同的调用格式，方便复用和维护
+* 上下文管理：提供统一的上下文管理机制，让模型更好地理解和使用工具
+* 可扩展性：可以方便地添加新的工具和功能
+* 跨平台兼容：不同的LLM平台都可以使用相同的协议
+
+MCP的工作流程：
+
+1. 定义工具：使用统一的格式定义工具的功能、参数等
+2. 上下文构建：将工具信息和其他上下文信息组织成标准格式
+3. 模型调用：模型根据上下文信息调用相应的工具
+4. 结果处理：统一处理工具返回的结果
+
+相比传统的Tool Calling，MCP的优势：
+
+* 更好的工具复用：统一的格式让工具可以在不同的场景下复用
+* 更清晰的上下文：标准化的上下文管理让模型更容易理解任务
+* 更容易维护：统一的协议让系统更容易维护和升级
+* 更好的生态：开放协议促进了工具和功能的共享

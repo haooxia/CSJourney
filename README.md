@@ -2,8 +2,6 @@
 
 
 * [操作系统](https://github.com/haooxia/CSJourney/blob/main/os/os.md)
-  * [IO Multiplexing](https://github.com/haooxia/CSJourney/blob/main/os/IO_multiplexing.md)
-  * [线程池](https://github.com/haooxia/CSJourney/tree/main/os/threadPool)
 * [计算机网络](https://github.com/haooxia/CSJourney/blob/main/network/network_essence.md)
   * [Socket](https://github.com/haooxia/CSJourney/blob/main/network/%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1.md)
 * [计算机组成原理](https://github.com/haooxia/CSJourney/blob/main/organization/organization.md)
@@ -13,7 +11,7 @@
 * [Java](https://github.com/haooxia/CSJourney/blob/main/java/java.md)
   * [Collection](https://github.com/haooxia/CSJourney/blob/main/java/Collection.md)
   * [JUC](https://github.com/haooxia/CSJourney/blob/main/java/JUC.md)
-  * [JVM](https://github.com/haooxia/CSJourney/blob/main/java/JVM_zhihong.md)
+  * [JVM](https://github.com/haooxia/CSJourney/blob/main/java/JVM.md)
 * [C++](https://github.com/haooxia/CSJourney/blob/main/cpp/cpp.md) 
   * [STL](https://github.com/haooxia/CSJourney/blob/main/houjie/STL/notes.md)
   * [OOP-1](https://github.com/haooxia/CSJourney/blob/main/houjie/object-oriented-1/notes.md)

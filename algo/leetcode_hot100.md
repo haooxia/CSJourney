@@ -40,7 +40,7 @@
   - [9. 排序链表](#9-排序链表)
   - [10. 反转链表 ☆](#10-反转链表-)
   - [11. 指定区间反转链表 ☆](#11-指定区间反转链表-)
-  - [11. K个一组翻转链表](#11-k个一组翻转链表)
+  - [11. K个一组翻转链表 ☆☆](#11-k个一组翻转链表-)
   - [11. 回文链表](#11-回文链表)
   - [12. 两两交换链表节点](#12-两两交换链表节点)
 - [二叉树](#二叉树)
@@ -99,6 +99,10 @@
   - [11. 分割为两个等和子集](#11-分割为两个等和子集)
   - [12. 最后一块石头的重量 II](#12-最后一块石头的重量-ii)
   - [13. 目标和](#13-目标和)
+  - [14. 最长递增子序列 ☆](#14-最长递增子序列-)
+  - [15. 最长公共子序列 ☆](#15-最长公共子序列-)
+  - [16. 最长重复子数组](#16-最长重复子数组)
+  - [17. 编辑距离 ☆](#17-编辑距离-)
 - [贪心](#贪心)
   - [1. 最大子数组和 ☆](#1-最大子数组和-)
   - [2. 买卖股票的最佳时机 ☆](#2-买卖股票的最佳时机-)
@@ -111,7 +115,7 @@ TODO:
 * 和为K的子数组
 * 矩阵类
 * 单调栈：接雨水 每日温度
-* 子串问题
+* 海岛
 
 
 ## Classical
@@ -156,7 +160,6 @@ class LRUCache {
         node.prev.next = node.next;
         node.next.prev = node.prev;
     }
-    
     public void addHead(Node node) {
         // 将节点加到双链表头结点
         node.next = dummyNode.next;
@@ -956,7 +959,7 @@ public ListNode reverseBetween(ListNode head, int left, int right) {
 }
 ```
 
-### 11. K个一组翻转链表
+### 11. K个一组翻转链表 ☆☆
 
 题目：给定一个链表，k个一组翻转链表。
 思路1：基于区间翻转
@@ -2413,7 +2416,107 @@ public int lastStoneWeightII(int[] stones) {
 
 ### 13. 目标和
 
+### 14. 最长递增子序列 ☆
 
+题目：给定一个数组，求最长递增子序列的长度。eg`[10,9,2,5,3,7,101,18]` -> `4` (eg `[2,3,7,101]`)
+
+```java
+public int lengthOfLIS(int[] nums) {
+    // dp[i]表示以nums[i]为结尾的最长递增子序列的长度
+    // dp[i] = max(dp[j]+1, dp[j])
+    int n = nums.length;
+    int[] dp = new int[n];
+    for (int i=0; i<n; ++i) dp[i] = 1; // 以每个元素结尾 那最少都是1
+    for (int i=1; i<n; ++i) {
+        for (int j=0; j<i; ++j) { // 这里会遍历0-i区间内的每一个元素 去找到最合适的
+            // j在0-i之间遍历，如果dp[i]更大 则长度++ 而且我们应该找到0i之间最大的那个
+            if (nums[i] > nums[j]) dp[i] = Math.max(dp[j]+1, dp[i]); 
+            // else dp[i] = Math.max(dp[j], dp[i]); // 这个并不需要
+        }
+    }
+    // 注意我们dp意思是以i结尾的最长 但并不是说一定是以最后一个元素结尾时最长递增的
+    int result = 0;
+    for (int i=0; i<n; ++i)
+        result = Math.max(result, dp[i]);
+    return result;
+}
+```
+
+### 15. 最长公共子序列 ☆
+
+题目：给定两个字符串，求最长公共子序列的长度。eg `abcde`和`ace` -> `3` (eg `[a,c,e]`)
+
+```java
+public int longestCommonSubsequence(String text1, String text2) {
+    // 元素不需要连续 保证顺序即可 （区别题目：最长重复子数组）
+    // dp[i][j]表示以i-1为结尾的text1和以j-1为结尾的text2的最长公共子序列的长度
+    int n1 = text1.length(), n2 = text2.length();
+    int[][] dp = new int[n1+1][n2+1];
+    // 初始化：首行首列均为0
+    int result = 0;
+    for (int i=1; i<=n1; ++i) {
+        for (int j=1; j<=n2; ++j) {
+            if (text1.charAt(i-1) == text2.charAt(j-1))
+                dp[i][j] = dp[i-1][j-1] + 1;
+            else
+                dp[i][j] = Math.max(dp[i-1][j], dp[i][j-1]); // abc和ace 可见c和e不同 那此时就是我们的dp[i][j]就应该从前面推出来
+            result = Math.max(result, dp[i][j]);
+        }
+    }
+    return result;
+}
+```
+
+### 16. 最长重复子数组
+
+题目：给定两个数组，求最长公共子数组的长度。eg `[1,2,3,2,1]`和`[3,2,1,4,7]` -> `3` (eg `[3,2,1]`)
+
+```java
+public int findLength(int[] nums1, int[] nums2) {
+    // 子数组要求是连续子序列
+    // dp[i][j]表示以i-1为结尾的nums1和以j-1为结尾的nums2的最长重复子数组的长度
+    // if (nums1[i-1] == nums2[j-1]) dp[i][j] = dp[i-1][j-1] + 1; // 这里ij需要同时后退一步
+    int n1 = nums1.length, n2 = nums2.length;
+    int[][] dp = new int[n1+1][n2+1];
+    // 初始化：首行首列都是0
+    int result = 0;
+    for (int i=1; i<=n1; ++i) { // 请注意这里的<= 因为dp是
+        for (int j=1; j<=n2; ++j) {
+            if (nums1[i-1] == nums2[j-1])
+                dp[i][j] = dp[i-1][j-1] + 1;
+            result = Math.max(dp[i][j], result);
+        }
+    }
+    return result;
+}
+```
+
+### 17. 编辑距离 ☆
+
+题目：给定两个字符串，求将一个字符串转换为另一个字符串的最小操作数。操作包括插入、删除和替换。
+思路：`dp[i][j]`表示将word1的前i个字符转换为word2的前j个字符的最小操作数。
+
+```java
+public int minDistance(String word1, String word2) {
+    int m = word1.length(), n = word2.length();
+    int[][] dp = new int[m + 1][n + 1];
+    // 初始化
+    for (int i = 1; i <= m; i++) dp[i][0] =  i;
+    for (int j = 1; j <= n; j++) dp[0][j] = j;
+    for (int i = 1; i <= m; i++) {
+        for (int j = 1; j <= n; j++) {
+            // 因为dp数组有效位从1开始
+            // 所以当前遍历到的字符串的位置为i-1 | j-1
+            if (word1.charAt(i - 1) == word2.charAt(j - 1)) {
+                dp[i][j] = dp[i - 1][j - 1];
+            } else {
+                dp[i][j] = Math.min(Math.min(dp[i - 1][j - 1], dp[i][j - 1]), dp[i - 1][j]) + 1;
+            }
+        }
+    }
+    return dp[m][n];
+}
+```
 
 ## 贪心
 

@@ -27,7 +27,7 @@
         - [happens-before常见规则](#happens-before常见规则)
       - [并发编程的三特性](#并发编程的三特性)
     - [volatile ☆](#volatile-)
-    - [乐观锁与悲观锁](#乐观锁与悲观锁)
+    - [乐观锁与悲观锁 ☆](#乐观锁与悲观锁-)
       - [版本号机制 vs. CAS](#版本号机制-vs-cas)
         - [java中是如何实现CAS的](#java中是如何实现cas的)
         - [CAS的问题](#cas的问题)
@@ -50,7 +50,6 @@
     - [ReentrantReadWriteLock / ReadWriteLock](#reentrantreadwritelock--readwritelock)
     - [ThreadLocal](#threadlocal)
       - [ThreadLocal原理](#threadlocal原理)
-      - [ThreadLocal内存泄漏](#threadlocal内存泄漏)
     - [BlockingQueue](#blockingqueue)
     - [线程池](#线程池)
       - [线程池三大创建方法](#线程池三大创建方法)
@@ -360,7 +359,7 @@ pronounce: `[ˈvɒlətaɪl]`
 <!-- 
 ![picture 10](../images/d41cd6cc8b99b2e14e1b0055d1ceee4eda86012c6a6efe757ae6b9beb101a1bd.png) -->
 
-### 乐观锁与悲观锁
+### 乐观锁与悲观锁 ☆
 
 > 悲观者永远正确 乐观者永远前行
 
@@ -376,7 +375,7 @@ pronounce: `[ˈvɒlətaɪl]`
 
 **乐观锁**：假定冲突的概率低：**先修改完共享资源，再验证这段时间内有没有发生冲突**，如果没有其他线程在修改资源，那么操作完成，如果发现有其他线程已经修改过这个资源，就**放弃**本次操作；（又名无锁编程
 
-* e.g., 版本号机制(git), CAS 算法, `juc.atomic`包下的原子变量类(eg, AtomicInteger)就是使用CAS实现的
+* e.g., 版本号机制(git), CAS 算法, `juc.atomic`包下的原子变量类(eg, AtomicInteger, AtomicReference)就是使用CAS实现的
 * 优点：高并发的场景下，不存在锁竞争造成线程阻塞，也不会有死锁的问题，在性能上往往会更胜一筹
 * 适合读多写少的场景
 * 问题：一旦发生冲突，重试的成本非常高，所以只有在**冲突概率非常低**，且**加锁成本非常高**的场景，才考虑使用乐观锁
@@ -386,6 +385,7 @@ pronounce: `[ˈvɒlətaɪl]`
 **版本号机制**：在数据表加上一个数据版本号version字段，表示数据被修改的次数。读取数据时，将版本号一起读出。更新数据时，比较当前版本号与之前读取的版本号是否一致。如果一致，则更新数据并将版本号加1；如果不一致，则表示数据已被其他线程修改，更新失败，通常会重试
 
 **CAS法**（Compare And Swap）：是乐观锁的一种实现方式，是硬件层面支持的原子操作(一条cpu指令)，包含3个操作基数，内存位置（Var），预期原值（Expected）和新值（New），**只有当内存位置V的值等于预期原值E时**（即数据没被修改），**才将该位置的值更新为新值N**，否则不做任何操作。
+
 
 ##### java中是如何实现CAS的
 
@@ -615,18 +615,22 @@ public interface ReadWriteLock {
 
 **Q: 为什么需要ThreadLocal？**
 
-首先我们有一些变量是共享变量，比如堆内存中的对象是多线程共享的，比如方法区中的static变量，而你多个线程同时访问这种共享变量会出现线程不安全的问题，我们一般直接加个锁(`synchronized, Lock`)保证数据安全。
-但加锁影响性能开销，还复杂，可能出现死锁。
+普通的全局变量，多个线程访问会互相影响。为确保线程安全，我们还需要加互斥锁。麻烦且慢。
+但用ThreadLocal，每个线程都有自己独立的副本（ie 线程局部变量），互不影响。
 
-所以有时候我们并不想要这种多个线程共享的变量，我们想要每个线程只访问自己的变量副本。这就可以考虑使用ThreadLocal机制创建**线程局部变量**，直接避免了共享变量，每个线程都有一个独立的副本，相互隔离。
+<!-- 首先我们有一些变量是共享变量，比如堆内存中的对象是多线程共享的，比如方法区中的static变量，而你多个线程同时访问这种共享变量会出现线程不安全的问题，我们一般直接加个锁(`synchronized, Lock`)保证数据安全。 -->
+<!-- 但加锁影响性能开销，还复杂，可能出现死锁。 -->
 
-> 其实会有点像函数中的局部变量，ThreadLoca提供了一种线程内的局部变量，可以在多个方法之间共享数据，同时保持线程隔离。
+<!-- 所以有时候我们并不想要这种多个线程共享的变量，我们想要每个线程只访问自己的变量副本。这就可以考虑使用ThreadLocal机制创建**线程局部变量**，直接避免了共享变量，每个线程都有一个独立的副本，相互隔离。 -->
+
+<!-- > 其实会有点像函数中的局部变量，ThreadLoca提供了一种线程内的局部变量，可以在多个方法之间共享数据，同时保持线程隔离。 -->
 
 1. web应用中，可以使用ThreadLocal存储用户会话信息，这样每个线程在处理用户请求时都能方便拿到当前用户的会话信息。
 2. 作用
    1. **线程隔离**：每个线程都有独立的变量副本，不互相影响，多线程时不用担心数据同步问题
    2. **降低耦合度**：在同一个线程内的多个函数或组件之间，**使用ThreadLocal可以减少参数的传递**，降低代码之间的耦合度，使代码更加清晰和模块化
    3. **性能优势**：由于ThreadLocal避免了线程间的同步开销，所以在大量线程并发执行时，相比传统的锁机制，它可以提供更好的性能
+3. 使用ThreadLocal一定要记得`remove()`，防止**内存泄露**
 
 ```java
 // 创建方法
@@ -638,22 +642,22 @@ threadLocalValue.remove()
 
 #### ThreadLocal原理
 
-* **ThreadLocal对象本身并不存数据**，数据存在线程自个儿的成员变量ThreadLocalMap中
-* **每个Thread线程都有自己的`ThreadLocalMap`成员变量，是一个Map结构（一个Entry数组），每个Entry的key是`ThreadLocal`本身，value是value值。
-* ThreadLocalMap中的key(即ThreadLocal对象实例)是用弱引用(WeakReference)来存储的
+* 每个线程Thread对象内部都有一个Map，ie `ThreadLocalMap`
+* **ThreadLocal对象本身作为key**（是弱引用weakReference），value是存的真正数据；key+value构成一个Entry
     * 弱引用是不管内存够不够，下一次垃圾回收时一定会回收
-* 如果一个线程中声明了两个`ThreadLocal`对象的话，`Thread`内部使用这一个`ThreadLocalMap`存放多个`ThreadLocal`数据，key是不同的`ThreadLocal`，value是对应的Object（即通过ThreadLocal对象调用set()设置的值）
+* 如果一个线程中声明了两个`ThreadLocal`对象，`Thread`内部使用这一个`ThreadLocalMap`存放2个`ThreadLocal`数据，key是不同的`ThreadLocal`，value是对应的数据
 
 
-![picture 11](../images/f092819fbf9c4122c6a72f288277b60b2be81a1eacfcbebd1fd9ceb5fa249ec8.png)  
-> 每个线程都有一个ThreadLocalMap成员，独立的空间，get()时就检查当前线程的ThreadLocalMap有没有值，有则返回，无则通过initialValue()创建并放入Map中(前提是重写了该方法)；set()就是将value给到当前线程的key(ThreadLocal)；remove()大概是直接删除对应Entry
+![picture 11](../images/f092819fbf9c4122c6a72f288277b60b2be81a1eacfcbebd1fd9ceb5fa249ec8.png){60%}
+<!-- > 每个线程都有一个ThreadLocalMap成员，独立的空间，get()时就检查当前线程的ThreadLocalMap有没有值，有则返回，无则通过initialValue()创建并放入Map中(前提是重写了该方法)；set()就是将value给到当前线程的key(ThreadLocal)；remove()大概是直接删除对应Entry -->
 
-#### ThreadLocal内存泄漏
+Q: **ThreadLocal内存泄漏?**
 
-> 还是搞不太明白，主要是ThreadlocalMap中value是强引用，无法被GC回收，导致内存泄漏，手动remove就没问题
+ThreadLocalMap中key是弱引用(weakReference)，而value是强引用。当key不被外部强引用时，GC的时候会清理掉key，但依然持有value数据。此时，Map就出现了key为null的Entry，这个value不会被GC回收，即为内存泄漏。**所以使用完ThreadLocal后一定要remove()**
 
-ThreadLocalMap中使用的key是ThreadLocal本身，value是value，key是一个**弱引用**，value是强引用。故而ThreadLocal(就是那个key)没有被外部强引用时，垃圾回收的时候key会被清理掉，而value并不会。这下Map就出现了key为null的Entry，这个value不会被GC回收，即为内存泄漏。（当线程结束时，ThreadLocalMap随之销毁，此时ThreadLocal对象还在...直到没有其他引用指向它为止
-（不太懂，看完jvm回来看
+remove会清理当前县城的ThreadLocalMap中对应的Entry
+
+
 
 ### BlockingQueue
 
