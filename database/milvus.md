@@ -4,6 +4,11 @@
 > eg, Milvus, FAISS 
 
 
+* 向量数据库常用于知识库、语义搜索、RAG等AI应用。
+* Milvus是一个开源的向量数据库
+
+---
+
 tutorial link: https://zilliz.com.cn/blog
 
 在具体构建RAG时，主要有四个步骤：数据整理、索引、检索和生成。

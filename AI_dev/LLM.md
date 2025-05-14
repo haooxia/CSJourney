@@ -12,6 +12,7 @@
       - [改进: 暴力搜索 -\> ANN](#改进-暴力搜索---ann)
       - [改进: 混合检索 Hybrid Search](#改进-混合检索-hybrid-search)
       - [Milvus向量数据库](#milvus向量数据库)
+      - [GraphRAG](#graphrag)
   - [SFT](#sft)
     - [LoRA](#lora)
     - [LLama-Factory](#llama-factory)
@@ -25,6 +26,14 @@
     - [Tool Calling](#tool-calling)
   - [MCP](#mcp)
 
+
+begining
+
+* LLM是AI应用的引擎/大脑/基础
+* RAG: 将外部知识检索提供给LLM，LLM的**外脑**
+* AI Workflow: **人工**添加一系列步骤/外部工具
+* AI Agent: **LLM自主**思考、决策、执行
+* MCP: 规范MCP与外部工具、资源的交互协议
 
 ## DeepSeek & RAG
 
@@ -233,6 +242,17 @@ ref: `project\recommend\recommend.ipynb`
 
 ---
 
+#### GraphRAG
+
+> 用于解决传统RAG在处理复杂关系时候的不足，传统RAG难以处理复杂关系的任务，基于纯语义嘛，对复杂的推理、分散任务还是难顶的
+
+GraphRAG 在传统 RAG 的基础上引入了知识图谱，将信息表示为由实体（如人物、地点、事件等）和它们之间的关系组成的图结构。这种结构化表示方式使得系统能够更好地理解和利用信息之间的复杂关联。
+
+* 这里是提前用一个大模型整理数据库中的实体和关系，建立一个知识图谱
+* 用户的查询首先被解析为图查询，然后系统在知识图谱中进行图遍历，检索与查询相关的子图。这些子图包含了多个相关的实体及其关系，提供了丰富的上下文信息。最后，系统将这些信息与原始查询一起输入到 LLM 中，生成更加准确和详细的回答。
+
+
+
 ## SFT
 
 通过**人工标注**的数据，进一步训练预训练模型，使其在特定任务上表现更好。
@@ -426,6 +446,7 @@ curl --request POST \
 ## Agent
 
 > 各个公司(openai, google..)对Agent都有自己的解释
+> 让AI自主完成任务，自己感知环境，自己想，自己做
 
 * Key components:
   * **LLM**(大脑)
@@ -491,6 +512,11 @@ function schema大概长这样
 
 ## MCP
 
+> * 如果A项目使用python的LangGraph写了一个tool，然后项目B想用该tool，但是是用js写的，此时就得新写一个同样功能的tool，这时候我们就会想，如果将tool**抽象为独立的服务**，使得不同语言和平台的应用程序可以通过统一的方式调用这些工具，类似于调用 API。于是MCP架构诞生了
+> * 服务：一个可以独立部署、远程调用、提供标准接口的程序模块。运行在服务器上，可以提供标准化接口（eg http, grpc）以供调用
+
+
+
 由于tools缺乏统一性，不好复用。所以Anthropic提出了MCP协议
 
 MCP: Model Context Protocol, 一个社区共建的开放协议，提供一个通用的开放标准，用于连接LLM和外部数据、工具或者行为。
@@ -502,16 +528,24 @@ MCP的主要特点：
 * 可扩展性：可以方便地添加新的工具和功能
 * 跨平台兼容：不同的LLM平台都可以使用相同的协议
 
-MCP的工作流程：
+---
 
-1. 定义工具：使用统一的格式定义工具的功能、参数等
-2. 上下文构建：将工具信息和其他上下文信息组织成标准格式
-3. 模型调用：模型根据上下文信息调用相应的工具
-4. 结果处理：统一处理工具返回的结果
+MCP架构：
 
-相比传统的Tool Calling，MCP的优势：
+* 同样是C/S架构：我们的CS架构是client和server通过http协议通信
+* 而MCP架构同样有client和server，是通过MCP Protocol通信
+  * 除了Client和server，还有Host（主机），负责启动连接，管理client，起到协调作用吧大概
+* client负责和LLm和user交互，server负责和tool, resource交互
 
-* 更好的工具复用：统一的格式让工具可以在不同的场景下复用
-* 更清晰的上下文：标准化的上下文管理让模型更容易理解任务
-* 更容易维护：统一的协议让系统更容易维护和升级
-* 更好的生态：开放协议促进了工具和功能的共享
+![picture 9](../images/f89d3048256fbc65687f3528dccd39e68a44e65b654dedb9a07b5d607a3c4d72.png)  
+
+----
+
+具体工作流程：
+
+1. user发送query（比如用户通过cursor/claude发送query，**启动与MCP客户端的交互**
+2. 客户端client与主机host建立连接，收到query；从MCP server拿到可用的tool和resource；然后整合除一个新的prompt，并发送给LLM
+   1. 这里会和MCP server交互，获取必要的上下文信息，然后整合
+3. LLM基于这个prompt产生一个调用tool的命令，再发给client，client再去调用server
+
+![picture 11](../images/e59f84372732f59c7ffcfbce7b62abc6611491dbfc4ca96888465d3568cb703f.png)  
