@@ -1,21 +1,26 @@
 # MCP
 
+- [MCP](#mcp)
+  - [MCP基础与使用](#mcp基础与使用)
+  - [Write a MCP Server](#write-a-mcp-server)
+    - [python MCP Server](#python-mcp-server)
+  - [MCP底层协议解析](#mcp底层协议解析)
+
 ## MCP基础与使用
 
 Model Context Protocol是Anthropic在2024/11/25发布的一个新协议，旨在解决LLM和工具之间的交互问题。
 
+简单来说就是LLM的**标准化工具箱**。
+
 * MCP Host: Claude Desktop, Cursor, Cline, Cherry studio
-* MCP Server: 大部分MCP server都是本地通过node或python提供的，只不过使用的时候可能会联网，但也可能仅本地就ok。（区别于传统的server）
+* MCP Server: 大部分MCP server都是本地通过nodejs或python提供的，只不过使用的时候可能会联网，但也可能仅本地就ok。（区别于传统的server）
   * > 所以MCP Server带个Server是有些容易误解的，其实就是一个程序应用，有各自的功能模块，也即MCP Server中的**tool**（其实也就是一个function
 
 * 有些MCP Host会自动安装MCP server，有些只能手动
 * LLM自己会阅读MCP server的github readme中的安装说明来自动安装server，但我不希望LLM乱搞，就是不太放心，所以还是自己装
 
 
-
-
-![picture 0](../images/9c29cb4f4fa83251c41d287268316fffe7cfcc2edd064e738f7cb3ee7cdff5e1.png)  
-
+<!-- ![picture 0](../images/9c29cb4f4fa83251c41d287268316fffe7cfcc2edd064e738f7cb3ee7cdff5e1.png)   -->
 
 
 MCP server市场
@@ -64,7 +69,7 @@ fetch是一个基于python的MCP server，uvx会自动安装并启动它。promp
 ```
 
 除此之外还有其他的安装方式...自己探索吧
-
+<!-- 
 ---
 
 > * 如果A项目使用python的LangGraph写了一个tool，然后项目B想用该tool，但是是用js写的，此时就得新写一个同样功能的tool，这时候我们就会想，如果将tool**抽象为独立的服务**，使得不同语言和平台的应用程序可以通过统一的方式调用这些工具，类似于调用 API。于是MCP架构诞生了
@@ -93,7 +98,7 @@ MCP架构：
   * 除了Client和server，还有Host（主机），负责启动连接，管理client，起到协调作用吧大概
 * client负责和LLm和user交互，server负责和tool, resource交互
 
-![picture 9](../images/f89d3048256fbc65687f3528dccd39e68a44e65b654dedb9a07b5d607a3c4d72.png)  
+![picture 9](../images/f89d3048256fbc65687f3528dccd39e68a44e65b654dedb9a07b5d607a3c4d72.png)   -->
 
 
 ## Write a MCP Server
@@ -231,7 +236,34 @@ if __name__ == "__main__":
 }
 ```
 
-### MCP底层协议解析
+## MCP底层协议解析
+
+上述手写的MCP server中利用了mcp.server.fastmcp这个库，提供了一个快速构建MCP服务的工具，这个库底层帮我们做了那些事情呢？
 
 * 大部分MCP Server都是通过输入和输出与Host沟通的
-* inputSchema
+
+利用gpt写了个脚本，**在MCP host和MCP server之间**，获取二者的输入和输出数据，存到文件中，便于分析
+
+![picture 1](../images/88e8072c76b681de5624cdfab2df63eaac3041c0ed8bd69701ca6211b29e2546.png)  
+
+分析流程如下：
+
+1. MCP Host(eg Cline)向MCP Server打招呼，通知MCP协议版本、Host名称、版本号等
+2. MCP Server接收打招呼的消息，也返回一些信息，包括MCP协议版本、Server名称、版本号等
+3. Host收到，Host发送消息，**想要知道Server支持的tool**列表
+5. Server返回tool列表
+   1. 每个tool包括：name, description, **inputSchema**(输入参数、入参规范), （这些都是从我们的python代码中自动提取出来的，借助docstring，装饰器啥的自动提取的
+6. 上述都是我们在注册工具的一瞬间做好的，后续就该使用了
+7. Host发送消息，想要调用tool，包括tool名称、输入参数
+   1. 这里的参数是LLM根据tool的输入规范来处理的
+8. Server接收消息，调用tool，返回结果
+9. Host接收结果，就结束了，返回给LLM，然后LLM总结完成答案，返回给用户
+
+
+![picture 2](../images/55f9ccba00f1f59f9e58d5855ae0bb8ee2cd66d4e8f0d404ae0b0b08bfe3c6e0.png)  
+
+![picture 0](../images/9c29cb4f4fa83251c41d287268316fffe7cfcc2edd064e738f7cb3ee7cdff5e1.png)  
+
+核心：**MCP协议只规定了Server与Host之间的交互，并没有规定如何与LLM模型进行交互**
+
+reference link: [link](https://www.youtube.com/watch?v=zrs_HWkZS5w)

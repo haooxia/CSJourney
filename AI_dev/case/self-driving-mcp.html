@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>深圳大学到商城县自驾方案</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/animejs@3.0.1/lib/anime.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --accent-color: #f39c12;
+            --warning-color: #e74c3c;
+            --text-color: #34495e;
+            --light-color: #ecf0f1;
+            --bg-color: #f9fafb;
+            --card-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            --hover-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+            --border-radius: 16px;
+        }
+
+        * {
+            transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', 'Microsoft YaHei', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.7;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #3a7bd5 0%, #3a6073 100%);
+            color: white;
+            padding: 30px 25px;
+            border-radius: var(--border-radius);
+            margin-bottom: 30px;
+            box-shadow: var(--card-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/pin-s+f44336(113.931849,22.533885),pin-s+4CAF50(115.406894,31.798320)/114.5,27.2,5/1200x400@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA') center center;
+            background-size: cover;
+            opacity: 0.2;
+            z-index: 0;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .card {
+            border: none;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            margin-bottom: 30px;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.4s, box-shadow 0.4s;
+            background-color: white;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .card-header {
+            background: linear-gradient(to right, var(--primary-color), #2980b9);
+            color: white;
+            font-weight: 500;
+            padding: 15px 20px;
+            border: none;
+        }
+
+        .card-header i {
+            margin-right: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px;
+            border-radius: 50%;
+            height: 25px;
+            width: 25px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .card-body {
+            padding: 25px;
+        }
+
+        #map {
+            height: 550px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border: 5px solid white;
+        }
+
+        .weather-icon {
+            font-size: 3rem;
+            margin-right: 15px;
+            background: linear-gradient(45deg, #3498db, #1abc9c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .weather-icon.sun {
+            background: linear-gradient(45deg, #f1c40f, #f39c12);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .badge {
+            font-size: 0.8rem;
+            padding: 7px 12px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            border-radius: 30px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .badge-success {
+            background: linear-gradient(to right, var(--secondary-color), #27ae60);
+        }
+
+        .badge-info {
+            background: linear-gradient(to right, var(--primary-color), #2980b9);
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 50px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(to bottom, var(--primary-color), var(--secondary-color));
+            border-radius: 3px;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -38px;
+            top: 5px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            border: 4px solid var(--primary-color);
+            box-shadow: 0 0 0 5px rgba(52, 152, 219, 0.2);
+            z-index: 1;
+        }
+
+        .timeline-item:hover::before {
+            background: var(--primary-color);
+            transform: scale(1.2);
+        }
+
+        .timeline-time {
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+
+        .waypoint {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .weather-card {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            color: var(--text-color);
+            margin-bottom: 20px;
+            box-shadow: var(--card-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .weather-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(to right, var(--primary-color), #9b59b6);
+        }
+
+        .weather-card.sun::after {
+            background: linear-gradient(to right, #f1c40f, #e67e22);
+        }
+
+        .weather-detail {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .progress-container {
+            margin-top: 30px;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .alert-box {
+            border-left: 4px solid var(--accent-color);
+            padding: 15px 20px;
+            background-color: white;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .alert-box h6 {
+            margin-bottom: 12px;
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        .alert-box p, .alert-box li {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .alert-box.danger {
+            border-left-color: var(--warning-color);
+        }
+
+        .alert-box.danger h6 {
+            color: var(--warning-color);
+        }
+
+        .alert-box.success {
+            border-left-color: var(--secondary-color);
+        }
+
+        .alert-box.success h6 {
+            color: var(--secondary-color);
+        }
+
+        .icon-circle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 35px;
+            height: 35px;
+            background-color: rgba(52, 152, 219, 0.1);
+            border-radius: 50%;
+            margin-right: 10px;
+            color: var(--primary-color);
+        }
+
+        .icon-circle.warning {
+            background-color: rgba(243, 156, 18, 0.1);
+            color: var(--accent-color);
+        }
+
+        .icon-circle.danger {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: var(--warning-color);
+        }
+
+        .icon-circle.success {
+            background-color: rgba(46, 204, 113, 0.1);
+            color: var(--secondary-color);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 30px 0;
+            color: #7f8c8d;
+            border-top: 1px solid #eee;
+            position: relative;
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 5px;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            border-radius: 5px;
+        }
+
+        .table {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .table thead th {
+            background-color: rgba(52, 152, 219, 0.1);
+            color: var(--primary-color);
+            font-weight: 600;
+            border: none;
+        }
+
+        .table tbody tr:hover {
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+
+        .table td {
+            vertical-align: middle;
+            border-color: #f1f1f1;
+        }
+
+        /* 动画效果 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fadeInUp {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+
+        /* 媒体查询适配 */
+        @media (max-width: 768px) {
+            .header {
+                padding: 20px 15px;
+            }
+            
+            .card {
+                margin-bottom: 20px;
+            }
+            
+            #map {
+                height: 400px;
+            }
+            
+            .timeline {
+                padding-left: 35px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <h1 class="text-center mb-3 animate-fadeInUp"><i class="fas fa-route me-2"></i>深圳大学 到 商城县 自驾方案</h1>
+                <p class="text-center mb-3 animate-fadeInUp" style="animation-delay: 0.1s;">
+                    <span class="badge bg-light text-primary me-2"><i class="far fa-calendar-alt me-1"></i>出发时间：2025年5月11日 上午8:00</span>
+                    <span class="badge bg-light text-primary me-2"><i class="fas fa-road me-1"></i>总距离：约1265公里</span>
+                    <span class="badge bg-light text-primary"><i class="far fa-clock me-1"></i>预计行驶时间：约13小时20分钟</span>
+                </p>
+                <div class="text-center animate-fadeInUp" style="animation-delay: 0.2s;">
+                    <button class="btn btn-light btn-sm mt-2" onclick="window.print()">
+                        <i class="fas fa-print me-1"></i> 打印行程
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-lg-8">
+                <div class="card animate-fadeInUp" style="animation-delay: 0.3s;">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-map-marked-alt"></i> 行程路线</h5>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-sm btn-light" onclick="toggleMapView('standard')">标准视图</button>
+                            <button type="button" class="btn btn-sm btn-light" onclick="toggleMapView('satellite')">卫星视图</button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="map"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card h-100 animate-fadeInUp" style="animation-delay: 0.4s;">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-cloud-sun"></i> 沿途天气</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="weather-card mb-4">
+                            <div class="d-flex justify-content-between mb-2">
+                                <h5><i class="fas fa-map-marker-alt me-2"></i>深圳</h5>
+                                <span class="badge bg-primary">出发地</span>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <div class="weather-icon">
+                                    <i class="fas fa-cloud"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold">多云</h6>
+                                    <div class="d-flex align-items-center mb-1">
+                                        <i class="fas fa-temperature-high me-2 text-danger"></i>
+                                        <span>气温: 19°C - 25°C</span>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-wind me-2 text-primary"></i>
+                                        <span>北风 1-3级</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="weather-card sun">
+                            <div class="d-flex justify-content-between mb-2">
+                                <h5><i class="fas fa-map-marker-alt me-2"></i>商城县</h5>
+                                <span class="badge bg-success">目的地</span>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <div class="weather-icon sun">
+                                    <i class="fas fa-sun"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold">晴</h6>
+                                    <div class="d-flex align-items-center mb-1">
+                                        <i class="fas fa-temperature-high me-2 text-danger"></i>
+                                        <span>气温: 18°C - 27°C</span>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-wind me-2 text-primary"></i>
+                                        <span>南风 1-3级</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="alert-box mt-4 warning">
+                            <h6 class="d-flex align-items-center">
+                                <span class="icon-circle warning"><i class="fas fa-exclamation-triangle"></i></span>
+                                天气提醒
+                            </h6>
+                            <p class="small mb-1"><i class="fas fa-check-circle text-success me-1"></i> 路上天气总体良好，无特殊恶劣天气</p>
+                            <p class="small mb-1"><i class="fas fa-tshirt text-primary me-1"></i> 从南到北气温会有所变化，建议准备适合不同温度的衣物</p>
+                            <p class="small mb-0"><i class="fas fa-moon text-warning me-1"></i> 夜间气温较低，如计划夜间驾驶请注意保暖</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card h-100 animate-fadeInUp" style="animation-delay: 0.5s;">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-road"></i> 行程概要</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="progress-container">
+                            <canvas id="elevationChart" width="400" height="150"></canvas>
+                        </div>
+                        <div class="timeline">
+                            <div class="timeline-item">
+                                <div class="timeline-time">08:00</div>
+                                <h6 class="fw-bold">深圳大学出发</h6>
+                                <p>经南海大道、桃园路等上高速</p>
+                                <div class="progress" style="height: 8px;">
+                                  <div class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-time">~12:00</div>
+                                <h6 class="fw-bold">第一次建议休息点</h6>
+                                <p>江西赣州周边服务区</p>
+                                <span class="badge bg-info">已行驶约400公里</span>
+                                <div class="progress mt-2" style="height: 8px;">
+                                  <div class="progress-bar bg-success" role="progressbar" style="width: 32%"></div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-time">~16:00</div>
+                                <h6 class="fw-bold">第二次建议休息点</h6>
+                                <p>湖北武汉周边服务区</p>
+                                <span class="badge bg-info">已行驶约800公里</span>
+                                <div class="progress mt-2" style="height: 8px;">
+                                  <div class="progress-bar bg-success" role="progressbar" style="width: 63%"></div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-time">~21:20</div>
+                                <h6 class="fw-bold">到达商城县</h6>
+                                <p>如无法一天内完成行程，建议在武汉或信阳住宿一晚</p>
+                                <span class="badge badge-success">总行程约1265公里</span>
+                                <div class="progress mt-2" style="height: 8px;">
+                                  <div class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100 animate-fadeInUp" style="animation-delay: 0.6s;">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-info-circle"></i> 注意事项</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert-box">
+                            <h6 class="d-flex align-items-center">
+                                <span class="icon-circle"><i class="fas fa-car"></i></span>
+                                路线提示
+                            </h6>
+                            <p class="small">全程高速公路约1255公里，国省道及城市道路约10公里。路途中有多个隧道和桥梁，请提前确认车辆状况。</p>
+                        </div>
+                        <div class="alert-box danger">
+                            <h6 class="d-flex align-items-center">
+                                <span class="icon-circle danger"><i class="fas fa-tired"></i></span>
+                                防疲劳提示
+                            </h6>
+                            <p class="small">行程较长，建议安排休息和住宿点，不要疲劳驾驶。每隔3-4小时休息一次，下车活动和伸展。</p>
+                        </div>
+                        <div class="alert-box warning">
+                            <h6 class="d-flex align-items-center">
+                                <span class="icon-circle warning"><i class="fas fa-tachometer-alt"></i></span>
+                                车速提示
+                            </h6>
+                            <p class="small">沿途注意限速标志，特别是隧道和桥梁等特殊路段。保持安全车距，遵守交通规则。</p>
+                        </div>
+                        <div class="alert-box success">
+                            <h6 class="d-flex align-items-center">
+                                <span class="icon-circle success"><i class="fas fa-toolbox"></i></span>
+                                出行准备
+                            </h6>
+                            <ul class="small mb-0">
+                                <li>自驾前检查车况，确保轮胎、机油、冷却液等状态良好</li>
+                                <li>准备足够的水和食物，以及必要的应急药品</li>
+                                <li>确保手机电量充足，带上车载充电器和导航设备</li>
+                                <li>准备现金和电子支付方式，用于支付油费和过路费</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card animate-fadeInUp" style="animation-delay: 0.7s;">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-map"></i> 详细路线说明</h5>
+                        <button class="btn btn-sm btn-outline-light" data-bs-toggle="collapse" data-bs-target="#routeDetails">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                    <div class="card-body collapse show" id="routeDetails">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>路段</th>
+                                        <th>行驶方向</th>
+                                        <th>距离</th>
+                                        <th>预计用时</th>
+                                        <th>说明</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge rounded-pill bg-light text-primary me-2">1</span>
+                                                深圳大学 → 高速入口
+                                            </div>
+                                        </td>
+                                        <td><i class="fas fa-arrow-right text-primary me-1"></i>东北</td>
+                                        <td>约5公里</td>
+                                        <td>15分钟</td>
+                                        <td>经南海大道辅路、桃园路、同乐路</td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge rounded-pill bg-light text-primary me-2">2</span>
+                                                S33南光高速
+                                            </div>
+                                        </td>
+                                        <td><i class="fas fa-arrow-up text-primary me-1"></i>北</td>
+                                        <td>约30公里</td>
+                                        <td>25分钟</td>
+                                        <td>经松岗立交</td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge rounded-pill bg-light text-primary me-2">3</span>
+                                                S31龙大高速→G9411莞佛高速→G1523甬莞高速
+                                            </div>
+                                        </td>
+                                        <td><i class="fas fa-arrow-right text-primary me-1"></i>东北</td>
+                                        <td>约40公里</td>
+                                        <td>30分钟</td>
+                                        <td>经罗田立交</td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge rounded-pill bg-light text-primary me-2">4</span>
+                                                G0422武深高速
+                                            </div>
+                                        </td>
+                                        <td><i class="fas fa-arrow-up text-primary me-1"></i>北</td>
+                                        <td>约150公里</td>
+                                        <td>1小时30分钟</td>
+                                        <td>穿越多个隧道</td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge rounded-pill bg-light text-primary me-2">5</span>
+                                                G45大广高速
+                                            </div>
+                                        </td>
+                                        <td><i class="fas fa-arrow-up text-primary me-1"></i>北</td>
+                                        <td>约900公里</td>
+                                        <td>9小时</td>
+                                        <td>跨越广东、江西、湖北等省份</td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge rounded-pill bg-light text-primary me-2">6</span>
+                                                G4222和襄高速→S23固商高速
+                                            </div>
+                                        </td>
+                                        <td><i class="fas fa-arrow-right text-primary me-1"></i>东北</td>
+                                        <td>约55公里</td>
+                                        <td>40分钟</td>
+                                        <td>经燕子岩隧道</td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge rounded-pill bg-light text-primary me-2">7</span>
+                                                下高速→商城县
+                                            </div>
+                                        </td>
+                                        <td><i class="fas fa-arrow-up text-primary me-1"></i>北</td>
+                                        <td>约10公里</td>
+                                        <td>20分钟</td>
+                                        <td>经汪岗大道、温泉大道</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="mb-4">
+                <span class="badge bg-light text-dark me-2"><i class="far fa-calendar-alt me-1"></i>方案生成时间：2025年5月10日</span>
+            </div>
+            <p class="mb-1">祝您旅途愉快，平安到达！</p>
+            <p class="small text-muted">本方案仅供参考，实际行驶请以导航和路况为准</p>
+            <div class="mt-3">
+                <button class="btn btn-sm btn-outline-primary me-2" onclick="window.print()">
+                    <i class="fas fa-print me-1"></i> 打印行程
+                </button>
+                <button class="btn btn-sm btn-outline-success" onclick="shareRoute()">
+                    <i class="fas fa-share-alt me-1"></i> 分享行程
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 初始化地图
+        var map = L.map('map').setView([27.2, 114.5], 6);
+        var currentMapLayer;
+        
+        function setMapLayer(type) {
+            if (currentMapLayer) {
+                map.removeLayer(currentMapLayer);
+            }
+            
+            if (type === 'satellite') {
+                currentMapLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                }).addTo(map);
+            } else {
+                currentMapLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(map);
+            }
+        }
+        
+        // 默认加载标准地图
+        setMapLayer('standard');
+        
+        function toggleMapView(type) {
+            setMapLayer(type);
+        }
+
+        // 起点和终点
+        var startLatLng = [22.533885, 113.931849]; // 深圳大学
+        var endLatLng = [31.798320, 115.406894];   // 商城县
+
+        // 添加起点和终点标记
+        var startIcon = L.divIcon({
+            html: '<i class="fas fa-play-circle" style="color:#2ecc71;font-size:28px;text-shadow: 2px 2px 3px rgba(0,0,0,0.3);"></i>',
+            className: 'marker-icon',
+            iconSize: [28, 28],
+            iconAnchor: [14, 14]
+        });
+        
+        var endIcon = L.divIcon({
+            html: '<i class="fas fa-flag-checkered" style="color:#e74c3c;font-size:28px;text-shadow: 2px 2px 3px rgba(0,0,0,0.3);"></i>',
+            className: 'marker-icon',
+            iconSize: [28, 28],
+            iconAnchor: [14, 14]
+        });
+
+        L.marker(startLatLng, {icon: startIcon}).addTo(map)
+            .bindPopup('<div class="waypoint"><strong>起点：深圳大学</strong><br>出发时间：8:00<br><i class="fas fa-cloud text-primary me-1"></i> 多云 19°C-25°C</div>');
+            
+        L.marker(endLatLng, {icon: endIcon}).addTo(map)
+            .bindPopup('<div class="waypoint"><strong>终点：商城县</strong><br>预计到达：21:20<br><i class="fas fa-sun text-warning me-1"></i> 晴 18°C-27°C</div>');
+
+        // 沿途关键点
+        var waypoints = [
+            {name: "赣州", latlng: [25.8, 114.9], time: "~12:00", desc: "第一次建议休息点"},
+            {name: "武汉", latlng: [30.6, 114.3], time: "~16:00", desc: "第二次建议休息点"},
+            {name: "信阳", latlng: [32.1, 114.1], time: "~20:30", desc: "接近目的地"}
+        ];
+
+        waypoints.forEach(function(wp) {
+            var wpIcon = L.divIcon({
+                html: '<i class="fas fa-map-pin" style="color:#3498db;font-size:22px;text-shadow: 2px 2px 3px rgba(0,0,0,0.3);"></i>',
+                className: 'marker-icon',
+                iconSize: [22, 22],
+                iconAnchor: [11, 22]
+            });
+            
+            L.marker(wp.latlng, {icon: wpIcon}).addTo(map)
+                .bindPopup('<div class="waypoint"><strong>' + wp.name + '</strong><br>' + wp.time + '<br>' + wp.desc + '</div>');
+        });
+
+        // 简化路线
+        var routePoints = [
+            startLatLng,
+            [23.0, 113.8], // 广州附近
+            [24.5, 114.4], // 赣州前
+            [25.8, 114.9], // 赣州
+            [27.5, 115.0], // 南昌附近
+            [29.2, 115.1], // 九江附近
+            [30.6, 114.3], // 武汉
+            [31.2, 114.2], // 孝感附近
+            [31.8, 114.5], // 信阳附近
+            endLatLng
+        ];
+
+        // 绘制路线
+        var polyline = L.polyline(routePoints, {
+            color: '#3498db',
+            weight: 6,
+            opacity: 0.8,
+            lineJoin: 'round',
+            dashArray: '1,10',
+            dashOffset: '0'
+        }).addTo(map);
+        
+        // 添加路线装饰
+        var decorator = L.polyline(routePoints, {
+            color: '#2980b9', 
+            weight: 3, 
+            opacity: 1
+        }).addTo(map);
+        
+        // 适应地图视图
+        map.fitBounds(polyline.getBounds(), {padding: [50, 50]});
+
+        // 初始化海拔图表
+        var ctx = document.getElementById('elevationChart').getContext('2d');
+        var gradientFill = ctx.createLinearGradient(0, 0, 0, 200);
+        gradientFill.addColorStop(0, 'rgba(52, 152, 219, 0.6)');
+        gradientFill.addColorStop(1, 'rgba(52, 152, 219, 0.1)');
+        
+        var elevationData = {
+            labels: ['深圳', '广州', '赣州', '南昌', '九江', '武汉', '孝感', '信阳', '商城'],
+            datasets: [{
+                label: '海拔变化(米)',
+                data: [40, 30, 150, 120, 90, 50, 70, 130, 200],
+                borderColor: '#3498db',
+                borderWidth: 3,
+                backgroundColor: gradientFill,
+                pointBackgroundColor: '#2980b9',
+                pointBorderColor: '#fff',
+                pointRadius: 5,
+                pointHoverRadius: 7,
+                tension: 0.4,
+                fill: true
+            }]
+        };
+
+        var elevationChart = new Chart(ctx, {
+            type: 'line',
+            data: elevationData,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            font: {
+                                family: "'Noto Sans SC', sans-serif",
+                                size: 12
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: '沿途海拔变化',
+                        font: {
+                            family: "'Noto Sans SC', sans-serif",
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        titleColor: '#333',
+                        bodyColor: '#333',
+                        titleFont: {
+                            family: "'Noto Sans SC', sans-serif",
+                            size: 14
+                        },
+                        bodyFont: {
+                            family: "'Noto Sans SC', sans-serif",
+                            size: 13
+                        },
+                        borderColor: '#ddd',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            font: {
+                                family: "'Noto Sans SC', sans-serif"
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                family: "'Noto Sans SC', sans-serif"
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // 分享功能
+        function shareRoute() {
+            if (navigator.share) {
+                navigator.share({
+                    title: '深圳大学到商城县自驾方案',
+                    text: '我的自驾路线：深圳大学到商城县，总距离约1265公里，预计行驶时间约13小时20分钟。',
+                    url: window.location.href
+                })
+                .catch(error => {
+                    alert('分享失败，请手动分享');
+                });
+            } else {
+                alert('您的浏览器不支持分享功能，请手动分享');
+            }
+        }
+        
+        // 页面动画
+        document.addEventListener('DOMContentLoaded', function() {
+            anime({
+                targets: '.animate-fadeInUp',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                delay: anime.stagger(100),
+                easing: 'easeOutQuad',
+                duration: 800
+            });
+            
+            // 进度条动画
+            setTimeout(function() {
+                anime({
+                    targets: '.progress-bar',
+                    width: function(el) {
+                        return el.getAttribute('style').replace('width: ', '');
+                    },
+                    easing: 'easeInOutQuart',
+                    duration: 1000,
+                    delay: anime.stagger(300)
+                });
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
