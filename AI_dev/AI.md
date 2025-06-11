@@ -15,6 +15,9 @@
       - [大模型优化技巧](#大模型优化技巧)
       - [LLM伦理和安全问题](#llm伦理和安全问题)
 
+更多详细知识参考repo:
+Machine Learning: [link](https://github.com/haooxia/MachineLearning-Notes)
+Deep Learning: [link](https://github.com/haooxia/DeepLearning-Notes)
 
 ## 一、机器学习基础
 

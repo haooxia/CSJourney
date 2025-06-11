@@ -10,6 +10,8 @@
   - [BERT](#bert)
     - [question](#question-1)
 
+> 简单整理了一点，详见DeepLearning Repo: [link](https://github.com/haooxia/DeepLearning-Notes)
+
 ## Transformer
 
 ### 1.为什么使用multi-head attention？在相同维度下单头和多头的区别是什么？
